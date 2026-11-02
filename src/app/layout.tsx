@@ -6,8 +6,8 @@ import "./globals.css";
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: BRAND.nombre,
-  description: `Stock y reparto · ${BRAND.empresa}`,
+  title: BRAND.name,
+  description: `Stock y reparto · ${BRAND.company}`,
 };
 
 export const viewport: Viewport = { themeColor: "#0f766e", viewportFit: "cover" };

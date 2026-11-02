@@ -67,6 +67,8 @@ src/
     auth.ts                     sesión y requireUser
 ```
 
+Resultado de una Server Action con `useActionState`: tipo `FormState` de `src/lib/form-state.ts`.
+
 ### Ejemplo: agregar "alertas de stock bajo"
 
 ```
@@ -83,13 +85,6 @@ src/app/(app)/page.tsx    const items = await listLowStock(); return <LowStockCa
 
 La página solo compone. La regla está en un archivo puro con test. La consulta vive
 en el módulo. Otro módulo que necesite el dato importa desde `@/modules/inventory`.
-
-### Estado actual
-
-El código de las fases 0 y 1 es anterior a estas reglas: tiene archivos en español
-y Server Actions dentro de `src/app/`. Se migra en un spec de refactor dedicado.
-Mientras tanto, **el código nuevo sigue este documento**; no se mezclan ambos
-estilos dentro de un mismo módulo nuevo.
 
 ---
 
@@ -126,7 +121,7 @@ Antes de escribir **cualquier** componente, función, hook o tipo:
 ### Reglas duras del proyecto
 
 - Verificar sesión y rol en el servidor en toda página y Server Action
-  (hoy `requerirUsuario` en `src/server/auth.ts`).
+  (`requireUser(...roles)` de `src/server/auth.ts`).
 - Validar con Zod toda entrada que llega del cliente.
 - Stock, pedidos y cobros siempre en `db.transaction`, con auditoría en la misma transacción.
 - Dinero en céntimos (enteros); cantidades en enteros de unidad base. Nunca `float`.

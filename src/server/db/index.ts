@@ -6,18 +6,19 @@ import * as schema from "./schema";
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("DATABASE_URL no está definida");
 
-// Pool (WebSocket) y no neon-http: stock, pedidos y cobros exigen db.transaction.
+// Pool (WebSocket), not neon-http: stock, orders and payments need db.transaction.
 export const db = drizzle(new Pool({ connectionString: url }), { schema });
 
 export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-export async function auditar(
+/** Appends to the audit log. Pass the mutation's tx so both commit together. */
+export async function audit(
   tx: typeof db | Tx,
-  e: { actorId: string | null; accion: string; entidad: string; entidadId?: string; detalles?: Record<string, unknown> },
+  e: { actorId: string | null; action: string; entity: string; entityId?: string; details?: Record<string, unknown> },
 ) {
-  await tx.insert(schema.auditoria).values(e);
+  await tx.insert(schema.auditLog).values(e);
 }
 
-/** Violación de UNIQUE de Postgres (23505), envuelta o no por Drizzle. */
-export const esDuplicado = (e: unknown) =>
+/** Postgres UNIQUE violation (23505), wrapped by Drizzle or not. */
+export const isUniqueViolation = (e: unknown) =>
   (e as { code?: string }).code === "23505" || (e as { cause?: { code?: string } }).cause?.code === "23505";

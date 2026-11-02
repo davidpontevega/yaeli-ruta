@@ -11,5 +11,5 @@ export function formatSoles(centimos: number): string {
   return `${signo}S/ ${Math.floor(abs / 100).toLocaleString("es-PE")}.${String(abs % 100).padStart(2, "0")}`;
 }
 
-/** Para inputs: 250 → "2.50" */
-export const solesInput = (centimos: number) => (centimos / 100).toFixed(2);
+/** For inputs: 250 → "2.50" */
+export const toSolesInput = (centimos: number) => (centimos / 100).toFixed(2);

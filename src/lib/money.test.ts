@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { formatSoles, parseSoles, solesInput } from "./dinero";
+import { formatSoles, parseSoles, toSolesInput } from "./money";
 
 test("parseSoles", () => {
   assert.equal(parseSoles("2.5"), 250);
@@ -14,5 +14,5 @@ test("formatSoles", () => {
   assert.equal(formatSoles(250), "S/ 2.50");
   assert.equal(formatSoles(5), "S/ 0.05");
   assert.equal(formatSoles(-1999), "-S/ 19.99");
-  assert.equal(solesInput(205), "2.05");
+  assert.equal(toSolesInput(205), "2.05");
 });

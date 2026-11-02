@@ -4,7 +4,7 @@
 import { Pool } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { inArray } from "drizzle-orm";
-import { categorias, marcas, presentaciones, productos, ubicaciones } from "../src/server/db/schema";
+import { brands, categories, locations, packagings, products } from "../src/server/db/schema";
 
 const db = drizzle(new Pool({ connectionString: process.env.DATABASE_URL! }));
 
@@ -54,42 +54,42 @@ const cent = (s: number) => Math.round(s * 100);
 
 async function main() {
   await db
-    .insert(ubicaciones)
+    .insert(locations)
     .values([
-      { nombre: "Piso 1", tipo: "ALMACEN" as const },
-      { nombre: "Piso 2", tipo: "ALMACEN" as const },
-      { nombre: "Carro de reparto", tipo: "VEHICULO" as const },
+      { name: "Piso 1", type: "ALMACEN" as const },
+      { name: "Piso 2", type: "ALMACEN" as const },
+      { name: "Carro de reparto", type: "VEHICULO" as const },
     ])
     .onConflictDoNothing();
 
   const nombresCat = [...new Set(PRODUCTOS.map((p) => p[2]))];
   const nombresMarca = [...new Set(PRODUCTOS.map((p) => p[3]))];
-  await db.insert(categorias).values(nombresCat.map((nombre) => ({ nombre }))).onConflictDoNothing();
-  await db.insert(marcas).values(nombresMarca.map((nombre) => ({ nombre }))).onConflictDoNothing();
-  const catId = new Map((await db.select().from(categorias).where(inArray(categorias.nombre, nombresCat))).map((c) => [c.nombre, c.id]));
-  const marcaId = new Map((await db.select().from(marcas).where(inArray(marcas.nombre, nombresMarca))).map((m) => [m.nombre, m.id]));
+  await db.insert(categories).values(nombresCat.map((name) => ({ name }))).onConflictDoNothing();
+  await db.insert(brands).values(nombresMarca.map((name) => ({ name }))).onConflictDoNothing();
+  const catId = new Map((await db.select().from(categories).where(inArray(categories.name, nombresCat))).map((c) => [c.name, c.id]));
+  const marcaId = new Map((await db.select().from(brands).where(inArray(brands.name, nombresMarca))).map((m) => [m.name, m.id]));
 
   let creados = 0;
   for (const [sku, nombre, cat, marca, unidad, precio, otras] of PRODUCTOS) {
     const mayorFactor = Math.max(1, ...otras.map((o) => o[1]));
     const [p] = await db
-      .insert(productos)
+      .insert(products)
       .values({
         sku,
-        nombre,
-        categoriaId: catId.get(cat)!,
-        marcaId: marcaId.get(marca)!,
-        unidadBase: unidad,
-        stockMinimo: mayorFactor * 2,
-        margenPct: MARGEN[cat] ?? 15,
+        name: nombre,
+        categoryId: catId.get(cat)!,
+        brandId: marcaId.get(marca)!,
+        baseUnit: unidad,
+        minStock: mayorFactor * 2,
+        marginPct: MARGEN[cat] ?? 15,
       })
       .onConflictDoNothing()
-      .returning({ id: productos.id });
+      .returning({ id: products.id });
     if (!p) continue;
     creados++;
-    await db.insert(presentaciones).values([
-      { productoId: p.id, nombre: unidad, factor: 1, precioVenta: cent(precio) },
-      ...otras.map(([n, factor, pr]) => ({ productoId: p.id, nombre: n, factor, precioVenta: cent(pr) })),
+    await db.insert(packagings).values([
+      { productId: p.id, name: unidad, factor: 1, salePrice: cent(precio) },
+      ...otras.map(([n, factor, pr]) => ({ productId: p.id, name: n, factor, salePrice: cent(pr) })),
     ]);
   }
   console.log(`Demo: ${creados} productos nuevos (${PRODUCTOS.length - creados} ya existían).`);

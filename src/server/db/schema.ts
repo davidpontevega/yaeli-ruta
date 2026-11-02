@@ -1,110 +1,112 @@
 import { sql } from "drizzle-orm";
 import { boolean, check, index, integer, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
+// TS keys in English; SQL names stay in Spanish (already migrated). Renaming a SQL name = new migration.
+
 const id = () => uuid("id").primaryKey().defaultRandom();
-const creadoEn = () => timestamp("creado_en", { withTimezone: true }).notNull().defaultNow();
+const createdAt = () => timestamp("creado_en", { withTimezone: true }).notNull().defaultNow();
 
-export const rolEnum = pgEnum("rol", ["DUENO", "REPARTIDOR"]);
+export const roleEnum = pgEnum("rol", ["DUENO", "REPARTIDOR"]);
+export type Role = (typeof roleEnum.enumValues)[number];
 
-export const usuarios = pgTable("usuarios", {
+export const users = pgTable("usuarios", {
   id: id(),
-  nombre: text("nombre").notNull().unique(),
-  rol: rolEnum("rol").notNull(),
+  name: text("nombre").notNull().unique(),
+  role: roleEnum("rol").notNull(),
   pinHash: text("pin_hash").notNull(),
-  intentosFallidos: integer("intentos_fallidos").notNull().default(0),
-  bloqueadoHasta: timestamp("bloqueado_hasta", { withTimezone: true }),
-  activo: boolean("activo").notNull().default(true),
-  creadoEn: creadoEn(),
+  failedAttempts: integer("intentos_fallidos").notNull().default(0),
+  lockedUntil: timestamp("bloqueado_hasta", { withTimezone: true }),
+  active: boolean("activo").notNull().default(true),
+  createdAt: createdAt(),
 });
 
-// La cookie lleva un token aleatorio; aquí solo su SHA-256, así un volcado de la BD no sirve para entrar.
-export const sesiones = pgTable(
+// The cookie holds a random token; only its SHA-256 is stored, so a DB dump is useless to log in.
+export const sessions = pgTable(
   "sesiones",
   {
     id: id(),
-    usuarioId: uuid("usuario_id")
+    userId: uuid("usuario_id")
       .notNull()
-      .references(() => usuarios.id),
+      .references(() => users.id),
     tokenHash: text("token_hash").notNull().unique(),
-    dispositivo: text("dispositivo"),
-    expiraEn: timestamp("expira_en", { withTimezone: true }).notNull(),
-    creadoEn: creadoEn(),
+    device: text("dispositivo"),
+    expiresAt: timestamp("expira_en", { withTimezone: true }).notNull(),
+    createdAt: createdAt(),
   },
-  (t) => [index("sesiones_usuario_idx").on(t.usuarioId)],
+  (t) => [index("sesiones_usuario_idx").on(t.userId)],
 );
 
-// Append-only. Nunca guardar PIN, tokens ni hashes en `detalles`.
-export const auditoria = pgTable(
+// Append-only. Never store PINs, tokens or hashes in `details`.
+export const auditLog = pgTable(
   "auditoria",
   {
     id: id(),
-    actorId: uuid("actor_id").references(() => usuarios.id),
-    accion: text("accion").notNull(),
-    entidad: text("entidad").notNull(),
-    entidadId: text("entidad_id"),
-    detalles: jsonb("detalles"),
-    creadoEn: creadoEn(),
+    actorId: uuid("actor_id").references(() => users.id),
+    action: text("accion").notNull(),
+    entity: text("entidad").notNull(),
+    entityId: text("entidad_id"),
+    details: jsonb("detalles"),
+    createdAt: createdAt(),
   },
-  (t) => [index("auditoria_entidad_idx").on(t.entidad, t.entidadId)],
+  (t) => [index("auditoria_entidad_idx").on(t.entity, t.entityId)],
 );
 
-export type Rol = (typeof rolEnum.enumValues)[number];
+// ── Catalog ─────────────────────────────────────────────────────────────────
 
-// ── Catálogo ────────────────────────────────────────────────────────────────
+export const locationTypeEnum = pgEnum("tipo_ubicacion", ["ALMACEN", "VEHICULO"]);
+export type LocationType = (typeof locationTypeEnum.enumValues)[number];
 
-export const tipoUbicacionEnum = pgEnum("tipo_ubicacion", ["ALMACEN", "VEHICULO"]);
-
-export const ubicaciones = pgTable("ubicaciones", {
+export const locations = pgTable("ubicaciones", {
   id: id(),
-  nombre: text("nombre").notNull().unique(),
-  tipo: tipoUbicacionEnum("tipo").notNull(),
-  activo: boolean("activo").notNull().default(true),
+  name: text("nombre").notNull().unique(),
+  type: locationTypeEnum("tipo").notNull(),
+  active: boolean("activo").notNull().default(true),
 });
 
-export const categorias = pgTable("categorias", {
+export const categories = pgTable("categorias", {
   id: id(),
-  nombre: text("nombre").notNull().unique(),
+  name: text("nombre").notNull().unique(),
 });
 
-export const marcas = pgTable("marcas", {
+export const brands = pgTable("marcas", {
   id: id(),
-  nombre: text("nombre").notNull().unique(),
+  name: text("nombre").notNull().unique(),
 });
 
-// Cantidades siempre en unidad base (entero). Dinero en céntimos (entero).
-export const productos = pgTable(
+// Quantities always in base units (integer). Money in céntimos (integer).
+export const products = pgTable(
   "productos",
   {
     id: id(),
     sku: text("sku").notNull().unique(),
-    nombre: text("nombre").notNull(),
-    categoriaId: uuid("categoria_id")
+    name: text("nombre").notNull(),
+    categoryId: uuid("categoria_id")
       .notNull()
-      .references(() => categorias.id),
-    marcaId: uuid("marca_id").references(() => marcas.id),
-    unidadBase: text("unidad_base").notNull(),
-    stockMinimo: integer("stock_minimo").notNull().default(0),
-    costoPromedio: integer("costo_promedio").notNull().default(0),
-    ultimoCosto: integer("ultimo_costo").notNull().default(0),
-    margenPct: integer("margen_pct").notNull().default(15),
-    activo: boolean("activo").notNull().default(true),
-    creadoEn: creadoEn(),
+      .references(() => categories.id),
+    brandId: uuid("marca_id").references(() => brands.id),
+    baseUnit: text("unidad_base").notNull(),
+    minStock: integer("stock_minimo").notNull().default(0),
+    averageCost: integer("costo_promedio").notNull().default(0),
+    lastCost: integer("ultimo_costo").notNull().default(0),
+    marginPct: integer("margen_pct").notNull().default(15),
+    active: boolean("activo").notNull().default(true),
+    createdAt: createdAt(),
   },
-  (t) => [index("productos_categoria_idx").on(t.categoriaId)],
+  (t) => [index("productos_categoria_idx").on(t.categoryId)],
 );
 
-// Toda venta/compra es por presentación. La de factor 1 es la unidad base y siempre existe.
-export const presentaciones = pgTable(
+// Every sale/purchase is by packaging. The one with factor 1 is the base unit and always exists.
+export const packagings = pgTable(
   "presentaciones",
   {
     id: id(),
-    productoId: uuid("producto_id")
+    productId: uuid("producto_id")
       .notNull()
-      .references(() => productos.id),
-    nombre: text("nombre").notNull(),
+      .references(() => products.id),
+    name: text("nombre").notNull(),
     factor: integer("factor").notNull(),
-    codigoBarras: text("codigo_barras").unique(),
-    precioVenta: integer("precio_venta").notNull(),
+    barcode: text("codigo_barras").unique(),
+    salePrice: integer("precio_venta").notNull(),
   },
-  (t) => [uniqueIndex("presentaciones_producto_nombre_uq").on(t.productoId, t.nombre), check("factor_positivo", sql`${t.factor} > 0`)],
+  (t) => [uniqueIndex("presentaciones_producto_nombre_uq").on(t.productId, t.name), check("factor_positivo", sql`${t.factor} > 0`)],
 );

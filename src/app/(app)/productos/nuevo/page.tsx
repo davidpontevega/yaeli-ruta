@@ -1,24 +1,23 @@
-import { requerirUsuario } from "@/server/auth";
-import { ProductoForm } from "../producto-form";
-import { opcionesCatalogo } from "../opciones";
+import { requireUser } from "@/server/auth";
+import { ProductForm, listCatalogOptions } from "@/modules/catalog";
 
-export default async function NuevoProductoPage() {
-  await requerirUsuario("DUENO");
-  const [categorias, marcas] = await opcionesCatalogo();
+export default async function NewProductPage() {
+  await requireUser("DUENO");
+  const { categories, brands } = await listCatalogOptions();
   return (
     <section className="flex flex-col gap-4">
       <h1 className="text-2xl font-bold">Nuevo producto</h1>
-      <ProductoForm
-        categorias={categorias}
-        marcas={marcas}
-        inicial={{
+      <ProductForm
+        categories={categories}
+        brands={brands}
+        initial={{
           sku: "",
-          nombre: "",
-          categoriaId: "",
-          marcaId: "",
-          stockMinimo: 0,
-          margenPct: 15,
-          presentaciones: [{ nombre: "unidad", factor: "1", precio: "", codigoBarras: "" }],
+          name: "",
+          categoryId: "",
+          brandId: "",
+          minStock: 0,
+          marginPct: 15,
+          packagings: [{ name: "unidad", factor: "1", price: "", barcode: "" }],
         }}
       />
     </section>
