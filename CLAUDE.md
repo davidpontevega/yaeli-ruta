@@ -4,6 +4,9 @@
 
 Stock + reparto offline for a consumer-goods distributor. Full plan and domain in `PLAN.md` (Spanish; domain terms in Spanish).
 
+**Rules of work: `docs/SETUP.md` (folder structure, SOLID/DRY/KISS/YAGNI, reuse-before-create, SDD, tests). It wins over anything else.**
+Entry rule: classify every coding request with the `orchestrator` agent (BUILD vs SDD) unless the user names the mode. SDD = `spec` → human approval → `developer` ⇄ `reviewer` (max 2 rounds). Agents in `.claude/agents/`, specs in `docs/specs/NNN-slug.md`.
+
 ## Commands
 `npm run dev` · `build` · `lint` · `typecheck` · `test` (node:test, `src/**/*.test.ts`, pure functions only) · `db:generate` · `db:migrate` · `db:studio`.
 Verify before finishing: `npm run typecheck && npm run lint && npm test && npm run build`.
