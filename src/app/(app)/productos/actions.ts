@@ -2,12 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { and, eq, notInArray } from "drizzle-orm";
+import { and, eq, like, notInArray } from "drizzle-orm";
 import { z } from "zod";
 import { auditar, db, esDuplicado } from "@/server/db";
 import { categorias, marcas, presentaciones, productos, tipoUbicacionEnum, ubicaciones } from "@/server/db/schema";
 import { requerirUsuario } from "@/server/auth";
 import { parseSoles } from "@/lib/dinero";
+import { prefijoSku, siguienteSku } from "@/lib/sku";
 
 export type Estado = { error?: string; ok?: string } | undefined;
 
@@ -20,7 +21,7 @@ const soles = z.string().transform((s, ctx) => {
 const productoSchema = z
   .object({
     id: z.uuid().optional(),
-    sku: z.string().trim().min(1, "Falta el código").max(30).toUpperCase(),
+    sku: z.string().trim().max(30).toUpperCase(), // vacío = se genera desde la categoría
     nombre: z.string().trim().min(2, "Falta el nombre").max(120),
     categoriaId: z.uuid("Elige una categoría"),
     marcaId: z.uuid().nullable(),
@@ -67,6 +68,13 @@ export async function guardarProducto(_: Estado, form: FormData): Promise<Estado
 
   try {
     await db.transaction(async (tx) => {
+      if (!valores.sku) {
+        const [cat] = await tx.select({ nombre: categorias.nombre }).from(categorias).where(eq(categorias.id, p.categoriaId));
+        if (!cat) throw new Error("Categoría no existe");
+        const prefijo = prefijoSku(cat.nombre);
+        const usados = await tx.select({ sku: productos.sku }).from(productos).where(like(productos.sku, `${prefijo}-%`));
+        valores.sku = siguienteSku(prefijo, usados.map((u) => u.sku));
+      }
       let productoId = p.id;
       if (productoId) {
         await tx.update(productos).set(valores).where(eq(productos.id, productoId));
