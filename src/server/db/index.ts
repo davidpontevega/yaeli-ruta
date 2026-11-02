@@ -17,3 +17,7 @@ export async function auditar(
 ) {
   await tx.insert(schema.auditoria).values(e);
 }
+
+/** Violación de UNIQUE de Postgres (23505), envuelta o no por Drizzle. */
+export const esDuplicado = (e: unknown) =>
+  (e as { code?: string }).code === "23505" || (e as { cause?: { code?: string } }).cause?.code === "23505";

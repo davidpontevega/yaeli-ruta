@@ -7,7 +7,13 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   const u = await requerirUsuario();
   const enlaces = [
     { href: "/", texto: "Inicio" },
-    ...(u.rol === "DUENO" ? [{ href: "/usuarios", texto: "Usuarios" }] : []),
+    { href: "/productos", texto: "Productos" },
+    ...(u.rol === "DUENO"
+      ? [
+          { href: "/catalogo", texto: "Catálogo" },
+          { href: "/usuarios", texto: "Usuarios" },
+        ]
+      : []),
   ];
 
   return (

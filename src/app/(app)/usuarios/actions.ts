@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { auditar, db } from "@/server/db";
+import { auditar, db, esDuplicado } from "@/server/db";
 import { rolEnum, sesiones, usuarios } from "@/server/db/schema";
 import { requerirUsuario } from "@/server/auth";
 import { PIN_REGEX, hashPin } from "@/lib/pin";
@@ -29,8 +29,7 @@ export async function crearUsuario(_: Estado, form: FormData): Promise<Estado> {
       await auditar(tx, { actorId: yo.id, accion: "usuario.crear", entidad: "usuario", entidadId: u.id, detalles: { rol: d.data.rol } });
     });
   } catch (e) {
-    // 23505 = unique_violation (nombre repetido)
-    if ((e as { cause?: { code?: string } }).cause?.code === "23505") return { error: "Ya existe un usuario con ese nombre" };
+    if (esDuplicado(e)) return { error: "Ya existe un usuario con ese nombre" };
     throw e;
   }
   revalidatePath("/usuarios");

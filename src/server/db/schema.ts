@@ -1,4 +1,5 @@
-import { boolean, index, integer, jsonb, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { boolean, check, index, integer, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 const id = () => uuid("id").primaryKey().defaultRandom();
 const creadoEn = () => timestamp("creado_en", { withTimezone: true }).notNull().defaultNow();
@@ -48,3 +49,62 @@ export const auditoria = pgTable(
 );
 
 export type Rol = (typeof rolEnum.enumValues)[number];
+
+// ── Catálogo ────────────────────────────────────────────────────────────────
+
+export const tipoUbicacionEnum = pgEnum("tipo_ubicacion", ["ALMACEN", "VEHICULO"]);
+
+export const ubicaciones = pgTable("ubicaciones", {
+  id: id(),
+  nombre: text("nombre").notNull().unique(),
+  tipo: tipoUbicacionEnum("tipo").notNull(),
+  activo: boolean("activo").notNull().default(true),
+});
+
+export const categorias = pgTable("categorias", {
+  id: id(),
+  nombre: text("nombre").notNull().unique(),
+});
+
+export const marcas = pgTable("marcas", {
+  id: id(),
+  nombre: text("nombre").notNull().unique(),
+});
+
+// Cantidades siempre en unidad base (entero). Dinero en céntimos (entero).
+export const productos = pgTable(
+  "productos",
+  {
+    id: id(),
+    sku: text("sku").notNull().unique(),
+    nombre: text("nombre").notNull(),
+    categoriaId: uuid("categoria_id")
+      .notNull()
+      .references(() => categorias.id),
+    marcaId: uuid("marca_id").references(() => marcas.id),
+    unidadBase: text("unidad_base").notNull(),
+    stockMinimo: integer("stock_minimo").notNull().default(0),
+    costoPromedio: integer("costo_promedio").notNull().default(0),
+    ultimoCosto: integer("ultimo_costo").notNull().default(0),
+    margenPct: integer("margen_pct").notNull().default(15),
+    activo: boolean("activo").notNull().default(true),
+    creadoEn: creadoEn(),
+  },
+  (t) => [index("productos_categoria_idx").on(t.categoriaId)],
+);
+
+// Toda venta/compra es por presentación. La de factor 1 es la unidad base y siempre existe.
+export const presentaciones = pgTable(
+  "presentaciones",
+  {
+    id: id(),
+    productoId: uuid("producto_id")
+      .notNull()
+      .references(() => productos.id),
+    nombre: text("nombre").notNull(),
+    factor: integer("factor").notNull(),
+    codigoBarras: text("codigo_barras").unique(),
+    precioVenta: integer("precio_venta").notNull(),
+  },
+  (t) => [uniqueIndex("presentaciones_producto_nombre_uq").on(t.productoId, t.nombre), check("factor_positivo", sql`${t.factor} > 0`)],
+);

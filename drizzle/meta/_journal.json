@@ -8,6 +8,13 @@
       "when": 1793651918970,
       "tag": "0000_illegal_namorita",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793655203881,
+      "tag": "0001_uneven_anthem",
+      "breakpoints": true
     }
   ]
 }
