@@ -19,6 +19,10 @@ export async function audit(
   await tx.insert(schema.auditLog).values(e);
 }
 
+const pgCode = (e: unknown) => (e as { code?: string }).code ?? (e as { cause?: { code?: string } }).cause?.code;
+
 /** Postgres UNIQUE violation (23505), wrapped by Drizzle or not. */
-export const isUniqueViolation = (e: unknown) =>
-  (e as { code?: string }).code === "23505" || (e as { cause?: { code?: string } }).cause?.code === "23505";
+export const isUniqueViolation = (e: unknown) => pgCode(e) === "23505";
+
+/** Postgres FOREIGN KEY violation (23503): the row is still referenced. */
+export const isForeignKeyViolation = (e: unknown) => pgCode(e) === "23503";

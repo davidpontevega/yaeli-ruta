@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, eq, like, notInArray } from "drizzle-orm";
 import { z } from "zod";
-import { audit, db, isUniqueViolation } from "@/server/db";
+import { audit, db, isForeignKeyViolation, isUniqueViolation } from "@/server/db";
 import { brands, categories, locations, packagings, products } from "@/server/db/schema";
 import { requireUser } from "@/server/auth";
 import type { FormState } from "@/lib/form-state";
@@ -52,7 +52,7 @@ export async function saveProduct(_: FormState, form: FormData): Promise<FormSta
       }
       const pid = productId!;
       const keep = p.packagings.flatMap((x) => (x.id ? [x.id] : []));
-      // ponytail: removed packagings are hard-deleted; once orders reference them the FK will block it → switch to deactivate.
+      // ponytail: removed packagings are hard-deleted; once received/sold the FK blocks it (handled below) → switch to deactivate if it annoys.
       await tx.delete(packagings).where(and(eq(packagings.productId, pid), keep.length ? notInArray(packagings.id, keep) : undefined));
       for (const x of p.packagings) {
         const row = { productId: pid, name: x.name, factor: x.factor, salePrice: x.price, barcode: x.barcode };
@@ -63,6 +63,7 @@ export async function saveProduct(_: FormState, form: FormData): Promise<FormSta
     });
   } catch (e) {
     if (isUniqueViolation(e)) return { error: "Código o código de barras repetido" };
+    if (isForeignKeyViolation(e)) return { error: "No puedes quitar una presentación que ya tiene ingresos" };
     throw e;
   }
   revalidatePath("/productos");

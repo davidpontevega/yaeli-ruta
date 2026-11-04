@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { boolean, check, index, integer, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, date, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 // TS keys in English; SQL names stay in Spanish (already migrated). Renaming a SQL name = new migration.
 
@@ -110,3 +110,90 @@ export const packagings = pgTable(
   },
   (t) => [uniqueIndex("presentaciones_producto_nombre_uq").on(t.productId, t.name), check("factor_positivo", sql`${t.factor} > 0`)],
 );
+
+// ── Inventory ───────────────────────────────────────────────────────────────
+
+export const movementTypeEnum = pgEnum("tipo_movimiento", ["INGRESO", "SALDO_INICIAL"]);
+export const receiptTypeEnum = pgEnum("tipo_recepcion", ["COMPRA", "SALDO_INICIAL"]);
+export type ReceiptType = (typeof receiptTypeEnum.enumValues)[number];
+
+// One lot per product + expiry date (null = no expiry). NULLS NOT DISTINCT so "no expiry" is also a single lot.
+export const lots = pgTable(
+  "lotes",
+  {
+    id: id(),
+    productId: uuid("producto_id")
+      .notNull()
+      .references(() => products.id),
+    expiresOn: date("vence_el", { mode: "string" }),
+    createdAt: createdAt(),
+  },
+  (t) => [unique("lotes_producto_vence_uq").on(t.productId, t.expiresOn).nullsNotDistinct()],
+);
+
+// Current balance per location and lot, in base units. Movements are the history; this is the fast read.
+export const stockLevels = pgTable(
+  "stock",
+  {
+    locationId: uuid("ubicacion_id")
+      .notNull()
+      .references(() => locations.id),
+    lotId: uuid("lote_id")
+      .notNull()
+      .references(() => lots.id),
+    quantity: integer("cantidad").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.locationId, t.lotId] }), check("stock_no_negativo", sql`${t.quantity} >= 0`)],
+);
+
+export const stockMovements = pgTable(
+  "movimientos_stock",
+  {
+    id: id(),
+    type: movementTypeEnum("tipo").notNull(),
+    lotId: uuid("lote_id")
+      .notNull()
+      .references(() => lots.id),
+    locationId: uuid("ubicacion_id")
+      .notNull()
+      .references(() => locations.id),
+    quantity: integer("cantidad").notNull(), // signed, base units
+    unitCost: integer("costo_unitario").notNull(), // céntimos per base unit
+    documentId: uuid("documento_id"),
+    userId: uuid("usuario_id")
+      .notNull()
+      .references(() => users.id),
+    createdAt: createdAt(),
+  },
+  (t) => [index("movimientos_lote_idx").on(t.lotId, t.createdAt)],
+);
+
+export const receipts = pgTable("recepciones", {
+  id: id(),
+  type: receiptTypeEnum("tipo").notNull(),
+  supplier: text("proveedor"),
+  document: text("documento"),
+  total: integer("total").notNull(),
+  userId: uuid("usuario_id")
+    .notNull()
+    .references(() => users.id),
+  createdAt: createdAt(),
+});
+
+export const receiptItems = pgTable("recepcion_items", {
+  id: id(),
+  receiptId: uuid("recepcion_id")
+    .notNull()
+    .references(() => receipts.id),
+  packagingId: uuid("presentacion_id")
+    .notNull()
+    .references(() => packagings.id),
+  lotId: uuid("lote_id")
+    .notNull()
+    .references(() => lots.id),
+  locationId: uuid("ubicacion_id")
+    .notNull()
+    .references(() => locations.id),
+  quantity: integer("cantidad").notNull(), // in packagings
+  cost: integer("costo").notNull(), // céntimos per packaging
+});

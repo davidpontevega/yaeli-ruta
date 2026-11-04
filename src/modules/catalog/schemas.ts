@@ -1,12 +1,6 @@
 import { z } from "zod";
 import { locationTypeEnum } from "@/server/db/schema";
-import { parseSoles } from "@/lib/money";
-
-const soles = z.string().transform((s, ctx) => {
-  const v = parseSoles(s);
-  if (v === null) ctx.addIssue({ code: "custom", message: `Precio inválido: "${s}"` });
-  return v ?? 0;
-});
+import { solesSchema } from "@/lib/money-schema";
 
 export const productSchema = z
   .object({
@@ -23,7 +17,7 @@ export const productSchema = z
           id: z.uuid().optional(),
           name: z.string().trim().min(1, "Presentación sin nombre").max(40),
           factor: z.coerce.number().int().min(1, "La cantidad debe ser 1 o más"),
-          price: soles,
+          price: solesSchema,
           barcode: z
             .string()
             .trim()
