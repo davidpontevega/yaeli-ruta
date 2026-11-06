@@ -185,6 +185,20 @@ Problemas a resolver:
 | 5 — Control | Ajustes (merma/rotura/vencidos), conteo físico por piso, devoluciones a proveedor. | Inventario cuadrado con la realidad. | 2–3 |
 | 6 — Reportes | Dashboard: ventas por día/ruta/cliente, margen, valor del inventario, productos sin movimiento, cobros por repartidor. Exportar CSV. | Decisiones con datos. | 2–3 |
 
+### Fase 3 dividida en specs (cada uno cabe en una sesión)
+
+| Spec | Contenido | Depende de |
+|---|---|---|
+| 007 — Rutas y clientes | Rutas con días de visita. Clientes con lo mínimo: nombre, teléfono y ruta; dirección, referencia y límite de crédito en "más opciones". Orden de visita (subir y bajar). Lista por ruta y búsqueda. | — |
+| 008 — Pedidos por teléfono | Buscar cliente → "repetir último pedido" o agregar productos con presentación y cantidad. Muestra el stock disponible (avisa, no bloquea). Precio general guardado en cada línea. Fecha de entrega: por defecto el próximo día de su ruta. Lista de pedidos por fecha y ruta; editar o anular mientras esté pendiente. | 007 |
+| 009 — Cuenta corriente y cobros | `movimientos_cuenta` append-only. **Deuda inicial** pasada del cuaderno. Cobro en oficina. Ajuste del dueño con motivo. Ficha del cliente con saldo y movimientos. Deudores por ruta con antigüedad. Aviso de límite de crédito en el pedido. | 007 |
+| 010 — Entrega desde la oficina (puente) | Marcar un pedido como entregado sin hoja de ruta: descuenta stock del almacén en orden **FEFO**, carga la deuda al cliente y registra lo que pagó. Permite dejar el papel antes de la fase 4. La fase 4 reutiliza la salida FEFO y el cargo. | 008, 009 |
+| 011 — Precios especiales | Precio por cliente y presentación (solo el dueño). El pedido lo usa si existe. | 008 |
+| 012 — Estado de cuenta | PDF del estado de cuenta por cliente para compartir por WhatsApp. | 009 |
+| 013 — Sugerencia de compra | Venta promedio semanal (de las entregas), días de cobertura, productos bajo mínimo o con poca cobertura agrupados por proveedor. Orden de compra simple que se comparte con el proveedor. | 010 (necesita historial de ventas) |
+
+Orden recomendado: 007 → 008 → 009 → 010 (con esto el negocio ya deja el papel) → 011 → 012 → 013.
+
 Orden pensado para dar valor rápido: con la fase 2 el dueño ya ve sus vencimientos
 aunque siga repartiendo en papel.
 
