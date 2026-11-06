@@ -58,6 +58,7 @@ async function main() {
     .values([
       { name: "Piso 1", type: "ALMACEN" as const },
       { name: "Piso 2", type: "ALMACEN" as const },
+      { name: "Piso 3", type: "ALMACEN" as const },
       { name: "Carro de reparto", type: "VEHICULO" as const },
     ])
     .onConflictDoNothing();

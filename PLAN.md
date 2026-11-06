@@ -5,7 +5,7 @@ Distribuidora de consumo masivo (dulces, galletas, detergente, pañales…).
 ## 0. Cómo trabaja hoy el negocio
 
 1. El dueño pide mercadería a sus proveedores; llega en camión y se guarda en un
-   almacén de **2 pisos**.
+   almacén de **3 pisos**.
 2. Los clientes (bodegas, tiendas) **llaman por teléfono** para hacer pedidos; hoy se
    anotan a mano.
 3. Hay **rutas fijas** de reparto. En cada cliente se entrega según la lista y se
@@ -23,7 +23,7 @@ Problemas a resolver:
 
 | Tema | Decisión |
 |---|---|
-| Almacenes | Uno solo, con **ubicaciones** (Piso 1, Piso 2; opcional estante/zona). |
+| Almacenes | Uno solo, con **ubicaciones** (Piso 1, Piso 2, Piso 3; opcional estante/zona). |
 | Lotes y vencimiento | Sí. Salida FEFO (vence primero, sale primero). |
 | Comprobantes | Solo control interno. Sin SUNAT. Se imprime/comparte nota de pedido. |
 | Precios | El precio de venta sigue al costo del proveedor: cada producto tiene un **margen %**; al recibir mercadería con costo nuevo el sistema **sugiere** el nuevo precio y el dueño lo confirma. Cada pedido guarda el precio con el que se vendió. |
@@ -85,7 +85,7 @@ Problemas a resolver:
 | `productos` | sku, codigo_barras, nombre, categoria_id, marca_id, unidad_base, stock_minimo, costo_promedio, ultimo_costo, margen_pct, precio_venta, activo |
 | `presentaciones` | producto_id, nombre, factor, codigo_barras, precio_venta |
 | `historial_precios` | producto_id, costo, precio_venta, fecha, usuario_id |
-| `ubicaciones` | nombre, tipo (`ALMACEN` / `VEHICULO`) — ej. Piso 1, Piso 2, Reparto 1, Reparto 2 |
+| `ubicaciones` | nombre, tipo (`ALMACEN` / `VEHICULO`) — ej. Piso 1, Piso 2, Piso 3, Reparto 1, Reparto 2 |
 | `lotes` | producto_id, codigo, fecha_vencimiento |
 | `stock` | ubicacion_id, lote_id, cantidad (PK compuesta) |
 | `movimientos_stock` | fecha, tipo, lote_id, ubicacion_id, cantidad (±), costo_unitario, documento_tipo, documento_id, usuario_id |
