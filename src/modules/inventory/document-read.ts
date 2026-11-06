@@ -3,18 +3,19 @@
 export const MAX_READ_LINES = 80;
 
 /** 60.5 | "60,50" | "S/ 1,234.50" → céntimos. null when not a positive amount. */
-function toCents(v: unknown): number | null {
+export function toCents(v: unknown): number | null {
   if (typeof v === "number") return Number.isFinite(v) && v > 0 ? Math.round(v * 100) : null;
   if (typeof v !== "string") return null;
   let s = v.replace(/S\/|\s/gi, "");
-  // "1,234.50" → thousands comma; "60,50" → decimal comma
-  s = /,\d{1,2}$/.test(s) && !s.includes(".") ? s.replace(",", ".") : s.replace(/,/g, "");
+  // "1,234.50" and "1.234,50": the last separator is the decimal one; "60,50" → decimal comma; "1,234" → thousands.
+  if (s.includes(",") && s.includes(".")) s = s.lastIndexOf(",") > s.lastIndexOf(".") ? s.replace(/\./g, "").replace(",", ".") : s.replace(/,/g, "");
+  else s = /,\d{1,2}$/.test(s) ? s.replace(",", ".") : s.replace(/,/g, "");
   const n = Number(s);
   return Number.isFinite(n) && n > 0 ? Math.round(n * 100) : null;
 }
 
 /** "2027-03-31" | "31/03/2027" | "31-03-27" → "2027-03-31"; anything else → null. */
-function toIsoDate(v: unknown): string | null {
+export function toIsoDate(v: unknown): string | null {
   if (typeof v !== "string") return null;
   const iso = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   const dmy = v.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2}|\d{4})$/);
@@ -28,7 +29,7 @@ function toIsoDate(v: unknown): string | null {
 
 const text = (v: unknown, max: number) => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null);
 
-function toQuantity(v: unknown) {
+export function toQuantity(v: unknown) {
   const n = typeof v === "string" ? Number(v.replace(",", ".")) : v;
   return typeof n === "number" && Number.isFinite(n) ? Math.round(n) : 0;
 }

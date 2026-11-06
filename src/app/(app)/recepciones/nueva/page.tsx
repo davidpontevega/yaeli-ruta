@@ -14,7 +14,7 @@ export default async function NewReceiptPage() {
   return (
     <section className="flex flex-col gap-4">
       <h1 className="text-2xl font-bold">Recibir mercadería</h1>
-      <ReceiptForm products={products} locations={locations} lastCosts={lastCosts} aliases={aliases} readerEnabled={isDocumentReaderEnabled()} />
+      <ReceiptForm products={products} locations={locations} lastCosts={lastCosts} aliases={aliases} aiEnabled={isDocumentReaderEnabled()} />
     </section>
   );
 }

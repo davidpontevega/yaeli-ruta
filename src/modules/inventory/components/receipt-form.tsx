@@ -42,7 +42,7 @@ export function ReceiptForm({
   locations,
   lastCosts,
   aliases,
-  readerEnabled,
+  aiEnabled,
 }: {
   products: ReceivableProduct[];
   locations: Option[];
@@ -50,7 +50,7 @@ export function ReceiptForm({
   lastCosts: Record<string, number>;
   /** Learned: normalized document text → packaging id. */
   aliases: Record<string, string>;
-  readerEnabled: boolean;
+  aiEnabled: boolean;
 }) {
   const [state, action, pending] = useActionState(receiveGoods, undefined);
   const [type, setType] = useState<ReceiptType>("COMPRA");
@@ -139,7 +139,7 @@ export function ReceiptForm({
         </div>
         {type === "COMPRA" && (
           <>
-            {readerEnabled && <ReadDocumentButton onRead={addRead} />}
+            <ReadDocumentButton onRead={addRead} aiEnabled={aiEnabled} />
             <div className="grid grid-cols-2 gap-3">
               <label className="campo">
                 Proveedor (opcional)
