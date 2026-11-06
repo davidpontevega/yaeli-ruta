@@ -1,7 +1,18 @@
 import "server-only";
 import { and, asc, desc, eq, gt, gte, inArray, isNotNull, lt, lte, sql } from "drizzle-orm";
 import { db } from "@/server/db";
-import { locations, lots, packagings, products, readAliases, receiptItems, receipts, stockLevels } from "@/server/db/schema";
+import {
+  locations,
+  lots,
+  packagings,
+  products,
+  readAliases,
+  receiptItems,
+  receipts,
+  stockLevels,
+  stockMovements,
+  suppliers,
+} from "@/server/db/schema";
 import { listProducts } from "@/modules/catalog";
 import { addDays, daysUntil, expiryBucket, todayInLima, type ExpiryBucket } from "./expiry";
 
@@ -166,3 +177,60 @@ export async function getAlertCounts() {
   ]);
   return { expired, within30, lowStock: low.length };
 }
+
+/** Supplier names, for the receipt form's suggestions. */
+export function listSupplierNames() {
+  return db
+    .select({ name: suppliers.name })
+    .from(suppliers)
+    .orderBy(asc(suppliers.name))
+    .then((rows) => rows.map((r) => r.name));
+}
+
+/** Suppliers with purchase count, total bought (céntimos) and last purchase, most recent first. */
+export function listSupplierStats() {
+  return db
+    .select({
+      id: suppliers.id,
+      name: suppliers.name,
+      phone: suppliers.phone,
+      purchases: sql<number>`count(${receipts.id})::int`,
+      total: sql<number>`coalesce(sum(${receipts.total}), 0)::int`,
+      lastPurchase: sql<Date | null>`max(${receipts.createdAt})`,
+    })
+    .from(suppliers)
+    .leftJoin(receipts, eq(receipts.supplierId, suppliers.id))
+    .groupBy(suppliers.id)
+    .orderBy(sql`max(${receipts.createdAt}) desc nulls last`, asc(suppliers.name));
+}
+
+export type SupplierStats = Awaited<ReturnType<typeof listSupplierStats>>[number];
+
+export const MOVEMENT_LIMIT = 100;
+
+/** Last 100 movements of a product, newest first, with the product balance right after each one. */
+export function listMovements(productId: string) {
+  return db
+    .select({
+      id: stockMovements.id,
+      type: stockMovements.type,
+      createdAt: stockMovements.createdAt,
+      quantity: stockMovements.quantity,
+      unitCost: stockMovements.unitCost,
+      location: locations.name,
+      expiresOn: lots.expiresOn,
+      supplier: receipts.supplier,
+      document: receipts.document,
+      // Window over ALL the product's movements (computed before LIMIT), so the balance is exact.
+      balance: sql<number>`(sum(${stockMovements.quantity}) over (order by ${stockMovements.createdAt}, ${stockMovements.id}))::int`,
+    })
+    .from(stockMovements)
+    .innerJoin(lots, eq(lots.id, stockMovements.lotId))
+    .innerJoin(locations, eq(locations.id, stockMovements.locationId))
+    .leftJoin(receipts, eq(receipts.id, stockMovements.documentId))
+    .where(eq(lots.productId, productId))
+    .orderBy(desc(stockMovements.createdAt), desc(stockMovements.id))
+    .limit(MOVEMENT_LIMIT);
+}
+
+export type Movement = Awaited<ReturnType<typeof listMovements>>[number];

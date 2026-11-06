@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { formatSoles } from "@/lib/money";
 import { formatDate, formatQty } from "../format";
 import type { StockItem } from "../queries";
@@ -49,6 +50,11 @@ export function StockList({ items }: { items: StockItem[] }) {
                     ))}
                   </tbody>
                 </table>
+              )}
+              {p.value !== null && (
+                <Link href={`/productos/${p.id}/movimientos`} className="mt-3 inline-block text-sm font-medium text-primary">
+                  Movimientos →
+                </Link>
               )}
             </details>
           </li>

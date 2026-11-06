@@ -168,10 +168,19 @@ export const stockMovements = pgTable(
   (t) => [index("movimientos_lote_idx").on(t.lotId, t.createdAt)],
 );
 
+// Created on the fly when a purchase names a supplier (matched ignoring case and extra spaces).
+export const suppliers = pgTable("proveedores", {
+  id: id(),
+  name: text("nombre").notNull().unique(),
+  phone: text("telefono"),
+  createdAt: createdAt(),
+});
+
 export const receipts = pgTable("recepciones", {
   id: id(),
   type: receiptTypeEnum("tipo").notNull(),
-  supplier: text("proveedor"),
+  supplier: text("proveedor"), // text as written (history); supplierId is the link
+  supplierId: uuid("proveedor_id").references(() => suppliers.id),
   document: text("documento"),
   total: integer("total").notNull(),
   userId: uuid("usuario_id")

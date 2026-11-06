@@ -26,3 +26,13 @@ export const receiptSchema = z.object({
     )
     .min(1, "Agrega al menos un producto"),
 });
+
+export const supplierPhoneSchema = z.object({
+  id: z.uuid(),
+  phone: z
+    .string()
+    .trim()
+    .max(30)
+    .regex(/^[\d\s+()-]*$/, "Solo números en el teléfono")
+    .transform((s) => s || null),
+});

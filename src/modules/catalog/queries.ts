@@ -2,6 +2,7 @@ import "server-only";
 import { and, asc, count, eq, ilike, inArray, or, type SQL } from "drizzle-orm";
 import { db } from "@/server/db";
 import { brands, categories, locations, packagings, products } from "@/server/db/schema";
+import { needsReview, priceUnitCost, realMarginPct, suggestedPrice } from "./pricing";
 
 export const PRODUCT_LIST_LIMIT = 200;
 
@@ -78,3 +79,33 @@ export function getCatalogSummary() {
 }
 
 export type CatalogSummary = Awaited<ReturnType<typeof getCatalogSummary>>;
+
+/** Packagings of active products whose price misses the target margin (beyond rounding noise). Optionally only some products. */
+export async function listPriceReview(productIds?: string[]) {
+  if (productIds && !productIds.length) return [];
+  const rows = await db
+    .select({
+      packagingId: packagings.id,
+      productId: products.id,
+      productName: products.name,
+      packagingName: packagings.name,
+      factor: packagings.factor,
+      price: packagings.salePrice,
+      lastCost: products.lastCost,
+      averageCost: products.averageCost,
+      targetPct: products.marginPct,
+    })
+    .from(packagings)
+    .innerJoin(products, eq(products.id, packagings.productId))
+    .where(and(eq(products.active, true), productIds ? inArray(products.id, productIds) : undefined))
+    .orderBy(asc(products.name), asc(packagings.factor));
+
+  return rows.flatMap((r) => {
+    const unitCost = priceUnitCost(r.lastCost, r.averageCost);
+    const suggested = suggestedPrice(unitCost, r.factor, r.targetPct);
+    if (suggested === null || r.price >= suggested || !needsReview(r.price, unitCost, r.factor, r.targetPct)) return [];
+    return [{ ...r, cost: unitCost! * r.factor, suggested, marginPct: realMarginPct(r.price, unitCost, r.factor)! }];
+  });
+}
+
+export type PriceReviewItem = Awaited<ReturnType<typeof listPriceReview>>[number];

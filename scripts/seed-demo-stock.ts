@@ -47,7 +47,9 @@ async function main() {
       const base = mine.find((k) => k.factor === 1);
       if (!base) return;
       const big = Math.max(...mine.map((k) => k.factor));
-      const cost = Math.round(base.salePrice / (1 + p.marginPct / 100));
+      // Cost from the cheapest per-unit price (wholesale box), so every packaging covers its margin.
+      const cheapest = Math.min(...mine.map((k) => k.salePrice / k.factor));
+      const cost = Math.floor(cheapest / (1 + p.marginPct / 100));
       const loc = (n: number) => floors[n % floors.length].id;
       const far = i % 4 === 3 ? null : addDays(today, 150 + ((i * 37) % 250)); // every 4th without expiry date
 

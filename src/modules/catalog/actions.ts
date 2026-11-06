@@ -9,6 +9,7 @@ import { brands, categories, locations, packagings, products } from "@/server/db
 import { requireUser } from "@/server/auth";
 import type { FormState } from "@/lib/form-state";
 import { catalogNameSchema, productSchema } from "./schemas";
+import { listPriceReview } from "./queries";
 import { nextSku, skuPrefix } from "./sku";
 
 export async function saveProduct(_: FormState, form: FormData): Promise<FormState> {
@@ -97,4 +98,30 @@ export async function addCatalogName(_: FormState, form: FormData): Promise<Form
   }
   revalidatePath("/catalogo");
   return { ok: `${name} agregado` };
+}
+
+/** Sets the checked packagings to their suggested price. The suggestion is recomputed here; the client only sends ids. */
+export async function applyPrices(form: FormData) {
+  const me = await requireUser("DUENO");
+  const parsed = z.array(z.uuid()).max(500).safeParse(form.getAll("packagingId"));
+  if (!parsed.success) return; // only a tampered form gets here
+  const ids = parsed.data;
+  const todo = (await listPriceReview()).filter((r) => ids.includes(r.packagingId));
+  if (todo.length) {
+    await db.transaction(async (tx) => {
+      for (const r of todo) {
+        await tx.update(packagings).set({ salePrice: r.suggested }).where(eq(packagings.id, r.packagingId));
+        await audit(tx, {
+          actorId: me.id,
+          action: "price.update",
+          entity: "packaging",
+          entityId: r.packagingId,
+          details: { before: r.price, after: r.suggested },
+        });
+      }
+    });
+  }
+  revalidatePath("/precios");
+  revalidatePath("/productos");
+  revalidatePath("/");
 }

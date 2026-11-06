@@ -43,6 +43,7 @@ export function ReceiptForm({
   lastCosts,
   aliases,
   aiEnabled,
+  supplierNames,
 }: {
   products: ReceivableProduct[];
   locations: Option[];
@@ -51,6 +52,8 @@ export function ReceiptForm({
   /** Learned: normalized document text → packaging id. */
   aliases: Record<string, string>;
   aiEnabled: boolean;
+  /** Known suppliers, suggested while typing. */
+  supplierNames: string[];
 }) {
   const [state, action, pending] = useActionState(receiveGoods, undefined);
   const [type, setType] = useState<ReceiptType>("COMPRA");
@@ -117,6 +120,11 @@ export function ReceiptForm({
   return (
     <form action={action} className="flex flex-col gap-4">
       <input type="hidden" name="data" value={data} />
+      <datalist id="suppliers">
+        {supplierNames.map((n) => (
+          <option key={n} value={n} />
+        ))}
+      </datalist>
 
       <div className="tarjeta flex flex-col gap-3">
         <div className="grid grid-cols-2 gap-2">
@@ -143,7 +151,7 @@ export function ReceiptForm({
             <div className="grid grid-cols-2 gap-3">
               <label className="campo">
                 Proveedor (opcional)
-                <input value={supplier} onChange={(e) => setSupplier(e.target.value)} maxLength={80} />
+                <input value={supplier} onChange={(e) => setSupplier(e.target.value)} maxLength={80} list="suppliers" />
               </label>
               <label className="campo">
                 N° guía / factura (opcional)

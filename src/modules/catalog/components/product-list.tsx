@@ -23,6 +23,9 @@ export function ProductList({ products, canEdit }: { products: ProductListItem[]
               </div>
               {canEdit && (
                 <div className="flex shrink-0 gap-2">
+                  <Link href={`/productos/${p.id}/movimientos`} className="btn-secundario flex h-9 items-center text-sm" aria-label="Movimientos">
+                    Kardex
+                  </Link>
                   <Link href={`/productos/${p.id}`} className="btn-secundario flex h-9 items-center text-sm">
                     Editar
                   </Link>

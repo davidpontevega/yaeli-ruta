@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { CatalogSummary as Summary } from "../queries";
 import { AddNameForm } from "./add-name-form";
 
@@ -14,6 +15,9 @@ export function CatalogSummary({ summary }: { summary: Summary }) {
 
   return (
     <>
+      <Link href="/proveedores" className="tarjeta flex items-center justify-between font-semibold">
+        Proveedores <span className="text-muted">→</span>
+      </Link>
       {blocks.map((b) => (
         <div key={b.kind} className="tarjeta flex flex-col gap-3">
           <h2 className="font-semibold">{b.title}</h2>

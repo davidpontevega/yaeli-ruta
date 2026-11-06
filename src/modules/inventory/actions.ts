@@ -4,10 +4,22 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { audit, db } from "@/server/db";
-import { locations, lots, packagings, products, readAliases, receiptItems, receipts, stockLevels, stockMovements } from "@/server/db/schema";
+import {
+  locations,
+  lots,
+  packagings,
+  products,
+  readAliases,
+  receiptItems,
+  receipts,
+  stockLevels,
+  stockMovements,
+  suppliers,
+} from "@/server/db/schema";
 import { requireUser } from "@/server/auth";
+import { listPriceReview } from "@/modules/catalog";
 import type { FormState } from "@/lib/form-state";
-import { receiptSchema } from "./schemas";
+import { receiptSchema, supplierPhoneSchema } from "./schemas";
 import { toBaseUnits, weightedAverageCost } from "./stock-math";
 import { normalizeText } from "./document-read";
 
@@ -59,12 +71,34 @@ export async function receiveGoods(_: FormState, form: FormData): Promise<FormSt
   const total = r.items.reduce((s, i) => s + i.quantity * i.unitCost, 0);
   const movementType = r.type === "COMPRA" ? "INGRESO" : "SALDO_INICIAL";
 
+  const supplierName = r.type === "COMPRA" && r.supplier ? r.supplier.replace(/\s+/g, " ").trim() : null;
+
   await db.transaction(async (tx) => {
+    // Find the supplier ignoring case and extra spaces; create it the first time it's named.
+    let supplierId: string | null = null;
+    if (supplierName) {
+      const [found] = await tx
+        .select({ id: suppliers.id })
+        .from(suppliers)
+        .where(sql`lower(${suppliers.name}) = lower(${supplierName})`)
+        .limit(1);
+      supplierId =
+        found?.id ??
+        (
+          await tx
+            .insert(suppliers)
+            .values({ name: supplierName })
+            .onConflictDoUpdate({ target: suppliers.name, set: { name: sql`excluded.nombre` } })
+            .returning({ id: suppliers.id })
+        )[0].id;
+    }
+
     const [{ id: receiptId }] = await tx
       .insert(receipts)
       .values({
         type: r.type,
-        supplier: r.supplier,
+        supplier: supplierName,
+        supplierId,
         document: r.document,
         total,
         userId: me.id,
@@ -149,5 +183,22 @@ export async function receiveGoods(_: FormState, form: FormData): Promise<FormSt
   });
 
   revalidatePath("/stock");
+  // A higher cost can leave sale prices below the margin: send the owner to review them.
+  const received = [...new Set(packs.map((p) => p.productId))];
+  const below = new Set((await listPriceReview(received)).map((r) => r.productId)).size;
+  if (below) redirect(`/precios?recepcion=${below}`);
   redirect("/stock");
+}
+
+/** Supplier phone, editable from /proveedores. Empty clears it. */
+export async function updateSupplierPhone(_: FormState, form: FormData): Promise<FormState> {
+  const me = await requireUser("DUENO");
+  const input = supplierPhoneSchema.safeParse(Object.fromEntries(form));
+  if (!input.success) return { error: input.error.issues[0].message };
+  await db.transaction(async (tx) => {
+    await tx.update(suppliers).set({ phone: input.data.phone }).where(eq(suppliers.id, input.data.id));
+    await audit(tx, { actorId: me.id, action: "supplier.update", entity: "supplier", entityId: input.data.id });
+  });
+  revalidatePath("/proveedores");
+  return { ok: "Guardado" };
 }
