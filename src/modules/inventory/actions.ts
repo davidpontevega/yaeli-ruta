@@ -4,11 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { audit, db } from "@/server/db";
-import { locations, lots, packagings, products, receiptItems, receipts, stockLevels, stockMovements } from "@/server/db/schema";
+import { locations, lots, packagings, products, readAliases, receiptItems, receipts, stockLevels, stockMovements } from "@/server/db/schema";
 import { requireUser } from "@/server/auth";
 import type { FormState } from "@/lib/form-state";
 import { receiptSchema } from "./schemas";
 import { toBaseUnits, weightedAverageCost } from "./stock-math";
+import { normalizeText } from "./document-read";
 
 /** Purchase or opening balance: creates/merges lots, adds stock, logs movements and updates product cost. One tx. */
 export async function receiveGoods(_: FormState, form: FormData): Promise<FormState> {
@@ -126,6 +127,16 @@ export async function receiveGoods(_: FormState, form: FormData): Promise<FormSt
           lastCost: Math.round(unitCost),
         })
         .where(eq(products.id, pack.productId));
+    }
+
+    // Learn how the supplier writes each product, so the next reading comes out "aprendido".
+    for (const item of items) {
+      const text = item.readText && normalizeText(item.readText);
+      if (!text) continue;
+      await tx
+        .insert(readAliases)
+        .values({ text, packagingId: item.packagingId })
+        .onConflictDoUpdate({ target: readAliases.text, set: { packagingId: item.packagingId, updatedAt: new Date() } });
     }
 
     await audit(tx, {

@@ -197,3 +197,12 @@ export const receiptItems = pgTable("recepcion_items", {
   quantity: integer("cantidad").notNull(), // in packagings
   cost: integer("costo").notNull(), // céntimos per packaging
 });
+
+// How a supplier writes a product on its documents (normalized text) → the packaging the owner confirmed. Learned on each receipt.
+export const readAliases = pgTable("alias_lectura", {
+  text: text("texto").primaryKey(),
+  packagingId: uuid("presentacion_id")
+    .notNull()
+    .references(() => packagings.id),
+  updatedAt: timestamp("actualizado_en", { withTimezone: true }).notNull().defaultNow(),
+});

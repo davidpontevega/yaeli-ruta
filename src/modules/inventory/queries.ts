@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, desc, eq, gt, inArray } from "drizzle-orm";
 import { db } from "@/server/db";
-import { locations, lots, products, receiptItems, receipts, stockLevels } from "@/server/db/schema";
+import { locations, lots, products, readAliases, receiptItems, receipts, stockLevels } from "@/server/db/schema";
 import { listProducts } from "@/modules/catalog";
 
 /** Warehouse floors where goods can be received (vehicles get stock by transfer, later). */
@@ -79,3 +79,9 @@ export async function listStock(f: { q: string; categoryId: string; withCost: bo
 }
 
 export type StockItem = Awaited<ReturnType<typeof listStock>>[number];
+
+/** Learned aliases: normalized document text → packaging id. */
+export async function listReadAliases(): Promise<Record<string, string>> {
+  const rows = await db.select({ text: readAliases.text, packagingId: readAliases.packagingId }).from(readAliases);
+  return Object.fromEntries(rows.map((r) => [r.text, r.packagingId]));
+}

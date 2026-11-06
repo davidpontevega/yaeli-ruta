@@ -20,6 +20,8 @@ export const receiptSchema = z.object({
         unitCost: solesSchema,
         expiresOn: z.union([z.literal(""), z.iso.date("Fecha de vencimiento inválida")]).transform((s) => s || null),
         locationId: z.uuid("Elige el piso"),
+        // Text read from the supplier document, to learn the alias. Optional: lines typed by hand don't have it.
+        readText: z.string().trim().max(200).optional(),
       }),
     )
     .min(1, "Agrega al menos un producto"),
