@@ -7,6 +7,7 @@ const LINKS = [
   { href: "/", label: "Inicio" },
   { href: "/productos", label: "Productos" },
   { href: "/stock", label: "Stock" },
+  { href: "/vencimientos", label: "Vencimientos" },
   { href: "/recepciones/nueva", label: "Recibir", ownerOnly: true },
   { href: "/catalogo", label: "Catálogo", ownerOnly: true },
   { href: "/usuarios", label: "Usuarios", ownerOnly: true },

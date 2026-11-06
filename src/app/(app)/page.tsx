@@ -1,11 +1,13 @@
 import { requireUser } from "@/server/auth";
+import { HomeAlerts, getAlertCounts } from "@/modules/inventory";
 
 export default async function HomePage() {
   const user = await requireUser();
+  const counts = await getAlertCounts();
   return (
     <section className="flex flex-col gap-4">
       <h1 className="text-2xl font-bold">Hola, {user.name}</h1>
-      <div className="tarjeta text-muted">Aquí aparecerán las alertas de vencimiento, stock bajo y las rutas del día.</div>
+      <HomeAlerts {...counts} />
     </section>
   );
 }

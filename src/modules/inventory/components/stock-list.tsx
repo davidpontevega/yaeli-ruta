@@ -1,12 +1,6 @@
 import { formatSoles } from "@/lib/money";
-import { splitByPackaging } from "../stock-math";
+import { formatDate, formatQty } from "../format";
 import type { StockItem } from "../queries";
-
-const formatDate = (iso: string) => iso.split("-").reverse().join("/");
-const formatQty = (qty: number, packagings: StockItem["packagings"]) =>
-  splitByPackaging(qty, packagings)
-    .map((x) => `${x.count} ${x.name}`)
-    .join(" + ");
 
 export function StockList({ items }: { items: StockItem[] }) {
   if (!items.length) return <p className="tarjeta text-muted">No hay productos con ese filtro.</p>;
