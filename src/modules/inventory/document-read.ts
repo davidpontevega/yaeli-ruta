@@ -82,12 +82,21 @@ export const normalizeText = (s: string) =>
     .replace(/[^A-Z0-9]+/g, " ")
     .trim();
 
+// "34GR" → "34G", "1LT" → "1L": suppliers abbreviate sizes differently.
+const SIZE = /^(\d+(?:\.\d+)?)(G|GR|GRS|KG|ML|L|LT|LTS|CC|OZ)$/;
+const UNIT_ALIAS: Record<string, string> = { GR: "G", GRS: "G", LT: "L", LTS: "L", CC: "ML" };
+const canonical = (t: string) => {
+  const m = t.match(SIZE);
+  return m ? `${m[1]}${UNIT_ALIAS[m[2]] ?? m[2]}` : t;
+};
 const tokens = (s: string) =>
   new Set(
     normalizeText(s)
       .split(" ")
-      .filter((t) => t.length >= 2),
+      .filter((t) => t.length >= 2)
+      .map(canonical),
   );
+const sizes = (t: Set<string>) => [...t].filter((x) => SIZE.test(x));
 
 // Share of the product name's words found in the read text. Below this, we don't guess.
 export const MATCH_THRESHOLD = 0.6;
@@ -129,6 +138,10 @@ export function matchLine(line: Pick<ReadLine, "description" | "unit">, products
   for (const p of products) {
     const name = tokens(p.name);
     if (!name.size) continue;
+    // Same product, different size ("Arroz 5KG" vs "Arroz 750g") is a different product.
+    const nameSizes = sizes(name);
+    const readSizes = sizes(read);
+    if (nameSizes.length && readSizes.length && !nameSizes.some((x) => readSizes.includes(x))) continue;
     const score = [...name].filter((t) => read.has(t)).length / name.size;
     if (!best || score > best.score) best = { p, score };
   }

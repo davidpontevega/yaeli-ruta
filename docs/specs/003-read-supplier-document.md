@@ -108,3 +108,4 @@ Grupo 0: T1. Luego en paralelo [T2 → T5], [T3 → T4] y [T6]. Al final T7 (usa
   `reserveReadSlot`/`recordReadResult` en `read-limit.ts`); `proxy.ts` declarado en T4; AC9 refleja las 2 acciones de auditoría;
   `recordReadResult` no rompe la respuesta si falla; 413 temprano por `Content-Length`; comentario del costo de modelos.
 - Review vuelta 2: aprobado. Pendiente a mano: lectura real con Gemini (falta `GEMINI_API_KEY`) y criterio de 5 facturas + 2 PDF.
+- Prueba real con Gemini (PDF sintético de 6 líneas, 5 s): proveedor, N°, total, cantidades, empaques y costos correctos. Ajustes tras la prueba: talla normalizada y obligatoria al asociar ("34GR" = "34g"; "Arroz 5KG" ya no se asocia a "Arroz 750g"); el prompt busca el vencimiento dentro de la descripción y el N° junto a FACTURA/BOLETA/GUÍA.

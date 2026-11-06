@@ -83,6 +83,13 @@ test("matchLine: word overlap with packaging from unit", () => {
   assert.equal(matchLine({ description: "CHOCMAN", unit: "ZZ" }, PRODUCTS, {}).packagingId, "p2c");
 });
 
+test("matchLine: sizes are normalized and must agree", () => {
+  const rice = [{ id: "r", name: "Arroz Costeño 750g", packagings: [{ id: "ru", name: "bolsa", factor: 1 }] }];
+  assert.equal(matchLine({ description: "ARROZ COSTEÑO 5KG", unit: "UND" }, rice, {}).status, "none");
+  assert.equal(matchLine({ description: "ARROZ COSTEÑO 750GR", unit: "UND" }, rice, {}).status, "suggested");
+  assert.equal(matchLine({ description: "GALLETA SODA FIELD 34GR X 60UN", unit: "CJ" }, PRODUCTS, {}).packagingId, "p1c");
+});
+
 test("matchLine: below threshold → none", () => {
   assert.equal(matchLine({ description: "GALLETA RELLENITA", unit: "CJ" }, PRODUCTS, {}).status, "none");
   assert.equal(matchLine({ description: "ARROZ COSTEÑO", unit: null }, PRODUCTS, {}).status, "none");

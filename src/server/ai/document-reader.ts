@@ -22,8 +22,8 @@ const PROMPT = [
   "Extrae SOLO las líneas de productos de la tabla de detalle, en el mismo orden.",
   "Para cada línea: description (texto tal como aparece), quantity (número), unit (unidad tal como aparece: CJ, UND, DSP, PQT…),",
   "unitPrice (precio por esa unidad; si hay valor unitario sin IGV y precio unitario con IGV, usa el precio CON IGV), total (importe de la línea),",
-  "expiresOn (fecha de vencimiento si la línea la trae, si no null).",
-  "También supplier (razón social del emisor), document (serie y número, ej. F001-00012345) y total (importe total a pagar).",
+  "expiresOn (fecha de vencimiento de la línea en formato YYYY-MM-DD; búscala también dentro de la descripción: VCTO, VENCE, F.V., EXP; si no hay, null).",
+  "También supplier (razón social del emisor), document (serie y número del comprobante que aparece junto a FACTURA, BOLETA o GUÍA, ej. F001-00012345) y total (importe total a pagar).",
   "No inventes: si un dato no aparece o no se lee, usa null. Ignora subtotales, descuentos globales, IGV, firmas y sellos.",
   "Montos como número con punto decimal, sin símbolo de moneda.",
 ].join("\n");
