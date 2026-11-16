@@ -9,6 +9,7 @@ import {
   pgEnum,
   pgTable,
   primaryKey,
+  serial,
   smallint,
   text,
   timestamp,
@@ -262,4 +263,44 @@ export const customers = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index("clientes_ruta_orden_idx").on(t.routeId, t.routeOrder)],
+);
+
+// ── Orders ──────────────────────────────────────────────────────────────────
+
+export const orderStatusEnum = pgEnum("estado_pedido", ["PENDIENTE", "ANULADO"]);
+export type OrderStatus = (typeof orderStatusEnum.enumValues)[number];
+
+export const orders = pgTable(
+  "pedidos",
+  {
+    id: id(),
+    number: serial("numero").notNull().unique(), // short number to talk about ("pedido 12")
+    customerId: uuid("cliente_id")
+      .notNull()
+      .references(() => customers.id),
+    deliveryOn: date("fecha_entrega").notNull(),
+    status: orderStatusEnum("estado").notNull().default("PENDIENTE"),
+    total: integer("total").notNull(), // céntimos
+    userId: uuid("usuario_id")
+      .notNull()
+      .references(() => users.id),
+    createdAt: createdAt(),
+  },
+  (t) => [index("pedidos_entrega_estado_idx").on(t.deliveryOn, t.status)],
+);
+
+export const orderItems = pgTable(
+  "pedido_items",
+  {
+    id: id(),
+    orderId: uuid("pedido_id")
+      .notNull()
+      .references(() => orders.id),
+    packagingId: uuid("presentacion_id")
+      .notNull()
+      .references(() => packagings.id),
+    quantity: integer("cantidad").notNull(), // in packagings
+    price: integer("precio").notNull(), // céntimos per packaging, at order time
+  },
+  (t) => [unique("pedido_items_presentacion_uq").on(t.orderId, t.packagingId), check("pedido_cantidad_positiva", sql`${t.quantity} > 0`)],
 );

@@ -9,8 +9,10 @@ export {
   listSupplierNames,
   listSupplierStats,
   listMovements,
+  warehouseStockByProduct,
 } from "./queries";
 export { parseReadResponse, fileType } from "./document-read";
+export { todayInLima, addDays } from "./expiry";
 export { reserveReadSlot, recordReadResult } from "./read-limit";
 export { StockList } from "./components/stock-list";
 export { ReceiptForm } from "./components/receipt-form";

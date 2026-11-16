@@ -43,6 +43,13 @@
       "when": 1794840365254,
       "tag": "0005_lonely_bullseye",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794841305693,
+      "tag": "0006_colossal_boomer",
+      "breakpoints": true
     }
   ]
 }

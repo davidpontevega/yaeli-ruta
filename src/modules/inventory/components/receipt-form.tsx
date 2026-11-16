@@ -6,7 +6,7 @@ import { formatSoles, parseSoles, toSolesInput } from "@/lib/money";
 import type { ReceiptType } from "@/server/db/schema";
 import { receiveGoods } from "../actions";
 import { costFromLine, matchLine, type LineMatch, type ReadDocument } from "../document-read";
-import { ProductPicker } from "./product-picker";
+import { ProductPicker } from "@/components/ui/product-picker";
 import { ReadDocumentButton } from "./read-document-button";
 
 type Option = { id: string; name: string };

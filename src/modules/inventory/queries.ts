@@ -234,3 +234,15 @@ export function listMovements(productId: string) {
 }
 
 export type Movement = Awaited<ReturnType<typeof listMovements>>[number];
+
+/** Base units on warehouse floors (not vehicles), per product. Products without stock are absent. */
+export async function warehouseStockByProduct(): Promise<Record<string, number>> {
+  const rows = await db
+    .select({ productId: lots.productId, qty: sql`sum(${stockLevels.quantity})`.mapWith(Number) })
+    .from(stockLevels)
+    .innerJoin(lots, eq(lots.id, stockLevels.lotId))
+    .innerJoin(locations, eq(locations.id, stockLevels.locationId))
+    .where(eq(locations.type, "ALMACEN"))
+    .groupBy(lots.productId);
+  return Object.fromEntries(rows.map((r) => [r.productId, r.qty]));
+}

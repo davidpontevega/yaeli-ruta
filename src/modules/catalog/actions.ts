@@ -64,7 +64,7 @@ export async function saveProduct(_: FormState, form: FormData): Promise<FormSta
     });
   } catch (e) {
     if (isUniqueViolation(e)) return { error: "Código o código de barras repetido" };
-    if (isForeignKeyViolation(e)) return { error: "No puedes quitar una presentación que ya tiene ingresos" };
+    if (isForeignKeyViolation(e)) return { error: "No puedes quitar una presentación que ya tiene ingresos o pedidos" };
     throw e;
   }
   revalidatePath("/productos");

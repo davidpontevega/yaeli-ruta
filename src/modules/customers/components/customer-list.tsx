@@ -80,6 +80,11 @@ export function CustomerList({ customers, canReorder }: { customers: CustomerRow
                       {c.address}
                     </p>
                   </div>
+                  {c.active && (
+                    <Link href={`/pedidos/nuevo?cliente=${c.id}`} className="btn-secundario flex h-10 shrink-0 items-center text-sm">
+                      Pedido
+                    </Link>
+                  )}
                   {canReorder && c.active && (
                     <div className="flex shrink-0 gap-1">
                       <MoveButton id={c.id} dir="up" disabled={c.routeOrder <= 1} />
