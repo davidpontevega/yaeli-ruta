@@ -23,7 +23,7 @@ export default async function PurchasePage({ params }: PageProps<"/compras/[id]"
   ]);
   return (
     <section className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">
+      <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">
         Compra #{purchase.number}
         {STATUS[purchase.status]}
       </h1>

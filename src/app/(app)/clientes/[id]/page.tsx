@@ -12,7 +12,7 @@ export default async function EditCustomerPage({ params }: PageProps<"/clientes/
   if (!c) notFound();
   return (
     <section className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">Editar cliente</h1>
+      <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Editar cliente</h1>
       <CustomerForm
         routes={routes}
         initial={{

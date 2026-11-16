@@ -67,124 +67,129 @@ export function OrderForm({
 
   return (
     <div className="flex flex-col gap-3">
-      <form action={action} className="flex flex-col gap-3">
+      {/* Phone: one column. Desktop: lines on the left, customer card on the right. */}
+      <form action={action} className="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
         <input type="hidden" name="data" value={data} />
-        <div className="tarjeta flex flex-col gap-2">
-          <p className="font-semibold leading-tight">
-            {customer.name} <span className="text-sm font-normal text-muted">· {customer.routeName}</span>
-          </p>
-          <p className="text-sm">
-            <span className={account.balance > 0 ? "font-semibold text-red-600" : "text-muted"}>
-              {account.balance > 0 ? `Debe ${formatSoles(account.balance)}` : "Al día"}
-            </span>
-            {account.creditLimit !== null && <span className="text-muted"> · Límite {formatSoles(account.creditLimit)}</span>}
-          </p>
-          {account.creditLimit !== null && account.balance + orderTotal(priced) > account.creditLimit && (
-            <p className="text-sm font-semibold text-amber-700">Con este pedido pasa su límite</p>
+        <div className="flex flex-col gap-3 lg:sticky lg:top-6 lg:order-2">
+          <div className="tarjeta flex flex-col gap-2">
+            <p className="font-semibold leading-tight">
+              {customer.name} <span className="text-sm font-normal text-muted">· {customer.routeName}</span>
+            </p>
+            <p className="text-sm">
+              <span className={account.balance > 0 ? "font-semibold text-red-600" : "text-muted"}>
+                {account.balance > 0 ? `Debe ${formatSoles(account.balance)}` : "Al día"}
+              </span>
+              {account.creditLimit !== null && <span className="text-muted"> · Límite {formatSoles(account.creditLimit)}</span>}
+            </p>
+            {account.creditLimit !== null && account.balance + orderTotal(priced) > account.creditLimit && (
+              <p className="text-sm font-semibold text-amber-700">Con este pedido pasa su límite</p>
+            )}
+            <label className="flex items-center gap-2 text-sm font-medium">
+              Entrega
+              <input
+                type="date"
+                required
+                min={today}
+                value={deliveryOn}
+                onChange={(e) => setDeliveryOn(e.target.value)}
+                className="h-10 rounded-xl border border-border bg-surface px-3"
+              />
+            </label>
+          </div>
+
+          {lastOrder && lastOrder.lines.length > 0 && (
+            <button type="button" onClick={repeat} disabled={repeated} className="btn-secundario h-12 disabled:opacity-40">
+              Repetir último pedido
+            </button>
           )}
-          <label className="flex items-center gap-2 text-sm font-medium">
-            Entrega
-            <input
-              type="date"
-              required
-              min={today}
-              value={deliveryOn}
-              onChange={(e) => setDeliveryOn(e.target.value)}
-              className="h-10 rounded-xl border border-border bg-surface px-3"
-            />
-          </label>
+          {notice && <p className="text-sm text-amber-700">{notice}</p>}
+          {lines.length > known.length && (
+            <p className="text-sm text-amber-700">{lines.length - known.length} producto(s) inactivo(s) se quitarán al guardar.</p>
+          )}
         </div>
 
-        {lastOrder && lastOrder.lines.length > 0 && (
-          <button type="button" onClick={repeat} disabled={repeated} className="btn-secundario h-12 disabled:opacity-40">
-            Repetir último pedido
-          </button>
-        )}
-        {notice && <p className="text-sm text-amber-700">{notice}</p>}
-        {lines.length > known.length && (
-          <p className="text-sm text-amber-700">{lines.length - known.length} producto(s) inactivo(s) se quitarán al guardar.</p>
-        )}
-
-        {known.map((l) => {
-          const { product, packaging } = byPackaging.get(l.packagingId)!;
-          const free = available[product.id] ?? 0;
-          const short = usedBase(product.id) > free;
-          return (
-            <div key={l.packagingId} className="tarjeta flex flex-col gap-2">
-              <div className="flex items-start justify-between gap-2">
-                <p className="font-semibold leading-tight">{product.name}</p>
-                <button
-                  type="button"
-                  onClick={() => setLines((ls) => ls.filter((x) => x.packagingId !== l.packagingId))}
-                  className="text-sm text-red-600"
-                >
-                  Quitar
-                </button>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center overflow-hidden rounded-xl border border-border">
+        <div className="flex min-w-0 flex-col gap-3 lg:order-1">
+          {known.map((l) => {
+            const { product, packaging } = byPackaging.get(l.packagingId)!;
+            const free = available[product.id] ?? 0;
+            const short = usedBase(product.id) > free;
+            return (
+              <div key={l.packagingId} className="tarjeta flex flex-col gap-2">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-semibold leading-tight">{product.name}</p>
                   <button
                     type="button"
-                    aria-label="Menos"
-                    onClick={() => setLine(l.packagingId, { quantity: Math.max(1, l.quantity - 1) })}
-                    className="h-11 w-11 bg-slate-50 text-lg active:bg-slate-100"
+                    onClick={() => setLines((ls) => ls.filter((x) => x.packagingId !== l.packagingId))}
+                    className="text-sm text-red-600"
                   >
-                    −
-                  </button>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    max={MAX_QTY}
-                    value={l.quantity || ""}
-                    onChange={(e) => setLine(l.packagingId, { quantity: Math.min(MAX_QTY, Math.max(0, Math.trunc(Number(e.target.value)))) })}
-                    aria-label="Cantidad"
-                    className="h-11 w-12 border-0 bg-surface text-center font-bold outline-none"
-                  />
-                  <button
-                    type="button"
-                    aria-label="Más"
-                    onClick={() => setLine(l.packagingId, { quantity: Math.min(MAX_QTY, l.quantity + 1) })}
-                    className="h-11 w-11 bg-slate-50 text-lg active:bg-slate-100"
-                  >
-                    +
+                    Quitar
                   </button>
                 </div>
-                <select
-                  value={l.packagingId}
-                  onChange={(e) => setLine(l.packagingId, { packagingId: e.target.value })}
-                  aria-label="Presentación"
-                  className="h-10 rounded-xl border border-border bg-surface px-2"
-                >
-                  {product.packagings.map((x) => (
-                    <option key={x.id} value={x.id}>
-                      {x.name} · {formatSoles(x.salePrice)}
-                    </option>
-                  ))}
-                </select>
-                <p className="cifra ml-auto text-[15px]">{formatSoles(l.quantity * packaging.salePrice)}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center overflow-hidden rounded-xl border border-border">
+                    <button
+                      type="button"
+                      aria-label="Menos"
+                      onClick={() => setLine(l.packagingId, { quantity: Math.max(1, l.quantity - 1) })}
+                      className="h-11 w-11 bg-slate-50 text-lg active:bg-slate-100"
+                    >
+                      −
+                    </button>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      max={MAX_QTY}
+                      value={l.quantity || ""}
+                      onChange={(e) => setLine(l.packagingId, { quantity: Math.min(MAX_QTY, Math.max(0, Math.trunc(Number(e.target.value)))) })}
+                      aria-label="Cantidad"
+                      className="h-11 w-12 border-0 bg-surface text-center font-bold outline-none"
+                    />
+                    <button
+                      type="button"
+                      aria-label="Más"
+                      onClick={() => setLine(l.packagingId, { quantity: Math.min(MAX_QTY, l.quantity + 1) })}
+                      className="h-11 w-11 bg-slate-50 text-lg active:bg-slate-100"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <select
+                    value={l.packagingId}
+                    onChange={(e) => setLine(l.packagingId, { packagingId: e.target.value })}
+                    aria-label="Presentación"
+                    className="h-10 rounded-xl border border-border bg-surface px-2"
+                  >
+                    {product.packagings.map((x) => (
+                      <option key={x.id} value={x.id}>
+                        {x.name} · {formatSoles(x.salePrice)}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="cifra ml-auto text-[15px]">{formatSoles(l.quantity * packaging.salePrice)}</p>
+                </div>
+                <p className={`text-xs ${short ? "font-semibold text-amber-700" : "text-muted"}`}>
+                  {short && "Falta stock · "}Disp.: {free ? formatQty(free, product.packagings) : "sin stock"}
+                </p>
               </div>
-              <p className={`text-xs ${short ? "font-semibold text-amber-700" : "text-muted"}`}>
-                {short && "Falta stock · "}Disp.: {free ? formatQty(free, product.packagings) : "sin stock"}
-              </p>
+            );
+          })}
+
+          <ProductPicker products={products} onPick={add} placeholder={known.length ? "+ Agregar otro producto" : "Busca el producto"} />
+
+          {/* Total and save stay above the bottom bar while scrolling the lines. */}
+          <div className="tarjeta sticky bottom-[calc(6rem+env(safe-area-inset-bottom))] z-10 md:bottom-4 flex flex-col gap-2.5 shadow-[0_-8px_24px_rgba(15,23,42,0.08)]">
+            <div className="flex items-baseline justify-between">
+              <span className="text-sm text-muted">
+                {known.length} producto{known.length === 1 ? "" : "s"}
+              </span>
+              <span className="cifra text-2xl">{formatSoles(orderTotal(priced))}</span>
             </div>
-          );
-        })}
-
-        <ProductPicker products={products} onPick={add} placeholder={known.length ? "+ Agregar otro producto" : "Busca el producto"} />
-
-        {/* Total and save stay above the bottom bar while scrolling the lines. */}
-        <div className="tarjeta sticky bottom-[calc(6rem+env(safe-area-inset-bottom))] z-10 md:bottom-4 flex flex-col gap-2.5 shadow-[0_-8px_24px_rgba(15,23,42,0.08)]">
-          <div className="flex items-baseline justify-between">
-            <span className="text-sm text-muted">
-              {known.length} producto{known.length === 1 ? "" : "s"}
-            </span>
-            <span className="cifra text-2xl">{formatSoles(orderTotal(priced))}</span>
+            <button disabled={pending || !known.length} className="btn-primario h-[52px] text-base">
+              {initial.id ? "Guardar cambios" : "Guardar pedido"}
+            </button>
+            {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
           </div>
-          <button disabled={pending || !known.length} className="btn-primario h-[52px] text-base">
-            {initial.id ? "Guardar cambios" : "Guardar pedido"}
-          </button>
-          {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
         </div>
       </form>
 

@@ -8,7 +8,7 @@ export default async function PricesPage({ searchParams }: PageProps<"/precios">
 
   return (
     <section className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">Precios por revisar</h1>
+      <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Precios por revisar</h1>
       {raised > 0 && (
         <p className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
           Ingreso guardado. Subió el costo de {raised} producto{raised === 1 ? "" : "s"}: revisa sus precios de venta.

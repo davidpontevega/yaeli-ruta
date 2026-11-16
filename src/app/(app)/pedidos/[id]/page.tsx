@@ -18,7 +18,7 @@ export default async function EditOrderPage({ params }: PageProps<"/pedidos/[id]
   if (order.status !== "PENDIENTE")
     return (
       <section className="flex flex-col gap-4">
-        <h1 className="text-2xl font-bold">Pedido #{order.number}</h1>
+        <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Pedido #{order.number}</h1>
         <OrderSummary order={order} customerName={customer.name} />
       </section>
     );
@@ -31,7 +31,7 @@ export default async function EditOrderPage({ params }: PageProps<"/pedidos/[id]
   ]);
   return (
     <section className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">Pedido #{order.number}</h1>
+      <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Pedido #{order.number}</h1>
       <OrderForm
         products={products}
         available={available}

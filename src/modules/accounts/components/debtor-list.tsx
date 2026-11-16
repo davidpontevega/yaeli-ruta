@@ -20,13 +20,13 @@ export function RouteFilter({ routeId, routes }: { routeId: string; routes: { id
 }
 
 export function DebtorList({ debtors }: { debtors: Debtor[] }) {
-  if (!debtors.length) return <p className="tarjeta text-muted">Nadie debe. 🎉</p>;
+  if (!debtors.length) return <p className="tarjeta text-muted">Nadie debe.</p>;
   const total = debtors.reduce((s, d) => s + d.balance, 0);
   return (
     <div className="flex flex-col gap-2">
-      <ul className="flex flex-col gap-2">
+      <ul className="lista">
         {debtors.map((d) => (
-          <li key={d.id} className="tarjeta flex items-center gap-3">
+          <li key={d.id} className="fila flex items-center gap-3">
             <div className="min-w-0 flex-1">
               <Link href={`/clientes/${d.id}/cuenta`} className="font-semibold leading-tight hover:underline">
                 {d.name}

@@ -13,7 +13,7 @@ export default async function NewPurchasePage() {
   ]);
   return (
     <section className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">Nueva compra</h1>
+      <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Nueva compra</h1>
       <PurchaseForm
         products={products}
         suppliers={suppliers}

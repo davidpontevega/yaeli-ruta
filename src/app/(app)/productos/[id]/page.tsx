@@ -16,7 +16,7 @@ export default async function EditProductPage({ params }: PageProps<"/productos/
 
   return (
     <section className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">Editar producto</h1>
+      <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Editar producto</h1>
       <ProductForm
         categories={categories}
         brands={brands}

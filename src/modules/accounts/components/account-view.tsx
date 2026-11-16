@@ -23,9 +23,9 @@ export function AccountView({ account, creditLimit }: { account: Account; credit
         </p>
       </div>
       {movements.length ? (
-        <ul className="flex flex-col gap-2">
+        <ul className="lista">
           {movements.map((m) => (
-            <li key={m.id} className="tarjeta flex items-start justify-between gap-2 text-sm">
+            <li key={m.id} className="fila flex items-start justify-between gap-2 text-sm">
               <div className="min-w-0">
                 <p className="font-semibold">{TYPE[m.type]}</p>
                 <p className="text-xs text-muted">

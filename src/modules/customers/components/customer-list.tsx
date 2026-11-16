@@ -64,15 +64,15 @@ export function CustomerList({
   if (!customers.length) return <p className="tarjeta text-muted">No hay clientes con ese filtro.</p>;
   const groups = Map.groupBy(customers, (c) => c.routeName);
   return (
-    <div className="flex flex-col gap-4">
+    <div className="grupos">
       {[...groups].map(([routeName, list]) => {
         const lastOrder = Math.max(...list.filter((c) => c.active).map((c) => c.routeOrder));
         return (
           <section key={routeName} className="flex flex-col gap-2">
             <h2 className="text-sm font-semibold uppercase text-muted">{routeName}</h2>
-            <ul className="flex flex-col gap-2">
+            <ul className="lista">
               {list.map((c) => (
-                <li key={c.id} className={`tarjeta flex items-center gap-3 ${c.active ? "" : "opacity-50"}`}>
+                <li key={c.id} className={`fila flex items-center gap-3 ${c.active ? "" : "opacity-50"}`}>
                   {c.active && <span className="w-6 shrink-0 text-center text-sm text-muted">{c.routeOrder}</span>}
                   <div className="min-w-0 flex-1">
                     <Link href={`/clientes/${c.id}`} className="font-semibold leading-tight hover:underline">

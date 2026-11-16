@@ -23,7 +23,7 @@ export default async function StockPage({ searchParams }: PageProps<"/stock">) {
   return (
     <section className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold">Stock</h1>
+        <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Stock</h1>
       </div>
       <ProductFilters {...filters} includeInactive={false} categories={categories} suppliers={suppliers} canSeeInactive={false} />
       <div className="flex flex-wrap gap-2">

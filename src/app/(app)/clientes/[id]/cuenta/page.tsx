@@ -14,7 +14,7 @@ export default async function CustomerAccountPage({ params }: PageProps<"/client
   return (
     <section className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold">{customer.name}</h1>
+        <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">{customer.name}</h1>
         <Link href={`/clientes/${customer.id}`} className="text-sm text-primary underline">
           Editar cliente
         </Link>

@@ -7,7 +7,7 @@ export default async function CatalogPage() {
   const summary = await getCatalogSummary();
   return (
     <section className="flex flex-col gap-5">
-      <h1 className="text-2xl font-bold">Ajustes</h1>
+      <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Ajustes</h1>
       <Link href="/usuarios" className="tarjeta flex items-center justify-between font-semibold">
         Usuarios y PIN <span className="text-muted">→</span>
       </Link>

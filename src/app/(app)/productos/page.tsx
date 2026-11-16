@@ -21,7 +21,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
   return (
     <section className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold">Productos</h1>
+        <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Productos</h1>
         {isOwner && (
           <Link href="/productos/nuevo" className="btn-primario flex h-10 items-center text-sm">
             + Nuevo

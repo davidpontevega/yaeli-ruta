@@ -44,6 +44,17 @@ body {
   .tarjeta {
     @apply rounded-2xl border border-border bg-surface p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)];
   }
+  /* A list as one white card with rows divided by thin lines (design: Stock por proveedor). */
+  .lista {
+    @apply divide-y divide-slate-100 overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_1px_2px_rgba(15,23,42,0.04)];
+  }
+  .fila {
+    @apply px-4 py-3 transition-colors hover:bg-slate-50;
+  }
+  /* Groups of lists (by supplier, by route…): one column on phones, two on wide screens. */
+  .grupos {
+    @apply grid items-start gap-5 lg:grid-cols-2;
+  }
   /* Big figures (money, counts): display face with tabular digits. */
   .cifra {
     @apply font-display font-semibold tracking-tight tabular-nums;

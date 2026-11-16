@@ -16,7 +16,7 @@ const when = (days: number) =>
 export function ExpiryList({ lots }: { lots: ExpiringLot[] }) {
   if (!lots.length) return <p className="tarjeta text-muted">Nada por vencer en 90 días.</p>;
   return (
-    <div className="flex flex-col gap-4">
+    <div className="grupos">
       {GROUPS.map((g) => {
         const items = lots.filter((l) => l.bucket === g.bucket);
         if (!items.length) return null;
@@ -29,9 +29,9 @@ export function ExpiryList({ lots }: { lots: ExpiringLot[] }) {
               </span>
               {value !== null && <span className="text-sm">{formatSoles(value)}</span>}
             </h2>
-            <ul className="flex flex-col gap-2">
+            <ul className="lista">
               {items.map((l, i) => (
-                <li key={i} className="tarjeta flex items-start justify-between gap-2">
+                <li key={i} className="fila flex items-start justify-between gap-2">
                   <div>
                     <p className="font-semibold leading-tight">{l.productName}</p>
                     <p className="text-xs text-muted">

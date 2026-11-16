@@ -15,7 +15,7 @@ export default async function NewOrderPage({ searchParams }: PageProps<"/pedidos
     const customers = await listCustomers({ q: "", routeId: "", includeInactive: false });
     return (
       <section className="flex flex-col gap-4">
-        <h1 className="text-2xl font-bold">Nuevo pedido</h1>
+        <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Nuevo pedido</h1>
         <CustomerPicker customers={customers} />
       </section>
     );
@@ -32,7 +32,7 @@ export default async function NewOrderPage({ searchParams }: PageProps<"/pedidos
   const route = routes.find((r) => r.id === customer.routeId)!;
   return (
     <section className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">Nuevo pedido</h1>
+      <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Nuevo pedido</h1>
       <OrderForm
         key={customer.id}
         products={products}

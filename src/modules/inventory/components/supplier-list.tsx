@@ -9,9 +9,9 @@ export function SupplierList({ suppliers }: { suppliers: SupplierStats[] }) {
   if (!suppliers.length)
     return <p className="tarjeta text-muted">Aún no hay proveedores. Se crean solos al registrar una compra con el nombre del proveedor.</p>;
   return (
-    <ul className="flex flex-col gap-2">
+    <ul className="lista">
       {suppliers.map((s) => (
-        <li key={s.id} className="tarjeta flex flex-col gap-2">
+        <li key={s.id} className="fila flex flex-col gap-2">
           <div className="flex items-start justify-between gap-2">
             <Link href={`/stock?proveedor=${s.id}`} className="font-semibold leading-tight text-primary hover:underline">
               {s.name}

@@ -13,10 +13,10 @@ const formatDay = (d: Date) => d.toLocaleDateString("es-PE", { timeZone: "Americ
 export function PurchaseList({ purchases }: { purchases: PurchaseRow[] }) {
   if (!purchases.length) return <p className="tarjeta text-muted">Aún no hay compras. Arma la primera lista con «+ Nueva compra».</p>;
   return (
-    <ul className="flex flex-col gap-2">
+    <ul className="lista">
       {purchases.map((p) => (
         <li key={p.id}>
-          <Link href={`/compras/${p.id}`} className={`tarjeta flex items-center gap-3 ${p.status === "ANULADA" ? "opacity-50" : ""}`}>
+          <Link href={`/compras/${p.id}`} className={`fila flex items-center gap-3 ${p.status === "ANULADA" ? "opacity-50" : ""}`}>
             <span className="w-10 shrink-0 text-sm text-muted">#{p.number}</span>
             <div className="min-w-0 flex-1">
               <p className="font-semibold leading-tight">{p.type === "RECOJO" ? (p.vehicleName ?? "Recojo") : (p.supplierName ?? "Proveedor")}</p>

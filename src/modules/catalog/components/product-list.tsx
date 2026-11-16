@@ -9,9 +9,9 @@ export function ProductList({ products, canEdit }: { products: ProductListItem[]
       <p className="text-sm text-muted">
         {products.length} productos{products.length === PRODUCT_LIST_LIMIT && ` (se muestran los primeros ${PRODUCT_LIST_LIMIT})`}
       </p>
-      <ul className="flex flex-col gap-2">
+      <ul className="lista">
         {products.map((p) => (
-          <li key={p.id} className={`tarjeta flex flex-col gap-2 ${p.active ? "" : "opacity-60"}`}>
+          <li key={p.id} className={`fila flex flex-col gap-2 ${p.active ? "" : "opacity-60"}`}>
             <div className="flex items-start justify-between gap-2">
               <div>
                 <p className="font-semibold leading-tight">{p.name}</p>

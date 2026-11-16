@@ -12,7 +12,7 @@ export default async function DebtorsPage({ searchParams }: PageProps<"/deudores
   return (
     <section className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold">Deudores</h1>
+        <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Deudores</h1>
         <Link href="/deudores/inicial" className="text-sm text-primary underline">
           Cargar deuda inicial
         </Link>

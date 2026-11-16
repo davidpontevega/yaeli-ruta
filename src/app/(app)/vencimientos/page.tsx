@@ -11,7 +11,7 @@ export default async function ExpiryPage({ searchParams }: PageProps<"/vencimien
 
   return (
     <section className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">Vencimientos</h1>
+      <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Vencimientos</h1>
       <LocationFilter locations={locations} value={valid} />
       <ExpiryList lots={lots} />
     </section>

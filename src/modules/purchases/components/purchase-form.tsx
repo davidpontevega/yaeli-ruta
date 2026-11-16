@@ -107,9 +107,10 @@ export function PurchaseForm({
   ].join("\n");
 
   return (
-    <div className="flex flex-col gap-3">
+    // Phone: totals, list, actions in one column. Desktop: the list on the left; totals and actions on the right.
+    <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:grid-rows-[auto_1fr] lg:items-start lg:[grid-template-areas:'form_totals'_'form_actions']">
       {/* Totals stay visible while scrolling the lines. */}
-      <div className="tarjeta sticky top-14 z-10 md:top-4 flex flex-col gap-1 text-sm print:static">
+      <div className="tarjeta sticky top-14 z-10 flex flex-col gap-1 text-sm md:top-4 lg:[grid-area:totals] print:static">
         <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
           <span>
             Peso <b className="cifra">{formatKg(totals.weight)}</b>
@@ -139,7 +140,7 @@ export function PurchaseForm({
         {totals.noWeight > 0 && <p className="text-xs text-amber-700">{totals.noWeight} producto(s) sin peso: complétalo en Productos.</p>}
       </div>
 
-      <form action={action} className="flex flex-col gap-3 print:hidden">
+      <form action={action} className="flex min-w-0 flex-col gap-3 lg:[grid-area:form] print:hidden">
         <input type="hidden" name="data" value={data} />
         <fieldset disabled={!editable} className="flex flex-col gap-3">
           <div className="tarjeta flex flex-col gap-3">
@@ -289,35 +290,37 @@ export function PurchaseForm({
         {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       </form>
 
-      {initial.id && known.length > 0 && (
-        <div className="grid grid-cols-2 gap-2 print:hidden">
-          <a
-            href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
-            target="_blank"
-            rel="noreferrer"
-            className="btn-secundario flex h-12 items-center justify-center text-sm"
-          >
-            Enviar por WhatsApp
-          </a>
-          <button type="button" onClick={() => window.print()} className="btn-secundario h-12 text-sm">
-            Imprimir
-          </button>
-        </div>
-      )}
-      {initial.id && editable && (
-        <Link href={`/recepciones/nueva?compra=${initial.id}`} className="btn-primario flex h-12 items-center justify-center print:hidden">
-          Recibir esta compra
-        </Link>
-      )}
-      {initial.id && editable && (
-        <form action={cancelAction} onSubmit={(e) => !confirm("¿Anular esta compra?") && e.preventDefault()} className="print:hidden">
-          <input type="hidden" name="id" value={initial.id} />
-          <button disabled={cancelling} className="h-12 w-full rounded-xl border border-red-300 text-red-600">
-            Anular compra
-          </button>
-          {cancelState?.error && <p className="text-sm text-red-600">{cancelState.error}</p>}
-        </form>
-      )}
+      <div className="flex flex-col gap-3 lg:[grid-area:actions] print:hidden">
+        {initial.id && known.length > 0 && (
+          <div className="grid grid-cols-2 gap-2 print:hidden">
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-secundario flex h-12 items-center justify-center text-sm"
+            >
+              Enviar por WhatsApp
+            </a>
+            <button type="button" onClick={() => window.print()} className="btn-secundario h-12 text-sm">
+              Imprimir
+            </button>
+          </div>
+        )}
+        {initial.id && editable && (
+          <Link href={`/recepciones/nueva?compra=${initial.id}`} className="btn-primario flex h-12 items-center justify-center print:hidden">
+            Recibir esta compra
+          </Link>
+        )}
+        {initial.id && editable && (
+          <form action={cancelAction} onSubmit={(e) => !confirm("¿Anular esta compra?") && e.preventDefault()} className="print:hidden">
+            <input type="hidden" name="id" value={initial.id} />
+            <button disabled={cancelling} className="h-12 w-full rounded-xl border border-red-300 text-red-600">
+              Anular compra
+            </button>
+            {cancelState?.error && <p className="text-sm text-red-600">{cancelState.error}</p>}
+          </form>
+        )}
+      </div>
 
       {/* Paper version: the notebook sheet. */}
       <table className="hidden w-full text-sm print:table">

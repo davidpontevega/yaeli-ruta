@@ -18,7 +18,7 @@ export default async function NewReceiptPage({ searchParams }: PageProps<"/recep
   ]);
   return (
     <section className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">Recibir mercadería{purchase && ` · compra #${purchase.number}`}</h1>
+      <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Recibir mercadería{purchase && ` · compra #${purchase.number}`}</h1>
       {purchase && purchase.status !== "BORRADOR" && (
         <p className="tarjeta text-sm text-amber-700">
           Esta compra ya fue {purchase.status === "RECIBIDA" ? "recibida" : "anulada"}; no se puede recibir otra vez.

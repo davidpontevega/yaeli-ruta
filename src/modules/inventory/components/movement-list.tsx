@@ -11,9 +11,9 @@ export function MovementList({ movements, packagings }: { movements: Movement[];
   return (
     <>
       {movements.length === MOVEMENT_LIMIT && <p className="text-sm text-muted">Se muestran los últimos {MOVEMENT_LIMIT} movimientos.</p>}
-      <ul className="flex flex-col gap-2">
+      <ul className="lista">
         {movements.map((m) => (
-          <li key={m.id} className="tarjeta flex items-start justify-between gap-2">
+          <li key={m.id} className="fila flex items-start justify-between gap-2">
             <div className="min-w-0">
               <p className="font-semibold leading-tight">
                 {TYPE[m.type]}

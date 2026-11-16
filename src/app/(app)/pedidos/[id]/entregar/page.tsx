@@ -20,7 +20,7 @@ export default async function DeliverOrderPage({ params }: PageProps<"/pedidos/[
   ]);
   return (
     <section className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">
+      <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">
         Entregar pedido #{order.number} <span className="block text-base font-normal text-muted">{customer?.name}</span>
       </h1>
       <DeliveryForm

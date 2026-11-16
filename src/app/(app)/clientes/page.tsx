@@ -20,7 +20,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/client
   return (
     <section className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold">Clientes</h1>
+        <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Clientes</h1>
         <div className="flex items-center gap-3">
           <Link href="/deudores" className="text-sm text-primary underline">
             Deudores

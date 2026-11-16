@@ -6,9 +6,9 @@ import { RouteForm } from "./route-form";
 export function RouteList({ routes }: { routes: RouteRow[] }) {
   if (!routes.length) return <p className="tarjeta text-muted">Aún no hay rutas. Crea la primera arriba.</p>;
   return (
-    <ul className="flex flex-col gap-2">
+    <ul className="lista">
       {routes.map((r) => (
-        <li key={r.id} className="tarjeta flex flex-col gap-2">
+        <li key={r.id} className="fila flex flex-col gap-2">
           <div className="flex items-start justify-between gap-2">
             <div>
               <p className="font-semibold leading-tight">{r.name}</p>

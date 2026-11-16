@@ -14,7 +14,7 @@ export default async function MovementsPage({ params }: PageProps<"/productos/[i
   return (
     <section className="flex flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-bold">Movimientos</h1>
+        <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Movimientos</h1>
         <p className="text-muted">
           {product.name} · {product.sku}
         </p>

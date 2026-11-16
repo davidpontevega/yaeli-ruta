@@ -11,7 +11,7 @@ export default async function InitialDebtPage({ searchParams }: PageProps<"/deud
   const [customers, routes] = await Promise.all([listWithoutInitialDebt({ routeId }), listRoutes()]);
   return (
     <section className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">Deuda inicial</h1>
+      <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Deuda inicial</h1>
       <p className="text-sm text-muted">
         Pasa lo que cada cliente debe según el cuaderno. Deja vacío a quien no debe. Se carga una sola vez por cliente.
       </p>

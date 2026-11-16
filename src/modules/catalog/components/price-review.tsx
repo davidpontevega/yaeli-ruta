@@ -6,10 +6,10 @@ export function PriceReview({ items }: { items: PriceReviewItem[] }) {
   if (!items.length) return <p className="tarjeta text-muted">Todos los precios cubren su margen.</p>;
   return (
     <form action={applyPrices} className="flex flex-col gap-3">
-      <ul className="flex flex-col gap-2">
+      <ul className="lista">
         {items.map((r) => (
           <li key={r.packagingId}>
-            <label className="tarjeta flex cursor-pointer items-start gap-3">
+            <label className="fila flex cursor-pointer items-start gap-3">
               <input type="checkbox" name="packagingId" value={r.packagingId} defaultChecked className="mt-1 size-5 shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="font-semibold leading-tight">
