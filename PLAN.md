@@ -190,7 +190,7 @@ Problemas a resolver:
 | Spec | Contenido | Depende de |
 |---|---|---|
 | 007 — Rutas y clientes | Rutas con días de visita. Clientes con lo mínimo: nombre, teléfono y ruta; dirección, referencia y límite de crédito en "más opciones". Orden de visita (subir y bajar). Lista por ruta y búsqueda. | — |
-| 008 — Pedidos por teléfono | Buscar cliente → "repetir último pedido" o agregar productos con presentación y cantidad. Muestra el stock disponible (avisa, no bloquea). Precio general guardado en cada línea. Fecha de entrega: por defecto el próximo día de su ruta. Lista de pedidos por fecha y ruta; editar o anular mientras esté pendiente. | 007 |
+| 008 — Pedidos por teléfono | Solo el dueño. Buscar cliente → "repetir último pedido" o agregar productos con presentación y cantidad. Muestra el stock disponible (avisa, no bloquea). Precio general guardado en cada línea. Fecha de entrega: por defecto el próximo día de su ruta. Lista de pedidos por fecha y ruta; editar o anular mientras esté pendiente. | 007 |
 | 009 — Cuenta corriente y cobros | `movimientos_cuenta` append-only. **Deuda inicial** pasada del cuaderno. Cobro en oficina. Ajuste del dueño con motivo. Ficha del cliente con saldo y movimientos. Deudores por ruta con antigüedad. Aviso de límite de crédito en el pedido. | 007 |
 | 010 — Entrega desde la oficina (puente) | Marcar un pedido como entregado sin hoja de ruta: descuenta stock del almacén en orden **FEFO**, carga la deuda al cliente y registra lo que pagó. Permite dejar el papel antes de la fase 4. La fase 4 reutiliza la salida FEFO y el cargo. | 008, 009 |
 | 011 — Precios especiales | Precio por cliente y presentación (solo el dueño). El pedido lo usa si existe. | 008 |
