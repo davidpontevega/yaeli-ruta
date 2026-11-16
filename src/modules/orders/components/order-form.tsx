@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import { ProductPicker } from "@/components/ui/product-picker";
 import { formatSoles } from "@/lib/money";
@@ -164,6 +165,11 @@ export function OrderForm({
         {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       </form>
 
+      {initial.id && (
+        <Link href={`/pedidos/${initial.id}/entregar`} className="btn-secundario flex h-12 items-center justify-center">
+          Entregar
+        </Link>
+      )}
       {initial.id && (
         <form action={cancelAction} onSubmit={(e) => !confirm("¿Anular este pedido?") && e.preventDefault()}>
           <input type="hidden" name="id" value={initial.id} />

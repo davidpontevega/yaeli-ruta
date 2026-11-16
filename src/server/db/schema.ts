@@ -130,7 +130,7 @@ export const packagings = pgTable(
 
 // ── Inventory ───────────────────────────────────────────────────────────────
 
-export const movementTypeEnum = pgEnum("tipo_movimiento", ["INGRESO", "SALDO_INICIAL"]);
+export const movementTypeEnum = pgEnum("tipo_movimiento", ["INGRESO", "SALDO_INICIAL", "VENTA"]);
 export const receiptTypeEnum = pgEnum("tipo_recepcion", ["COMPRA", "SALDO_INICIAL"]);
 export type ReceiptType = (typeof receiptTypeEnum.enumValues)[number];
 
@@ -267,7 +267,7 @@ export const customers = pgTable(
 
 // ── Orders ──────────────────────────────────────────────────────────────────
 
-export const orderStatusEnum = pgEnum("estado_pedido", ["PENDIENTE", "ANULADO"]);
+export const orderStatusEnum = pgEnum("estado_pedido", ["PENDIENTE", "ANULADO", "ENTREGADO"]);
 export type OrderStatus = (typeof orderStatusEnum.enumValues)[number];
 
 export const orders = pgTable(
@@ -284,6 +284,7 @@ export const orders = pgTable(
     userId: uuid("usuario_id")
       .notNull()
       .references(() => users.id),
+    deliveredAt: timestamp("entregado_en", { withTimezone: true }),
     createdAt: createdAt(),
   },
   (t) => [index("pedidos_entrega_estado_idx").on(t.deliveryOn, t.status)],
@@ -301,8 +302,13 @@ export const orderItems = pgTable(
       .references(() => packagings.id),
     quantity: integer("cantidad").notNull(), // in packagings
     price: integer("precio").notNull(), // céntimos per packaging, at order time
+    delivered: integer("cantidad_entregada"), // null = not delivered yet
   },
-  (t) => [unique("pedido_items_presentacion_uq").on(t.orderId, t.packagingId), check("pedido_cantidad_positiva", sql`${t.quantity} > 0`)],
+  (t) => [
+    unique("pedido_items_presentacion_uq").on(t.orderId, t.packagingId),
+    check("pedido_cantidad_positiva", sql`${t.quantity} > 0`),
+    check("pedido_entregado_rango", sql`${t.delivered} between 0 and ${t.quantity}`),
+  ],
 );
 
 // ── Customer accounts ───────────────────────────────────────────────────────
@@ -325,6 +331,7 @@ export const accountMovements = pgTable(
     date: date("fecha").notNull(),
     method: paymentMethodEnum("medio"), // ABONO only
     note: text("nota"),
+    orderId: uuid("pedido_id").references(() => orders.id), // CARGO of a delivery
     userId: uuid("usuario_id")
       .notNull()
       .references(() => users.id),

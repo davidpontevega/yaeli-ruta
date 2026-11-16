@@ -2,6 +2,8 @@ import "server-only";
 import { and, asc, desc, eq, gt, gte, inArray, isNotNull, lt, lte, sql } from "drizzle-orm";
 import { db } from "@/server/db";
 import {
+  customers,
+  orders,
   locations,
   lots,
   packagings,
@@ -219,8 +221,9 @@ export function listMovements(productId: string) {
       unitCost: stockMovements.unitCost,
       location: locations.name,
       expiresOn: lots.expiresOn,
-      supplier: receipts.supplier,
-      document: receipts.document,
+      // Fields named for purchases; on a sale `supplier` holds the customer and `document` the order number.
+      supplier: sql<string | null>`coalesce(${receipts.supplier}, ${customers.name})`,
+      document: sql<string | null>`coalesce(${receipts.document}, 'Pedido #' || ${orders.number})`,
       // Window over ALL the product's movements (computed before LIMIT), so the balance is exact.
       balance: sql<number>`(sum(${stockMovements.quantity}) over (order by ${stockMovements.createdAt}, ${stockMovements.id}))::int`,
     })
@@ -228,6 +231,8 @@ export function listMovements(productId: string) {
     .innerJoin(lots, eq(lots.id, stockMovements.lotId))
     .innerJoin(locations, eq(locations.id, stockMovements.locationId))
     .leftJoin(receipts, eq(receipts.id, stockMovements.documentId))
+    .leftJoin(orders, eq(orders.id, stockMovements.documentId))
+    .leftJoin(customers, eq(customers.id, orders.customerId))
     .where(eq(lots.productId, productId))
     .orderBy(desc(stockMovements.createdAt), desc(stockMovements.id))
     .limit(MOVEMENT_LIMIT);

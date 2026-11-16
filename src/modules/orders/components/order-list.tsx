@@ -2,11 +2,11 @@ import Link from "next/link";
 import { formatSoles } from "@/lib/money";
 import type { OrderDetail, OrderRow } from "../queries";
 
-/** Orders of one delivery date grouped by route, in visit order (the query sorts them). Total counts pending orders only. */
+/** Orders of one delivery date grouped by route, in visit order (the query sorts them). Total excludes cancelled orders. */
 export function OrderList({ orders }: { orders: OrderRow[] }) {
   if (!orders.length) return <p className="tarjeta text-muted">No hay pedidos para esa fecha.</p>;
   const groups = Map.groupBy(orders, (o) => o.routeName);
-  const total = orders.filter((o) => o.status === "PENDIENTE").reduce((s, o) => s + o.total, 0);
+  const total = orders.filter((o) => o.status !== "ANULADO").reduce((s, o) => s + o.total, 0);
   return (
     <div className="flex flex-col gap-4">
       {[...groups].map(([routeName, list]) => (
@@ -25,6 +25,7 @@ export function OrderList({ orders }: { orders: OrderRow[] }) {
                     <p className="text-xs text-muted">
                       {o.lines} línea{o.lines === 1 ? "" : "s"}
                       {o.status === "ANULADO" && " · anulado"}
+                      {o.status === "ENTREGADO" && <span className="font-semibold text-emerald-700"> · entregado</span>}
                     </p>
                   </div>
                   <p className="shrink-0 font-semibold">{formatSoles(o.total)}</p>
@@ -42,20 +43,27 @@ export function OrderList({ orders }: { orders: OrderRow[] }) {
   );
 }
 
-/** Read-only view of a closed (cancelled) order. */
+/** Read-only view of a closed order (cancelled or delivered). Delivered orders show what was delivered. */
 export function OrderSummary({ order, customerName }: { order: OrderDetail; customerName: string }) {
+  const delivered = order.status === "ENTREGADO";
   return (
     <div className="tarjeta flex flex-col gap-2">
       <p className="font-semibold">
-        {customerName} <span className="text-sm font-normal text-red-600">· anulado</span>
+        {customerName}{" "}
+        {delivered ? (
+          <span className="text-sm font-normal text-emerald-700">· Entregado</span>
+        ) : (
+          <span className="text-sm font-normal text-red-600">· anulado</span>
+        )}
       </p>
       <ul className="flex flex-col gap-1 text-sm">
         {order.items.map((i) => (
           <li key={i.packagingId} className="flex justify-between gap-2">
             <span>
-              {i.quantity} {i.packagingName} · {i.productName}
+              {delivered ? i.delivered : i.quantity} {i.packagingName} · {i.productName}
+              {delivered && i.delivered !== i.quantity && <span className="text-amber-700"> (pidió {i.quantity})</span>}
             </span>
-            <span>{formatSoles(i.quantity * i.price)}</span>
+            <span>{formatSoles((delivered ? (i.delivered ?? 0) : i.quantity) * i.price)}</span>
           </li>
         ))}
       </ul>

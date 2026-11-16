@@ -1,9 +1,9 @@
 import { formatDate } from "@/lib/date";
 import { formatSoles } from "@/lib/money";
+import { paymentLabel } from "@/lib/payment";
 import { ACCOUNT_MOVEMENT_LIMIT, type Account } from "../queries";
 
 const TYPE: Record<string, string> = { SALDO_INICIAL: "Deuda inicial", CARGO: "Entrega", ABONO: "Cobro", AJUSTE: "Ajuste" };
-const METHOD: Record<string, string> = { EFECTIVO: "Efectivo", YAPE: "Yape", PLIN: "Plin", TRANSFERENCIA: "Transferencia" };
 
 /** Balance header + movements newest first, each with the balance after it. */
 export function AccountView({ account, creditLimit }: { account: Account; creditLimit: number | null }) {
@@ -30,7 +30,8 @@ export function AccountView({ account, creditLimit }: { account: Account; credit
                 <p className="font-semibold">{TYPE[m.type]}</p>
                 <p className="text-xs text-muted">
                   {formatDate(m.date)}
-                  {m.method && ` · ${METHOD[m.method]}`}
+                  {m.method && ` · ${paymentLabel(m.method)}`}
+                  {m.orderNumber && ` · Pedido #${m.orderNumber}`}
                   {m.note && ` · ${m.note}`}
                 </p>
               </div>

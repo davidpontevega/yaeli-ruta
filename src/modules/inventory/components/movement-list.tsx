@@ -2,7 +2,7 @@ import { formatSoles } from "@/lib/money";
 import { formatDate, formatQty } from "../format";
 import { MOVEMENT_LIMIT, type Movement } from "../queries";
 
-const TYPE: Record<Movement["type"], string> = { INGRESO: "Compra", SALDO_INICIAL: "Saldo inicial" };
+const TYPE: Record<Movement["type"], string> = { INGRESO: "Compra", SALDO_INICIAL: "Saldo inicial", VENTA: "Venta" };
 const formatWhen = (d: Date) => d.toLocaleString("es-PE", { timeZone: "America/Lima", dateStyle: "short", timeStyle: "short" });
 
 export function MovementList({ movements, packagings }: { movements: Movement[]; packagings: { name: string; factor: number }[] }) {

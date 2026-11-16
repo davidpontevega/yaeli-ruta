@@ -1,31 +1,21 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq, inArray, sql } from "drizzle-orm";
-import { audit, db, type Tx } from "@/server/db";
+import { and, eq, inArray } from "drizzle-orm";
+import { audit, db } from "@/server/db";
 import { accountMovements, customers } from "@/server/db/schema";
 import { requireUser } from "@/server/auth";
 import type { FormState } from "@/lib/form-state";
 import { formatSoles } from "@/lib/money";
 import { todayInLima } from "@/modules/inventory";
 import { adjustmentSchema, initialDebtsSchema, paymentSchema } from "./schemas";
+import { addPayment, lockedBalance } from "./ledger";
 
 const refresh = (customerId?: string) => {
   revalidatePath("/deudores", "layout");
   revalidatePath("/clientes");
   if (customerId) revalidatePath(`/clientes/${customerId}/cuenta`);
 };
-
-/** Locks the customer row so concurrent payments/adjustments see each other's result; returns the current balance or null. */
-async function lockedBalance(tx: Tx, customerId: string) {
-  const [c] = await tx.select({ id: customers.id }).from(customers).where(eq(customers.id, customerId)).for("update");
-  if (!c) return null;
-  const [r] = await tx
-    .select({ balance: sql`coalesce(sum(${accountMovements.amount}), 0)`.mapWith(Number) })
-    .from(accountMovements)
-    .where(eq(accountMovements.customerId, customerId));
-  return r.balance;
-}
 
 /** Form fields: `date` and one `amount_<customerId>` per row; empty rows are skipped. */
 export async function saveInitialDebts(_: FormState, form: FormData): Promise<FormState> {
@@ -83,7 +73,7 @@ export async function registerPayment(_: FormState, form: FormData): Promise<For
     const balance = await lockedBalance(tx, customerId);
     if (balance === null) return "El cliente no existe";
     if (amount > balance) return balance > 0 ? `El cliente debe ${formatSoles(balance)}` : "El cliente no tiene deuda";
-    await tx.insert(accountMovements).values({ customerId, type: "ABONO", amount: -amount, date: todayInLima(), method, userId: me.id });
+    await addPayment(tx, { customerId, amount, method, userId: me.id });
     await audit(tx, { actorId: me.id, action: "account.payment", entity: "customer", entityId: customerId, details: { amount, method } });
     return null;
   });

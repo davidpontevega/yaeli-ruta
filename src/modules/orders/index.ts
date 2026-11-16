@@ -3,4 +3,5 @@ export { listOrders, getOrder, lastOrderLines, availableByProduct, defaultOrderD
 export { OrderForm } from "./components/order-form";
 export { OrderList, OrderSummary } from "./components/order-list";
 export { OrderFilters } from "./components/order-filters";
+export { DeliveryForm } from "./components/delivery-form";
 export { CustomerPicker } from "./components/customer-picker";

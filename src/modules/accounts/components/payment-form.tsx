@@ -1,14 +1,8 @@
 "use client";
 
+import { PAYMENT_METHODS } from "@/lib/payment";
 import { useActionState } from "react";
 import { registerPayment } from "../actions";
-
-const METHODS = [
-  ["EFECTIVO", "Efectivo"],
-  ["YAPE", "Yape"],
-  ["PLIN", "Plin"],
-  ["TRANSFERENCIA", "Transferencia"],
-] as const;
 
 export function PaymentForm({ customerId }: { customerId: string }) {
   const [state, action, pending] = useActionState(registerPayment, undefined);
@@ -26,7 +20,7 @@ export function PaymentForm({ customerId }: { customerId: string }) {
           className="h-12 min-w-0 flex-1 rounded-xl border border-border bg-surface px-3"
         />
         <select name="method" defaultValue="EFECTIVO" aria-label="Medio de pago" className="h-12 rounded-xl border border-border bg-surface px-2">
-          {METHODS.map(([v, l]) => (
+          {PAYMENT_METHODS.map(([v, l]) => (
             <option key={v} value={v}>
               {l}
             </option>

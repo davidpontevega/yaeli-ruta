@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { parseSoles } from "@/lib/money";
+import { PAYMENT_METHOD_IDS } from "@/lib/payment";
 
 export const MAX_AMOUNT = 100_000_000; // S/ 1 millón per movement
 const amount = z
@@ -22,7 +23,7 @@ export const initialDebtsSchema = z.object({
 export const paymentSchema = z.object({
   customerId: z.uuid(),
   amount,
-  method: z.enum(["EFECTIVO", "YAPE", "PLIN", "TRANSFERENCIA"]),
+  method: z.enum(PAYMENT_METHOD_IDS),
 });
 
 /** "+20", "-15.50" → signed céntimos. Sign required so the owner states the direction. */

@@ -13,6 +13,8 @@ export {
 } from "./queries";
 export { parseReadResponse, fileType } from "./document-read";
 export { todayInLima, addDays, daysUntil } from "./expiry";
+export { dispatchStock } from "./dispatch";
+export { toBaseUnits } from "./stock-math";
 export { reserveReadSlot, recordReadResult } from "./read-limit";
 export { StockList } from "./components/stock-list";
 export { ReceiptForm } from "./components/receipt-form";

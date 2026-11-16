@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { db } from "@/server/db";
-import { accountMovements, customers, routes } from "@/server/db/schema";
+import { accountMovements, customers, orders, routes } from "@/server/db/schema";
 import { daysUntil, todayInLima } from "@/modules/inventory";
 import { debtSince } from "./account-math";
 
@@ -32,8 +32,10 @@ export async function getAccount(customerId: string) {
       date: accountMovements.date,
       method: accountMovements.method,
       note: accountMovements.note,
+      orderNumber: orders.number,
     })
     .from(accountMovements)
+    .leftJoin(orders, eq(orders.id, accountMovements.orderId))
     .where(eq(accountMovements.customerId, customerId))
     .orderBy(asc(accountMovements.date), asc(accountMovements.createdAt));
   let running = 0;

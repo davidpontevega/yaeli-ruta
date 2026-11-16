@@ -16,7 +16,7 @@ export async function defaultOrderDate() {
 }
 
 export async function listOrders(f: { date: string; routeId: string; includeCancelled: boolean }) {
-  const where: (SQL | undefined)[] = [eq(orders.deliveryOn, f.date), f.includeCancelled ? undefined : eq(orders.status, "PENDIENTE")];
+  const where: (SQL | undefined)[] = [eq(orders.deliveryOn, f.date), f.includeCancelled ? undefined : ne(orders.status, "ANULADO")];
   if (f.routeId) where.push(eq(customers.routeId, f.routeId));
   return db
     .select({
@@ -58,6 +58,9 @@ export async function getOrder(id: string) {
       price: orderItems.price,
       productName: products.name,
       packagingName: packagings.name,
+      productId: packagings.productId,
+      factor: packagings.factor,
+      delivered: orderItems.delivered,
     })
     .from(orderItems)
     .innerJoin(packagings, eq(packagings.id, orderItems.packagingId))
@@ -115,5 +118,6 @@ export function sellablePackagings(tx: Tx, ids: string[]) {
     .from(packagings)
     .innerJoin(products, eq(products.id, packagings.productId))
     .where(and(inArray(packagings.id, ids), eq(products.active, true)))
+    .orderBy(asc(products.id)) // lock rows in product id order, like receiveGoods and deliverOrder
     .for("share");
 }
