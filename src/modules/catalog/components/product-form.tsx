@@ -143,6 +143,7 @@ export function ProductForm({
             % de ganancia
             <input
               type="number"
+              required
               min={0}
               max={300}
               inputMode="numeric"
