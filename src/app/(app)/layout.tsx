@@ -22,7 +22,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         <AppHeader user={user} />
         <SectionTabs role={user.role} />
         {/* Bottom padding leaves room for the floating bottom bar on phones. */}
-        <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-5 pb-[calc(7rem+env(safe-area-inset-bottom))] md:px-8 md:py-8">{children}</main>
+        <main className="mx-auto w-full max-w-3xl flex-1 px-4 md:max-w-6xl py-5 pb-[calc(7rem+env(safe-area-inset-bottom))] md:px-8 md:py-8">{children}</main>
       </div>
     </div>
   );
