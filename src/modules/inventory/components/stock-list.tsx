@@ -84,9 +84,10 @@ export function StockList({ items, expiring, canBuy }: { items: StockItem[]; exp
                       </Link>
                     )}
                   </header>
-                  <ul className="celdas">
+                  {/* Two columns on desktop; items-start so opening one product doesn't stretch its neighbor. */}
+                  <ul className="grid items-start lg:grid-cols-2">
                     {list.map((p) => (
-                      <li key={p.id} className="fila">
+                      <li key={p.id} className="fila border-t border-slate-100 lg:odd:border-r lg:[&:last-child:nth-child(odd)]:col-span-2">
                         <details className="group">
                           <summary className="flex cursor-pointer list-none items-center gap-3">
                             <span className={`h-10 w-1.5 shrink-0 rounded-full ${STATUS[p.status].bar}`} aria-hidden />
