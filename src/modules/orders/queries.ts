@@ -140,3 +140,12 @@ export async function todaySummary() {
   };
 }
 export type TodaySummary = Awaited<ReturnType<typeof todaySummary>>;
+
+/** Orders still pending for today or earlier (menu badge): what is left to deliver. */
+export async function countPendingDue() {
+  const [r] = await db
+    .select({ n: count() })
+    .from(orders)
+    .where(and(eq(orders.status, "PENDIENTE"), sql`${orders.deliveryOn} <= ${todayInLima()}`));
+  return r.n;
+}

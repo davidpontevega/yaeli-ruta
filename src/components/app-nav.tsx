@@ -200,7 +200,11 @@ export function SectionTabs({ role }: { role: Role }) {
 /**
  * Desktop (md+): fixed left menu with every section and its tabs, and `footer` (who is signed in + Salir, rendered by the server layout).
  */
-export function SideNav({ role, brand, footer }: { role: Role; brand: string; footer: React.ReactNode }) {
+/** Count shown next to a menu item (only when > 0), and its color: "alert" for things to act on, "info" otherwise. */
+export type NavBadges = Partial<Record<string, { n: number; tone: "alert" | "warn" | "info" }>>;
+const BADGE = { alert: "bg-red-700 text-white", warn: "bg-amber-600 text-white", info: "bg-teal-700 text-white" } as const;
+
+export function SideNav({ role, brand, footer, badges = {} }: { role: Role; brand: string; footer: React.ReactNode; badges?: NavBadges }) {
   const { sections, current } = useCurrent(role);
   return (
     <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col gap-5 overflow-y-auto border-r border-border bg-surface px-3.5 py-5 md:flex print:hidden">
@@ -223,7 +227,12 @@ export function SideNav({ role, brand, footer }: { role: Role; brand: string; fo
                   className={`flex h-10 items-center gap-3 rounded-xl px-3 text-[15px] ${t === current?.tab || (t.href === "/" && s === current?.section) ? "bg-teal-50 font-semibold text-teal-800" : "font-medium text-slate-700 hover:bg-slate-100"}`}
                 >
                   {t.icon && <Icon d={t.icon} small />}
-                  {t.label}
+                  <span className="flex-1">{t.label}</span>
+                  {!!badges[t.href]?.n && (
+                    <span className={`cifra min-w-6 rounded-full px-1.5 py-0.5 text-center text-xs ${BADGE[badges[t.href]!.tone]}`}>
+                      {badges[t.href]!.n > 99 ? "99+" : badges[t.href]!.n}
+                    </span>
+                  )}
                 </Link>
               ))}
             </div>

@@ -106,3 +106,18 @@ export async function receivableSummary() {
   };
 }
 export type ReceivableSummary = Awaited<ReturnType<typeof receivableSummary>>;
+
+/** How many customers owe something (menu badge). */
+export async function countDebtors() {
+  const [r] = await db
+    .select({ n: sql`count(*)`.mapWith(Number) })
+    .from(
+      db
+        .select({ id: accountMovements.customerId })
+        .from(accountMovements)
+        .groupBy(accountMovements.customerId)
+        .having(sql`sum(${accountMovements.amount}) > 0`)
+        .as("owing"),
+    );
+  return r.n;
+}
