@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Stat } from "@/components/ui/stat";
 import { formatSoles } from "@/lib/money";
 import { Avatar, Glyph } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -11,23 +12,6 @@ const G = {
   hide: "M17.9 17.9A10 10 0 0 1 12 20c-7 0-10-8-10-8a18 18 0 0 1 5.1-5.9M9.9 4.2A9 9 0 0 1 12 4c7 0 10 8 10 8a18 18 0 0 1-2.2 3.2M1 1l22 22",
   show: "M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
 };
-
-function Stat({ href, label, value, tone = "" }: { href?: string; label: string; value: number; tone?: string }) {
-  const cls = "tarjeta flex flex-col gap-0.5 px-4 py-3";
-  const body = (
-    <>
-      <span className="text-xs font-medium text-muted">{label}</span>
-      <span className={`cifra text-2xl ${tone}`}>{value}</span>
-    </>
-  );
-  return href ? (
-    <Link href={href} className={`${cls} transition hover:border-slate-300`}>
-      {body}
-    </Link>
-  ) : (
-    <div className={cls}>{body}</div>
-  );
-}
 
 /** Summary strip and one card per product: who supplies it, its packagings with price, and quick actions. */
 export function ProductList({ products, canEdit, priceReview }: { products: ProductListItem[]; canEdit: boolean; priceReview: number }) {

@@ -1,48 +1,70 @@
 import { EmptyState } from "@/components/ui/empty-state";
 import Link from "next/link";
 import { formatSoles } from "@/lib/money";
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar, ICONS, IconTile } from "@/components/ui/avatar";
+import { Stat } from "@/components/ui/stat";
 import type { OrderDetail, OrderRow } from "../queries";
 
-/** Orders of one delivery date grouped by route, in visit order (the query sorts them). Total excludes cancelled orders. */
+const STATUS = {
+  PENDIENTE: { label: "Pendiente", className: "bg-amber-100 text-amber-800" },
+  ENTREGADO: { label: "Entregado", className: "bg-emerald-100 text-emerald-800" },
+  ANULADO: { label: "Anulado", className: "bg-slate-200 text-slate-600" },
+} as const;
+
+/** Day summary, then orders grouped by route in visit order (the query sorts them). Totals exclude cancelled orders. */
 export function OrderList({ orders }: { orders: OrderRow[] }) {
-  if (!orders.length) return <EmptyState text="No hay pedidos para esa fecha." />;
+  const live = orders.filter((o) => o.status !== "ANULADO");
+  const pending = live.filter((o) => o.status === "PENDIENTE").length;
+  const total = live.reduce((s, o) => s + o.total, 0);
   const groups = Map.groupBy(orders, (o) => o.routeName);
-  const total = orders.filter((o) => o.status !== "ANULADO").reduce((s, o) => s + o.total, 0);
   return (
     <div className="flex flex-col gap-4">
-      <div className="grupos">
-        {[...groups].map(([routeName, list]) => (
-          <section key={routeName} className="flex flex-col gap-2">
-            <h2 className="text-sm font-semibold uppercase text-muted">{routeName}</h2>
-            <ul className="lista">
-              {list.map((o) => (
-                <li key={o.id}>
-                  <Link
-                    href={`/pedidos/${o.id}`}
-                    className={`fila flex items-center gap-3 ${o.status === "ANULADO" ? "line-through opacity-50" : ""}`}
-                  >
-                    <Avatar name={o.customerName} />
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold leading-tight">{o.customerName}</p>
-                      <p className="text-xs text-muted">
-                        #{o.number} · {o.lines} línea{o.lines === 1 ? "" : "s"}
-                        {o.status === "ANULADO" && " · anulado"}
-                        {o.status === "ENTREGADO" && <span className="font-semibold text-emerald-700"> · entregado</span>}
-                      </p>
-                    </div>
-                    <p className="cifra shrink-0">{formatSoles(o.total)}</p>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
+      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+        <Stat label="Pedidos del día" value={live.length} />
+        <Stat label="Por entregar" value={pending} tone={pending ? "text-amber-700" : ""} />
+        <Stat label="Entregados" value={live.length - pending} tone={live.length - pending ? "text-emerald-700" : ""} />
+        <Stat label="Total del día" value={formatSoles(total)} tone="text-primary" />
       </div>
-      <p className="flex justify-between text-lg font-bold">
-        <span>Total del día</span>
-        <span>{formatSoles(total)}</span>
-      </p>
+      {!orders.length ? (
+        <EmptyState text="No hay pedidos para esa fecha." />
+      ) : (
+        <div className="grupos">
+          {[...groups].map(([routeName, list]) => (
+            <section key={routeName} className="lista">
+              <header className="flex items-center gap-3 bg-slate-50/70 px-4 py-3">
+                <IconTile d={ICONS.pin} />
+                <div className="min-w-0 flex-1">
+                  <h2 className="truncate font-bold leading-tight">{routeName}</h2>
+                  <span className="chip mt-1 bg-slate-100 text-slate-700">
+                    {list.length} pedido{list.length === 1 ? "" : "s"}
+                  </span>
+                </div>
+                <span className="cifra shrink-0">{formatSoles(list.filter((o) => o.status !== "ANULADO").reduce((s, o) => s + o.total, 0))}</span>
+              </header>
+              <ul className="divide-y divide-slate-100">
+                {list.map((o) => (
+                  <li key={o.id}>
+                    <Link href={`/pedidos/${o.id}`} className={`fila flex items-center gap-3 ${o.status === "ANULADO" ? "opacity-50" : ""}`}>
+                      <Avatar name={o.customerName} />
+                      <div className="min-w-0 flex-1">
+                        <p className={`truncate font-semibold leading-tight ${o.status === "ANULADO" ? "line-through" : ""}`}>{o.customerName}</p>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          <span className="chip bg-slate-100 text-slate-600">#{o.number}</span>
+                          <span className="chip bg-slate-100 text-slate-600">
+                            {o.lines} producto{o.lines === 1 ? "" : "s"}
+                          </span>
+                          <span className={`chip ${STATUS[o.status].className}`}>{STATUS[o.status].label}</span>
+                        </div>
+                      </div>
+                      <p className="cifra shrink-0 text-[15px]">{formatSoles(o.total)}</p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

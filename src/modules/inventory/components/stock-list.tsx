@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Stat } from "@/components/ui/stat";
 import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatSoles } from "@/lib/money";
@@ -15,24 +16,13 @@ const STATUS = {
 
 /** Expiry chip color by how close the date is. */
 const expiryTone = (days: number) =>
-  days < 0 ? "bg-red-100 text-red-800" : days <= 30 ? "bg-amber-100 text-amber-800" : days <= 90 ? "bg-yellow-50 text-yellow-800" : "bg-slate-100 text-slate-700";
-
-function Stat({ href, label, value, tone = "" }: { href?: string; label: string; value: string | number; tone?: string }) {
-  const body = (
-    <>
-      <span className="text-xs font-medium text-muted">{label}</span>
-      <span className={`cifra text-2xl ${tone}`}>{value}</span>
-    </>
-  );
-  const cls = "tarjeta flex flex-col gap-0.5 px-4 py-3";
-  return href ? (
-    <Link href={href} className={`${cls} transition hover:border-slate-300`}>
-      {body}
-    </Link>
-  ) : (
-    <div className={cls}>{body}</div>
-  );
-}
+  days < 0
+    ? "bg-red-100 text-red-800"
+    : days <= 30
+      ? "bg-amber-100 text-amber-800"
+      : days <= 90
+        ? "bg-yellow-50 text-yellow-800"
+        : "bg-slate-100 text-slate-700";
 
 /**
  * Summary strip, then products grouped by main supplier (alphabetical, "Sin proveedor" last), each with its status

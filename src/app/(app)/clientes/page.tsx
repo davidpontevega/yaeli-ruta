@@ -39,19 +39,20 @@ export default async function CustomersPage({ searchParams }: PageProps<"/client
         </div>
       </div>
       {!routes.length ? (
-        <p className="tarjeta">
-          Primero crea una ruta.{" "}
-          <Link href="/rutas" className="text-primary underline">
-            Ir a rutas
+        <div className="tarjeta flex flex-col items-center gap-3 py-10 text-center">
+          <p className="font-semibold">Primero crea una ruta</p>
+          <p className="max-w-sm text-sm text-muted">Cada cliente pertenece a una ruta de reparto.</p>
+          <Link href="/rutas" className="btn-primario flex h-10 items-center text-sm">
+            Crear ruta
           </Link>
-        </p>
+        </div>
       ) : (
         <>
           {repeated && (
             <p className="tarjeta text-sm text-amber-700">Guardado. Ojo: ya había otro cliente llamado &quot;{repeated}&quot; en esta ruta.</p>
           )}
           <CustomerFilters {...filters} routes={routes} />
-          <CustomerList customers={customers} canReorder={!!filters.routeId && !filters.q} balances={balances} />
+          <CustomerList customers={customers} canReorder={!!filters.routeId && !filters.q} balances={balances} routes={routes} />
         </>
       )}
     </section>
