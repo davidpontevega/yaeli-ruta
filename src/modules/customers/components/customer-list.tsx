@@ -81,7 +81,7 @@ export function CustomerList({
       {!customers.length ? (
         <EmptyState text="No hay clientes con ese filtro." />
       ) : (
-        <div className="grupos">
+        <div className="flex flex-col gap-5">
           {[...groups].map(([routeName, list]) => {
             const lastOrder = Math.max(...list.filter((c) => c.active).map((c) => c.routeOrder));
             return (
@@ -104,7 +104,7 @@ export function CustomerList({
                     </div>
                   </div>
                 </header>
-                <ul className="divide-y divide-slate-100">
+                <ul className="celdas">
                   {list.map((c) => (
                     <li key={c.id} className={`fila flex items-center gap-3 ${c.active ? "" : "opacity-50"}`}>
                       <Avatar name={c.name} />

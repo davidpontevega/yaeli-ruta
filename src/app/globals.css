@@ -118,6 +118,13 @@ body {
   .grupos {
     @apply grid items-start gap-5 lg:grid-cols-2;
   }
+  /* Rows of a group as cells: one column on phones, two on wide screens, separated by hairlines (gap over grey). */
+  .celdas {
+    @apply grid gap-px bg-slate-100 lg:grid-cols-2;
+  }
+  .celdas > li {
+    @apply bg-surface;
+  }
   /* Big figures (money, counts): display face with tabular digits. */
   .cifra {
     @apply font-display font-semibold tracking-tight tabular-nums;
@@ -125,5 +132,12 @@ body {
   /* Small uppercase section label. */
   .rotulo {
     @apply text-xs font-semibold uppercase tracking-wider text-muted;
+  }
+}
+
+/* An odd last cell spans both columns, so no grey hole is left. */
+@media (min-width: 64rem) {
+  .celdas > li:last-child:nth-child(odd) {
+    grid-column: span 2;
   }
 }

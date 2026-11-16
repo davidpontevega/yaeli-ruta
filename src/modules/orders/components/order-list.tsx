@@ -28,7 +28,7 @@ export function OrderList({ orders }: { orders: OrderRow[] }) {
       {!orders.length ? (
         <EmptyState text="No hay pedidos para esa fecha." />
       ) : (
-        <div className="grupos">
+        <div className="flex flex-col gap-5">
           {[...groups].map(([routeName, list]) => (
             <section key={routeName} className="lista">
               <header className="flex items-center gap-3 bg-slate-50/70 px-4 py-3">
@@ -41,7 +41,7 @@ export function OrderList({ orders }: { orders: OrderRow[] }) {
                 </div>
                 <span className="cifra shrink-0">{formatSoles(list.filter((o) => o.status !== "ANULADO").reduce((s, o) => s + o.total, 0))}</span>
               </header>
-              <ul className="divide-y divide-slate-100">
+              <ul className="celdas">
                 {list.map((o) => (
                   <li key={o.id}>
                     <Link href={`/pedidos/${o.id}`} className={`fila flex items-center gap-3 ${o.status === "ANULADO" ? "opacity-50" : ""}`}>

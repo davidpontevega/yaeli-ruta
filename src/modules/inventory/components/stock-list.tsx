@@ -50,7 +50,7 @@ export function StockList({ items, expiring, canBuy }: { items: StockItem[]; exp
       {!items.length ? (
         <EmptyState text="No hay productos con ese filtro." />
       ) : (
-        <div className="grupos">
+        <div className="flex flex-col gap-5">
           {[...Map.groupBy(items, (p) => p.supplierName ?? NO_SUPPLIER)]
             .sort(([a], [b]) => (a === NO_SUPPLIER ? 1 : b === NO_SUPPLIER ? -1 : a.localeCompare(b)))
             .map(([supplier, list]) => {
@@ -84,7 +84,7 @@ export function StockList({ items, expiring, canBuy }: { items: StockItem[]; exp
                       </Link>
                     )}
                   </header>
-                  <ul className="divide-y divide-slate-100">
+                  <ul className="celdas">
                     {list.map((p) => (
                       <li key={p.id} className="fila">
                         <details className="group">

@@ -64,7 +64,7 @@ export function ExpiryList({ lots }: { lots: ExpiringLot[] }) {
           );
         })}
       </div>
-      <div className="grupos">
+      <div className="flex flex-col gap-5">
         {GROUPS.map((g) => {
           const items = lots.filter((l) => l.bucket === g.bucket);
           if (!items.length) return null;
@@ -80,7 +80,7 @@ export function ExpiryList({ lots }: { lots: ExpiringLot[] }) {
                 </h2>
                 {value !== null && <span className={`cifra ${g.figure}`}>{formatSoles(value)}</span>}
               </header>
-              <ul className="divide-y divide-slate-100">
+              <ul className="celdas">
                 {items.map((l, i) => {
                   const [, m, d] = l.expiresOn.split("-");
                   return (
