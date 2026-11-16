@@ -194,7 +194,17 @@ export function PurchaseForm({
             )}
           </div>
 
-          {known.map((l) => {
+          {/* Search first and newest line on top, so what you just added stays in view. */}
+          {editable && (
+            <div className="tarjeta p-3">
+              <ProductPicker
+                products={products.filter((p) => p.active)}
+                onPick={add}
+                placeholder={known.length ? "+ Agregar otro producto" : "Busca el producto"}
+              />
+            </div>
+          )}
+          {[...known].reverse().map((l) => {
             const { product } = byPackaging.get(l.packagingId)!;
             const n = num(l);
             const w = lineWeight(n);
@@ -272,14 +282,6 @@ export function PurchaseForm({
               </div>
             );
           })}
-
-          {editable && (
-            <ProductPicker
-              products={products.filter((p) => p.active)}
-              onPick={add}
-              placeholder={known.length ? "+ Agregar otro producto" : "Busca el producto"}
-            />
-          )}
         </fieldset>
 
         {editable && (

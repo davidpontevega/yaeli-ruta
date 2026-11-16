@@ -79,9 +79,18 @@ export function ReceiptForm({
   const lastLocation = (s: Line[]) => s.at(-1)?.locationId ?? locations[0]?.id ?? "";
   const add = (p: ReceivableProduct) => {
     const pack = largest(p);
+    // Typed lines go on top, under the search (lines read from a document keep the document's order below).
     setLines((s) => [
+      {
+        key: `l${seq++}`,
+        product: p,
+        packagingId: pack.id,
+        quantity: "1",
+        unitCost: costFor(pack.id),
+        expiresOn: "",
+        locationId: s[0]?.locationId ?? lastLocation(s),
+      },
       ...s,
-      { key: `l${seq++}`, product: p, packagingId: pack.id, quantity: "1", unitCost: costFor(pack.id), expiresOn: "", locationId: lastLocation(s) },
     ]);
   };
   const update = (key: string, patch: Partial<Line>) => setLines((s) => s.map((l) => (l.key === key ? { ...l, ...patch } : l)));
@@ -180,6 +189,10 @@ export function ReceiptForm({
       </div>
 
       <div className="flex min-w-0 flex-col gap-4 lg:[grid-area:main]">
+        {/* Search first; a product added by hand appears right under it. */}
+        <div className="tarjeta p-3">
+          <ProductPicker products={products} onPick={add} placeholder={lines.length ? "+ Agregar otro producto" : "Busca el producto que llegó"} />
+        </div>
         {lines.map((l) => {
           const p = l.product;
           const pack = p?.packagings.find((x) => x.id === l.packagingId);
@@ -271,10 +284,6 @@ export function ReceiptForm({
             </div>
           );
         })}
-
-        <div className="tarjeta">
-          <ProductPicker products={products} onPick={add} placeholder={lines.length ? "+ Agregar otro producto" : "Busca el producto que llegó"} />
-        </div>
       </div>
 
       <div className="flex flex-col gap-2 lg:[grid-area:bottom]">
