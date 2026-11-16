@@ -114,7 +114,7 @@ const QUICK = [
 ];
 
 /** Mobile only: floating bar at the bottom (with "+" for the owner). Desktop uses SideNav. */
-export function SectionNav({ role }: { role: Role }) {
+export function SectionNav({ role, badges = {} }: { role: Role; badges?: NavBadges }) {
   const { sections, current } = useCurrent(role);
   const [open, setOpen] = useState(false);
   const owner = role === "DUENO";
@@ -124,7 +124,15 @@ export function SectionNav({ role }: { role: Role }) {
       href={s.tabs[0].href}
       className={`flex flex-col items-center gap-0.5 py-1 text-[11px] ${s === current?.section ? "font-semibold text-primary" : "font-medium text-muted"}`}
     >
-      <Icon d={s.icon} />
+      <span className="relative">
+        <Icon d={s.icon} />
+        {/* Red dot: something pending in this section (counts are in the tabs and on desktop). */}
+        {s.tabs.some((t) => badges[t.href]?.n) && (
+          <span className="absolute -top-0.5 -right-1 h-2.5 w-2.5 rounded-full border-2 border-surface bg-red-600">
+            <span className="sr-only">Tiene pendientes</span>
+          </span>
+        )}
+      </span>
       {s.label}
     </Link>
   );
@@ -177,7 +185,7 @@ export function SectionNav({ role }: { role: Role }) {
 }
 
 /** Tabs of the current section as a segmented switch (hidden when the section has only one page). */
-export function SectionTabs({ role }: { role: Role }) {
+export function SectionTabs({ role, badges = {} }: { role: Role; badges?: NavBadges }) {
   const { current } = useCurrent(role);
   if (!current || current.section.tabs.length < 2) return null;
   return (
@@ -190,6 +198,11 @@ export function SectionTabs({ role }: { role: Role }) {
             className={`flex h-9 items-center justify-center rounded-[9px] text-sm ${t === current.tab ? "bg-surface font-semibold shadow-sm" : "font-medium text-muted"}`}
           >
             {t.label}
+            {!!badges[t.href]?.n && (
+              <span className={`cifra ml-1.5 min-w-5 rounded-full px-1.5 text-center text-[11px] leading-5 ${BADGE[badges[t.href]!.tone]}`}>
+                {badges[t.href]!.n > 99 ? "99+" : badges[t.href]!.n}
+              </span>
+            )}
           </Link>
         ))}
       </div>

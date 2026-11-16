@@ -37,8 +37,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         }
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        <AppHeader user={user} />
-        <SectionTabs role={user.role} />
+        <AppHeader user={user} badges={badges} />
+        <SectionTabs role={user.role} badges={badges} />
         {/* Bottom padding leaves room for the floating bottom bar on phones. */}
         <main className="mx-auto w-full max-w-3xl flex-1 px-4 md:max-w-6xl py-5 pb-[calc(7rem+env(safe-area-inset-bottom))] md:px-8 md:py-8">
           {children}
