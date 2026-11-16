@@ -84,73 +84,80 @@ export function StockList({ items, expiring, canBuy }: { items: StockItem[]; exp
                       </Link>
                     )}
                   </header>
-                  {/* Two columns on desktop; items-start so opening one product doesn't stretch its neighbor. */}
-                  <ul className="grid items-start lg:grid-cols-2">
-                    {list.map((p) => (
-                      <li key={p.id} className="fila border-t border-slate-100 lg:odd:border-r lg:[&:last-child:nth-child(odd)]:col-span-2">
-                        <details className="group">
-                          <summary className="flex cursor-pointer list-none items-center gap-3">
-                            <span className={`h-10 w-1.5 shrink-0 rounded-full ${STATUS[p.status].bar}`} aria-hidden />
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate font-semibold leading-tight">{p.name}</p>
-                              <p className="truncate text-xs text-muted">
-                                {p.sku} · {p.category}
-                              </p>
-                            </div>
-                            <div className="flex shrink-0 flex-col items-end gap-1">
-                              <span className={`cifra text-[15px] ${p.total ? "" : "text-red-600"}`}>
-                                {p.total ? formatQty(p.total, p.packagings) : "Sin stock"}
-                              </span>
-                              <span className="flex flex-wrap justify-end gap-1">
-                                {p.status === "low" && (
-                                  <span className="chip bg-amber-50 text-amber-800">faltan {formatQty(p.minStock - p.total, p.packagings)}</span>
-                                )}
-                                <span className={`chip ${STATUS[p.status].className}`}>{STATUS[p.status].label}</span>
-                              </span>
-                            </div>
-                            <svg
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="#94A3B8"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              className="shrink-0 transition group-open:rotate-90"
-                              aria-hidden
-                            >
-                              <path d="M9 6l6 6-6 6" />
-                            </svg>
-                          </summary>
-                          <div className="mt-3 flex flex-col gap-2 rounded-xl bg-slate-50 p-3">
-                            {p.lots.length ? (
-                              p.lots.map((l, i) => (
-                                <div key={i} className="flex flex-wrap items-center gap-2 text-sm">
-                                  <span className="chip bg-white text-slate-700 ring-1 ring-border">{l.location}</span>
-                                  {l.expiresOn ? (
-                                    <span className={`chip ${expiryTone(daysUntil(l.expiresOn, today))}`}>vence {formatDate(l.expiresOn)}</span>
-                                  ) : (
-                                    <span className="chip bg-slate-100 text-muted">sin vencimiento</span>
-                                  )}
-                                  <span className="cifra ml-auto">{formatQty(l.quantity, p.packagings)}</span>
+                  {/* Desktop: two independent columns (first half | second half), so opening a product only pushes the
+                      ones below it in its own column. Phone: the halves stack, keeping the original order. */}
+                  <div className="grid items-start lg:grid-cols-2">
+                    {[list.slice(0, Math.ceil(list.length / 2)), list.slice(Math.ceil(list.length / 2))].map((col, c) => (
+                      <ul key={c} className={c === 0 ? "lg:border-r lg:border-slate-100" : ""}>
+                        {col.map((p) => (
+                          <li key={p.id} className="fila border-t border-slate-100">
+                            <details className="group">
+                              <summary className="flex cursor-pointer list-none items-center gap-3">
+                                <span className={`h-10 w-1.5 shrink-0 rounded-full ${STATUS[p.status].bar}`} aria-hidden />
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate font-semibold leading-tight">{p.name}</p>
+                                  <p className="truncate text-xs text-muted">
+                                    {p.sku} · {p.category}
+                                  </p>
                                 </div>
-                              ))
-                            ) : (
-                              <p className="text-sm text-muted">Sin lotes en almacén.</p>
-                            )}
-                            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                              {p.value !== null && p.total > 0 && <span className="text-xs text-muted">Valor a costo {formatSoles(p.value)}</span>}
-                              {p.value !== null && (
-                                <Link href={`/productos/${p.id}/movimientos`} className="btn-suave h-8 px-3 text-xs">
-                                  Ver movimientos
-                                </Link>
-                              )}
-                            </div>
-                          </div>
-                        </details>
-                      </li>
+                                <div className="flex shrink-0 flex-col items-end gap-1">
+                                  <span className={`cifra text-[15px] ${p.total ? "" : "text-red-600"}`}>
+                                    {p.total ? formatQty(p.total, p.packagings) : "Sin stock"}
+                                  </span>
+                                  <span className="flex flex-wrap justify-end gap-1">
+                                    {p.status === "low" && (
+                                      <span className="chip bg-amber-50 text-amber-800">faltan {formatQty(p.minStock - p.total, p.packagings)}</span>
+                                    )}
+                                    <span className={`chip ${STATUS[p.status].className}`}>{STATUS[p.status].label}</span>
+                                  </span>
+                                </div>
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="#94A3B8"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  className="shrink-0 transition group-open:rotate-90"
+                                  aria-hidden
+                                >
+                                  <path d="M9 6l6 6-6 6" />
+                                </svg>
+                              </summary>
+                              <div className="mt-3 flex flex-col gap-2 rounded-xl bg-slate-50 p-3">
+                                {p.lots.length ? (
+                                  p.lots.map((l, i) => (
+                                    <div key={i} className="flex flex-wrap items-center gap-2 text-sm">
+                                      <span className="chip bg-white text-slate-700 ring-1 ring-border">{l.location}</span>
+                                      {l.expiresOn ? (
+                                        <span className={`chip ${expiryTone(daysUntil(l.expiresOn, today))}`}>vence {formatDate(l.expiresOn)}</span>
+                                      ) : (
+                                        <span className="chip bg-slate-100 text-muted">sin vencimiento</span>
+                                      )}
+                                      <span className="cifra ml-auto">{formatQty(l.quantity, p.packagings)}</span>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <p className="text-sm text-muted">Sin lotes en almacén.</p>
+                                )}
+                                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                                  {p.value !== null && p.total > 0 && (
+                                    <span className="text-xs text-muted">Valor a costo {formatSoles(p.value)}</span>
+                                  )}
+                                  {p.value !== null && (
+                                    <Link href={`/productos/${p.id}/movimientos`} className="btn-suave h-8 px-3 text-xs">
+                                      Ver movimientos
+                                    </Link>
+                                  )}
+                                </div>
+                              </div>
+                            </details>
+                          </li>
+                        ))}
+                      </ul>
                     ))}
-                  </ul>
+                  </div>
                 </section>
               );
             })}
