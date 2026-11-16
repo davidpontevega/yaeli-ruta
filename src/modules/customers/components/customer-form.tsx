@@ -23,28 +23,30 @@ export function CustomerForm({ routes, initial }: { routes: Option[]; initial: C
   return (
     <form action={action} className="tarjeta flex flex-col gap-3">
       <input type="hidden" name="id" value={initial.id} />
-      <label className="flex flex-col gap-1 text-sm font-medium">
-        Nombre
-        <input name="name" required maxLength={80} defaultValue={initial.name} placeholder="Bodega Rosa" className={field} />
-      </label>
-      <label className="flex flex-col gap-1 text-sm font-medium">
-        Teléfono
-        <input name="phone" type="tel" inputMode="numeric" defaultValue={initial.phone} placeholder="987654321" className={field} />
-      </label>
-      <label className="flex flex-col gap-1 text-sm font-medium">
-        Ruta
-        <select name="routeId" required defaultValue={initial.routeId} className={field}>
-          <option value="">Elige…</option>
-          {routes.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="grid gap-3 md:grid-cols-3">
+        <label className="flex flex-col gap-1 text-sm font-medium">
+          Nombre
+          <input name="name" required maxLength={80} defaultValue={initial.name} placeholder="Bodega Rosa" className={field} />
+        </label>
+        <label className="flex flex-col gap-1 text-sm font-medium">
+          Teléfono
+          <input name="phone" type="tel" inputMode="numeric" defaultValue={initial.phone} placeholder="987654321" className={field} />
+        </label>
+        <label className="flex flex-col gap-1 text-sm font-medium">
+          Ruta
+          <select name="routeId" required defaultValue={initial.routeId} className={field}>
+            <option value="">Elige…</option>
+            {routes.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
       <details open={!!(initial.address || initial.reference || initial.creditLimit)}>
         <summary className="cursor-pointer text-sm text-primary">Más opciones</summary>
-        <div className="flex flex-col gap-3 pt-3">
+        <div className="grid gap-3 pt-3 md:grid-cols-3">
           <label className="flex flex-col gap-1 text-sm font-medium">
             Dirección
             <input name="address" maxLength={150} defaultValue={initial.address} className={field} />

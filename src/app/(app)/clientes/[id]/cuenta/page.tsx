@@ -19,9 +19,15 @@ export default async function CustomerAccountPage({ params }: PageProps<"/client
           Editar cliente
         </Link>
       </div>
-      {account.balance > 0 && <PaymentForm customerId={customer.id} />}
-      <AdjustmentForm customerId={customer.id} />
-      <AccountView account={account} creditLimit={customer.creditLimit} />
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="flex flex-col gap-3 lg:sticky lg:top-6 lg:order-2">
+          {account.balance > 0 && <PaymentForm customerId={customer.id} />}
+          <AdjustmentForm customerId={customer.id} />
+        </div>
+        <div className="min-w-0 lg:order-1">
+          <AccountView account={account} creditLimit={customer.creditLimit} />
+        </div>
+      </div>
     </section>
   );
 }

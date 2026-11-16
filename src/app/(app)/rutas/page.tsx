@@ -13,10 +13,12 @@ export default async function RoutesPage() {
           Clientes
         </Link>
       </div>
-      <div className="tarjeta">
-        <RouteForm />
+      <div className="grid items-start gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
+        <div className="tarjeta lg:sticky lg:top-6">
+          <RouteForm />
+        </div>
+        <RouteList routes={routes} />
       </div>
-      <RouteList routes={routes} />
     </section>
   );
 }

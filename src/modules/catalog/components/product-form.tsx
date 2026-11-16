@@ -98,7 +98,7 @@ export function ProductForm({
   });
 
   return (
-    <form action={action} className="flex flex-col gap-4">
+    <form action={action} className="grid items-start gap-4 lg:grid-cols-2">
       <input type="hidden" name="data" value={data} />
       <datalist id="units">
         {UNITS.map((u) => (
@@ -252,7 +252,7 @@ export function ProductForm({
         </button>
       </div>
 
-      <details className="tarjeta">
+      <details className="tarjeta lg:col-span-2">
         <summary className="cursor-pointer text-sm font-medium">Más opciones (no obligatorio)</summary>
         <div className="mt-3 grid grid-cols-2 gap-3">
           <label className="campo">
@@ -277,10 +277,10 @@ export function ProductForm({
         </div>
       </details>
 
-      <p role="alert" className="min-h-5 text-sm text-red-600">
+      <p role="alert" className="min-h-5 text-sm text-red-600 lg:col-span-2">
         {state?.error}
       </p>
-      <div className="flex gap-2">
+      <div className="flex gap-2 lg:col-span-2 lg:justify-end">
         <Link href="/productos" className="btn-secundario flex h-12 flex-1 items-center justify-center">
           Cancelar
         </Link>

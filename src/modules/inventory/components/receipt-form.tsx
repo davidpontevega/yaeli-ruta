@@ -132,7 +132,10 @@ export function ReceiptForm({
   if (!locations.length) return <p className="tarjeta text-muted">Primero agrega un piso del almacén en Catálogo.</p>;
 
   return (
-    <form action={action} className="flex flex-col gap-4">
+    <form
+      action={action}
+      className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:grid-rows-[auto_1fr] lg:items-start lg:[grid-template-areas:'main_top'_'main_bottom']"
+    >
       <input type="hidden" name="data" value={data} />
       <datalist id="suppliers">
         {supplierNames.map((n) => (
@@ -140,7 +143,7 @@ export function ReceiptForm({
         ))}
       </datalist>
 
-      <div className="tarjeta flex flex-col gap-3">
+      <div className="tarjeta flex flex-col gap-3 lg:sticky lg:top-6 lg:[grid-area:top]">
         <div className="grid grid-cols-2 gap-2">
           {(
             [
@@ -176,119 +179,125 @@ export function ReceiptForm({
         )}
       </div>
 
-      {lines.map((l) => {
-        const p = l.product;
-        const pack = p?.packagings.find((x) => x.id === l.packagingId);
-        return (
-          <div key={l.key} className={`tarjeta flex flex-col gap-3 ${l.status && l.status !== "alias" ? "border-amber-300" : ""}`}>
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex flex-col gap-1">
-                <p className="font-semibold leading-tight">{p ? p.name : "Producto no encontrado"}</p>
-                {l.readText && (
-                  <p className="text-xs text-muted">
-                    Leído: {l.readText}{" "}
-                    {l.status && <span className={`rounded px-1.5 py-0.5 font-medium ${STATUS[l.status].className}`}>{STATUS[l.status].label}</span>}
-                  </p>
-                )}
+      <div className="flex min-w-0 flex-col gap-4 lg:[grid-area:main]">
+        {lines.map((l) => {
+          const p = l.product;
+          const pack = p?.packagings.find((x) => x.id === l.packagingId);
+          return (
+            <div key={l.key} className={`tarjeta flex flex-col gap-3 ${l.status && l.status !== "alias" ? "border-amber-300" : ""}`}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex flex-col gap-1">
+                  <p className="font-semibold leading-tight">{p ? p.name : "Producto no encontrado"}</p>
+                  {l.readText && (
+                    <p className="text-xs text-muted">
+                      Leído: {l.readText}{" "}
+                      {l.status && (
+                        <span className={`rounded px-1.5 py-0.5 font-medium ${STATUS[l.status].className}`}>{STATUS[l.status].label}</span>
+                      )}
+                    </p>
+                  )}
+                </div>
+                <button type="button" onClick={() => setLines((s) => s.filter((x) => x.key !== l.key))} className="text-muted" aria-label="Quitar">
+                  ✕
+                </button>
               </div>
-              <button type="button" onClick={() => setLines((s) => s.filter((x) => x.key !== l.key))} className="text-muted" aria-label="Quitar">
-                ✕
-              </button>
-            </div>
-            {(!p || l.status === "suggested") && (
-              <ProductPicker
-                products={products}
-                placeholder={p ? "¿No es este? Busca el correcto" : "Busca el producto"}
-                onPick={(np) => {
-                  const keep = np.packagings.find((x) => x.id === l.packagingId);
-                  const next = keep ?? largest(np);
-                  update(l.key, { product: np, packagingId: next.id, status: undefined, unitCost: l.unitCost || costFor(next.id) });
-                }}
-              />
-            )}
-            {p && (
-              <div className="grid grid-cols-3 gap-2">
+              {(!p || l.status === "suggested") && (
+                <ProductPicker
+                  products={products}
+                  placeholder={p ? "¿No es este? Busca el correcto" : "Busca el producto"}
+                  onPick={(np) => {
+                    const keep = np.packagings.find((x) => x.id === l.packagingId);
+                    const next = keep ?? largest(np);
+                    update(l.key, { product: np, packagingId: next.id, status: undefined, unitCost: l.unitCost || costFor(next.id) });
+                  }}
+                />
+              )}
+              {p && (
+                <div className="grid grid-cols-3 gap-2">
+                  <label className="campo">
+                    Cantidad
+                    <input
+                      type="number"
+                      min={1}
+                      inputMode="numeric"
+                      value={l.quantity}
+                      onChange={(e) => update(l.key, { quantity: e.target.value })}
+                      required
+                    />
+                  </label>
+                  <label className="campo">
+                    De
+                    <select
+                      value={l.packagingId}
+                      onChange={(e) => update(l.key, { packagingId: e.target.value, unitCost: l.readText ? l.unitCost : costFor(e.target.value) })}
+                    >
+                      {p.packagings.map((x) => (
+                        <option key={x.id} value={x.id}>
+                          {x.name}
+                          {x.factor > 1 && ` ×${x.factor}`}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="campo">
+                    Costo c/{pack?.name} S/
+                    <input
+                      inputMode="decimal"
+                      value={l.unitCost}
+                      onChange={(e) => update(l.key, { unitCost: e.target.value })}
+                      required
+                      placeholder="0.00"
+                    />
+                  </label>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-2">
                 <label className="campo">
-                  Cantidad
-                  <input
-                    type="number"
-                    min={1}
-                    inputMode="numeric"
-                    value={l.quantity}
-                    onChange={(e) => update(l.key, { quantity: e.target.value })}
-                    required
-                  />
+                  Vence (si tiene)
+                  <input type="date" value={l.expiresOn} onChange={(e) => update(l.key, { expiresOn: e.target.value })} />
                 </label>
                 <label className="campo">
-                  De
-                  <select
-                    value={l.packagingId}
-                    onChange={(e) => update(l.key, { packagingId: e.target.value, unitCost: l.readText ? l.unitCost : costFor(e.target.value) })}
-                  >
-                    {p.packagings.map((x) => (
+                  Dónde lo guardas
+                  <select value={l.locationId} onChange={(e) => update(l.key, { locationId: e.target.value })}>
+                    {locations.map((x) => (
                       <option key={x.id} value={x.id}>
                         {x.name}
-                        {x.factor > 1 && ` ×${x.factor}`}
                       </option>
                     ))}
                   </select>
                 </label>
-                <label className="campo">
-                  Costo c/{pack?.name} S/
-                  <input
-                    inputMode="decimal"
-                    value={l.unitCost}
-                    onChange={(e) => update(l.key, { unitCost: e.target.value })}
-                    required
-                    placeholder="0.00"
-                  />
-                </label>
               </div>
-            )}
-            <div className="grid grid-cols-2 gap-2">
-              <label className="campo">
-                Vence (si tiene)
-                <input type="date" value={l.expiresOn} onChange={(e) => update(l.key, { expiresOn: e.target.value })} />
-              </label>
-              <label className="campo">
-                Dónde lo guardas
-                <select value={l.locationId} onChange={(e) => update(l.key, { locationId: e.target.value })}>
-                  {locations.map((x) => (
-                    <option key={x.id} value={x.id}>
-                      {x.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              {p && <p className="text-right text-sm text-muted">Subtotal {formatSoles(subtotal(l))}</p>}
             </div>
-            {p && <p className="text-right text-sm text-muted">Subtotal {formatSoles(subtotal(l))}</p>}
-          </div>
-        );
-      })}
+          );
+        })}
 
-      <div className="tarjeta">
-        <ProductPicker products={products} onPick={add} placeholder={lines.length ? "+ Agregar otro producto" : "Busca el producto que llegó"} />
+        <div className="tarjeta">
+          <ProductPicker products={products} onPick={add} placeholder={lines.length ? "+ Agregar otro producto" : "Busca el producto que llegó"} />
+        </div>
       </div>
 
-      <div className="text-right">
-        <p className="font-semibold">Total {formatSoles(total)}</p>
-        {readTotal !== null && (
-          <p className={`text-sm ${readTotal === total ? "text-muted" : "font-medium text-red-600"}`}>
-            Total en el documento {formatSoles(readTotal)}
-            {readTotal !== total && " — no cuadra, revisa"}
-          </p>
-        )}
-      </div>
-      <p role="alert" className="min-h-5 text-sm text-red-600">
-        {missing > 0 ? `Falta elegir el producto en ${missing} línea${missing > 1 ? "s" : ""}` : state?.error}
-      </p>
-      <div className="flex gap-2">
-        <Link href="/stock" className="btn-secundario flex h-12 flex-1 items-center justify-center">
-          Cancelar
-        </Link>
-        <button disabled={pending || !lines.length || missing > 0} className="btn-primario h-12 flex-1">
-          {pending ? "Guardando…" : "Guardar ingreso"}
-        </button>
+      <div className="flex flex-col gap-2 lg:[grid-area:bottom]">
+        <div className="text-right">
+          <p className="font-semibold">Total {formatSoles(total)}</p>
+          {readTotal !== null && (
+            <p className={`text-sm ${readTotal === total ? "text-muted" : "font-medium text-red-600"}`}>
+              Total en el documento {formatSoles(readTotal)}
+              {readTotal !== total && " — no cuadra, revisa"}
+            </p>
+          )}
+        </div>
+        <p role="alert" className="min-h-5 text-sm text-red-600">
+          {missing > 0 ? `Falta elegir el producto en ${missing} línea${missing > 1 ? "s" : ""}` : state?.error}
+        </p>
+        <div className="flex gap-2">
+          <Link href="/stock" className="btn-secundario flex h-12 flex-1 items-center justify-center">
+            Cancelar
+          </Link>
+          <button disabled={pending || !lines.length || missing > 0} className="btn-primario h-12 flex-1">
+            {pending ? "Guardando…" : "Guardar ingreso"}
+          </button>
+        </div>
       </div>
     </form>
   );

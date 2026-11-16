@@ -8,8 +8,14 @@ export default async function UsersPage() {
   return (
     <section className="flex flex-col gap-5">
       <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Usuarios</h1>
-      <UserList users={users} currentUserId={me.id} now={now} />
-      <NewUserForm />
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="min-w-0">
+          <UserList users={users} currentUserId={me.id} now={now} />
+        </div>
+        <div className="lg:sticky lg:top-6">
+          <NewUserForm />
+        </div>
+      </div>
     </section>
   );
 }
