@@ -95,3 +95,18 @@ export function listWithoutInitialDebt(f: { routeId: string }) {
     .orderBy(asc(routes.name), asc(customers.routeOrder));
 }
 export type InitialDebtRow = Awaited<ReturnType<typeof listWithoutInitialDebt>>[number];
+
+/** Sum of every positive customer balance (what customers owe in total). */
+export async function totalReceivable() {
+  const [r] = await db
+    .select({ total: sql`coalesce(sum(b), 0)`.mapWith(Number) })
+    .from(
+      db
+        .select({ b: sql`sum(${accountMovements.amount})`.as("b") })
+        .from(accountMovements)
+        .groupBy(accountMovements.customerId)
+        .as("balances"),
+    )
+    .where(sql`b > 0`);
+  return r.total;
+}

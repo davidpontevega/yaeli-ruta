@@ -22,6 +22,9 @@ export default async function CustomersPage({ searchParams }: PageProps<"/client
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">Clientes</h1>
         <div className="flex items-center gap-3">
+          <Link href="/deudores" className="text-sm text-primary underline">
+            Deudores
+          </Link>
           <Link href="/rutas" className="text-sm text-primary underline">
             Rutas
           </Link>

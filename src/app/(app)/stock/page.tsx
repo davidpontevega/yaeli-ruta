@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/server/auth";
 import { ProductFilters, listCatalogOptions } from "@/modules/catalog";
-import { StockList, listStock } from "@/modules/inventory";
+import { StockList, getAlertCounts, listStock } from "@/modules/inventory";
 
 export default async function StockPage({ searchParams }: PageProps<"/stock">) {
   const user = await requireUser();
@@ -13,17 +13,20 @@ export default async function StockPage({ searchParams }: PageProps<"/stock">) {
     supplierId: typeof sp.proveedor === "string" ? sp.proveedor : "",
     onlyMissing: sp.falta === "1",
   };
-  const [items, { categories, suppliers }] = await Promise.all([listStock({ ...filters, withCost: isOwner }), listCatalogOptions()]);
+  const [items, { categories, suppliers }, alerts] = await Promise.all([
+    listStock({ ...filters, withCost: isOwner }),
+    listCatalogOptions(),
+    getAlertCounts(),
+  ]);
+  const expiring = alerts.expired + alerts.within30;
 
   return (
     <section className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">Stock</h1>
-        {isOwner && (
-          <Link href="/recepciones/nueva" className="btn-primario flex h-10 items-center text-sm">
-            + Recibir
-          </Link>
-        )}
+        <Link href="/vencimientos" className={`btn-secundario flex h-10 items-center text-sm ${expiring ? "border-amber-300 text-amber-800" : ""}`}>
+          Por vencer ({expiring})
+        </Link>
       </div>
       <ProductFilters {...filters} includeInactive={false} categories={categories} suppliers={suppliers} canSeeInactive={false} />
       <StockList items={items} />

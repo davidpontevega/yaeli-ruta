@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/server/auth";
-import { ProductFilters, ProductList, listCatalogOptions, listProducts } from "@/modules/catalog";
+import { ProductFilters, ProductList, listCatalogOptions, listProducts, listPriceReview } from "@/modules/catalog";
 
 export default async function ProductsPage({ searchParams }: PageProps<"/productos">) {
   const user = await requireUser();
@@ -12,7 +12,11 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
     supplierId: typeof sp.proveedor === "string" ? sp.proveedor : "",
     includeInactive: sp.inactivos === "1" && isOwner,
   };
-  const [products, { categories, suppliers }] = await Promise.all([listProducts(filters), listCatalogOptions()]);
+  const [products, { categories, suppliers }, review] = await Promise.all([
+    listProducts(filters),
+    listCatalogOptions(),
+    isOwner ? listPriceReview() : [],
+  ]);
 
   return (
     <section className="flex flex-col gap-4">
@@ -24,6 +28,11 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
           </Link>
         )}
       </div>
+      {review.length > 0 && (
+        <Link href="/precios" className="tarjeta flex items-center justify-between border-sky-300 bg-sky-50 text-sm font-medium text-sky-800">
+          {review.length} precio{review.length === 1 ? "" : "s"} por revisar: subió el costo <span>→</span>
+        </Link>
+      )}
       <ProductFilters {...filters} categories={categories} suppliers={suppliers} canSeeInactive={isOwner} />
       <ProductList products={products} canEdit={isOwner} />
     </section>

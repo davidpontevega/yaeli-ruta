@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatSoles } from "@/lib/money";
 
 type Alert = { href: string; count: number; label: string; tone: string };
 
@@ -7,11 +8,14 @@ export function HomeAlerts({
   within30,
   lowStock,
   priceReview,
+  receivable,
 }: {
   expired: number;
   within30: number;
   lowStock: number;
   priceReview: number | null;
+  /** Céntimos owed by all customers; null = not the owner. */
+  receivable: number | null;
 }) {
   const alerts: Alert[] = [
     { href: "/vencimientos", count: expired, label: "lotes vencidos", tone: "border-red-300 bg-red-50 text-red-800" },
@@ -23,6 +27,15 @@ export function HomeAlerts({
     alerts.push({ href: "/precios", count: priceReview, label: "precios por revisar", tone: "border-sky-300 bg-sky-50 text-sky-800" });
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {receivable !== null && (
+        <Link
+          href="/deudores"
+          className={`col-span-2 rounded-2xl border p-4 sm:col-span-4 ${receivable ? "border-rose-300 bg-rose-50 text-rose-800" : "border-border bg-surface text-muted"}`}
+        >
+          <p className="text-3xl font-bold">{formatSoles(receivable)}</p>
+          <p className="text-sm font-medium">{receivable ? "por cobrar a clientes" : "por cobrar · Nadie debe"}</p>
+        </Link>
+      )}
       {alerts.map((a) => (
         <Link key={a.label} href={a.href} className={`rounded-2xl border p-4 ${a.count ? a.tone : "border-border bg-surface text-muted"}`}>
           <p className="text-3xl font-bold">{a.count}</p>
