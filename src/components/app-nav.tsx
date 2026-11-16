@@ -27,6 +27,7 @@ const SECTIONS: Section[] = [
       { href: "/stock", label: "Stock" },
       { href: "/vencimientos", label: "Vencimientos" },
       { href: "/recepciones/nueva", label: "Recibir", ownerOnly: true },
+      { href: "/compras", label: "Compras", ownerOnly: true },
       { href: "/proveedores", label: "Proveedores", ownerOnly: true },
     ],
   },
@@ -83,7 +84,7 @@ export function SectionNav({ role }: { role: Role }) {
   const { sections, current } = useCurrent(role);
   return (
     <>
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] md:hidden print:hidden">
         <div className="mx-auto flex max-w-3xl">
           {sections.map((s) => (
             <Link
@@ -117,7 +118,7 @@ export function SectionTabs({ role }: { role: Role }) {
   const { path, current } = useCurrent(role);
   if (!current || current.tabs.length < 2) return null;
   return (
-    <nav className="mx-auto flex max-w-3xl gap-1 overflow-x-auto px-4 pt-3 text-sm">
+    <nav className="mx-auto flex max-w-3xl gap-1 overflow-x-auto px-4 pt-3 text-sm print:hidden">
       {current.tabs.map((t) => (
         <Link
           key={t.href}

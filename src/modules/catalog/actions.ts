@@ -111,6 +111,25 @@ export async function addCatalogName(_: FormState, form: FormData): Promise<Form
   return { ok: `${name} agregado` };
 }
 
+/** Max load (kg) of a vehicle; empty clears it. */
+export async function setLocationCapacity(form: FormData) {
+  const me = await requireUser("DUENO");
+  const input = z
+    .object({ id: z.uuid(), capacityKg: z.union([z.literal(""), z.coerce.number().int().min(1).max(100_000)]) })
+    .safeParse(Object.fromEntries(form));
+  if (!input.success) return; // the input enforces the same limits; only a tampered form gets here
+  const capacityKg = input.data.capacityKg === "" ? null : input.data.capacityKg;
+  await db.transaction(async (tx) => {
+    const [row] = await tx
+      .update(locations)
+      .set({ capacityKg })
+      .where(and(eq(locations.id, input.data.id), eq(locations.type, "VEHICULO")))
+      .returning({ id: locations.id });
+    if (row) await audit(tx, { actorId: me.id, action: "location.capacity", entity: "location", entityId: row.id, details: { capacityKg } });
+  });
+  revalidatePath("/catalogo");
+}
+
 /** Sets the checked packagings to their suggested price. The suggestion is recomputed here; the client only sends ids. */
 export async function applyPrices(form: FormData) {
   const me = await requireUser("DUENO");

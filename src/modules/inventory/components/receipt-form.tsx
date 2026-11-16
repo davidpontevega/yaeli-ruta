@@ -44,6 +44,7 @@ export function ReceiptForm({
   aliases,
   aiEnabled,
   supplierNames,
+  initial,
 }: {
   products: ReceivableProduct[];
   locations: Option[];
@@ -54,13 +55,25 @@ export function ReceiptForm({
   aiEnabled: boolean;
   /** Known suppliers, suggested while typing. */
   supplierNames: string[];
+  /** Prefill from a purchase list (spec 013): costs already include each line's freight. */
+  initial?: { purchaseId: string; supplier: string; lines: { packagingId: string; quantity: number; unitCost: number }[] };
 }) {
   const [state, action, pending] = useActionState(receiveGoods, undefined);
   const [type, setType] = useState<ReceiptType>("COMPRA");
-  const [supplier, setSupplier] = useState("");
+  const [supplier, setSupplier] = useState(initial?.supplier ?? "");
   const [document, setDocument] = useState("");
   const [readTotal, setReadTotal] = useState<number | null>(null);
-  const [lines, setLines] = useState<Line[]>([]);
+  const [lines, setLines] = useState<Line[]>(() =>
+    (initial?.lines ?? []).map((l) => ({
+      key: `l${seq++}`,
+      product: products.find((p) => p.packagings.some((x) => x.id === l.packagingId)) ?? null,
+      packagingId: l.packagingId,
+      quantity: String(l.quantity),
+      unitCost: toSolesInput(l.unitCost),
+      expiresOn: "",
+      locationId: locations[0]?.id ?? "",
+    })),
+  );
 
   const costFor = (packagingId: string) => (lastCosts[packagingId] ? toSolesInput(lastCosts[packagingId]) : "");
   const lastLocation = (s: Line[]) => s.at(-1)?.locationId ?? locations[0]?.id ?? "";
@@ -103,6 +116,7 @@ export function ReceiptForm({
   const missing = lines.filter((l) => !l.product).length;
   const data = JSON.stringify({
     type,
+    purchaseId: initial?.purchaseId,
     supplier: type === "COMPRA" ? supplier : "",
     document: type === "COMPRA" ? document : "",
     items: lines.map(({ packagingId, quantity, unitCost, expiresOn, locationId, readText }) => ({

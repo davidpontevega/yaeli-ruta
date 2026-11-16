@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { CatalogSummary as Summary } from "../queries";
 import { AddNameForm } from "./add-name-form";
+import { setLocationCapacity } from "../actions";
 
 export function CatalogSummary({ summary }: { summary: Summary }) {
   const blocks = [
@@ -28,6 +29,27 @@ export function CatalogSummary({ summary }: { summary: Summary }) {
               </li>
             ))}
           </ul>
+          {b.kind === "location" &&
+            summary.locations
+              .filter((l) => l.type === "VEHICULO")
+              .map((l) => (
+                <form key={l.id} action={setLocationCapacity} className="flex flex-wrap items-center gap-2 text-sm">
+                  <input type="hidden" name="id" value={l.id} />
+                  <span className="min-w-0 flex-1">{l.name}: carga máx. kg</span>
+                  <input
+                    name="capacityKg"
+                    type="number"
+                    min={1}
+                    max={100000}
+                    inputMode="numeric"
+                    defaultValue={l.capacityKg ?? ""}
+                    placeholder="Sin dato"
+                    aria-label={`Carga máxima de ${l.name} en kg`}
+                    className="h-10 w-28 rounded-xl border border-border bg-surface px-3"
+                  />
+                  <button className="btn-secundario h-10 text-sm">Guardar</button>
+                </form>
+              ))}
           <AddNameForm kind={b.kind} />
         </div>
       ))}

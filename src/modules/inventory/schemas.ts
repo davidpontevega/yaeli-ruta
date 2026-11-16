@@ -10,6 +10,7 @@ const optionalText = z
 
 export const receiptSchema = z.object({
   type: z.enum(receiptTypeEnum.enumValues),
+  purchaseId: z.uuid().optional(), // received from a purchase list (spec 013)
   supplier: optionalText,
   document: optionalText,
   items: z

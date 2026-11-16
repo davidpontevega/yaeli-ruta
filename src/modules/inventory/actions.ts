@@ -9,6 +9,7 @@ import {
   lots,
   packagings,
   products,
+  purchases,
   readAliases,
   receiptItems,
   receipts,
@@ -23,6 +24,9 @@ import { receiptSchema, supplierPhoneSchema } from "./schemas";
 import { toBaseUnits, weightedAverageCost } from "./stock-math";
 import { normalizeText } from "./document-read";
 
+/** Thrown inside the receipt transaction to roll it back with a message for the owner. */
+class ReceiptError extends Error {}
+
 /** Purchase or opening balance: creates/merges lots, adds stock, logs movements and updates product cost. One tx. */
 export async function receiveGoods(_: FormState, form: FormData): Promise<FormState> {
   const me = await requireUser("DUENO");
@@ -35,6 +39,7 @@ export async function receiveGoods(_: FormState, form: FormData): Promise<FormSt
   const input = receiptSchema.safeParse(raw);
   if (!input.success) return { error: input.error.issues[0].message };
   const r = input.data;
+  if (r.purchaseId && r.type !== "COMPRA") return { error: "Una compra se recibe como «Llegó mercadería»" };
 
   const packs = await db
     .select({
@@ -73,121 +78,138 @@ export async function receiveGoods(_: FormState, form: FormData): Promise<FormSt
 
   const supplierName = r.type === "COMPRA" && r.supplier ? r.supplier.replace(/\s+/g, " ").trim() : null;
 
-  await db.transaction(async (tx) => {
-    // Find the supplier ignoring case and extra spaces; create it the first time it's named.
-    let supplierId: string | null = null;
-    if (supplierName) {
-      const [found] = await tx
-        .select({ id: suppliers.id })
-        .from(suppliers)
-        .where(sql`lower(${suppliers.name}) = lower(${supplierName})`)
-        .limit(1);
-      supplierId =
-        found?.id ??
-        (
-          await tx
-            .insert(suppliers)
-            .values({ name: supplierName })
-            .onConflictDoUpdate({ target: suppliers.name, set: { name: sql`excluded.nombre` } })
-            .returning({ id: suppliers.id })
-        )[0].id;
-    }
+  try {
+    await db.transaction(async (tx) => {
+      // A purchase list is received once: claim it first (it stays BORRADOR if anything below fails).
+      if (r.purchaseId) {
+        const [claimed] = await tx
+          .update(purchases)
+          .set({ status: "RECIBIDA" })
+          .where(and(eq(purchases.id, r.purchaseId), eq(purchases.status, "BORRADOR")))
+          .returning({ id: purchases.id });
+        if (!claimed) throw new ReceiptError("La compra ya fue recibida o anulada");
+      }
 
-    const [{ id: receiptId }] = await tx
-      .insert(receipts)
-      .values({
-        type: r.type,
-        supplier: supplierName,
-        supplierId,
-        document: r.document,
-        total,
-        userId: me.id,
-      })
-      .returning({ id: receipts.id });
+      // Find the supplier ignoring case and extra spaces; create it the first time it's named.
+      let supplierId: string | null = null;
+      if (supplierName) {
+        const [found] = await tx
+          .select({ id: suppliers.id })
+          .from(suppliers)
+          .where(sql`lower(${suppliers.name}) = lower(${supplierName})`)
+          .limit(1);
+        supplierId =
+          found?.id ??
+          (
+            await tx
+              .insert(suppliers)
+              .values({ name: supplierName })
+              .onConflictDoUpdate({ target: suppliers.name, set: { name: sql`excluded.nombre` } })
+              .returning({ id: suppliers.id })
+          )[0].id;
+      }
 
-    for (const item of items) {
-      const pack = packById.get(item.packagingId)!;
-      const qty = toBaseUnits(item.quantity, pack.factor);
-      const unitCost = item.unitCost / pack.factor;
-
-      // Lock the product so two receipts can't compute the average from the same old stock.
-      const [prod] = await tx.select({ averageCost: products.averageCost }).from(products).where(eq(products.id, pack.productId)).for("update");
-      const [{ onHand }] = await tx
-        .select({
-          onHand: sql<number>`coalesce(sum(${stockLevels.quantity}), 0)::int`,
+      const [{ id: receiptId }] = await tx
+        .insert(receipts)
+        .values({
+          type: r.type,
+          supplier: supplierName,
+          supplierId,
+          document: r.document,
+          total,
+          userId: me.id,
         })
-        .from(stockLevels)
-        .innerJoin(lots, eq(lots.id, stockLevels.lotId))
-        .where(eq(lots.productId, pack.productId));
+        .returning({ id: receipts.id });
 
-      const [{ id: lotId }] = await tx
-        .insert(lots)
-        .values({ productId: pack.productId, expiresOn: item.expiresOn })
-        .onConflictDoUpdate({
-          target: [lots.productId, lots.expiresOn],
-          set: { productId: sql`excluded.producto_id` },
-        })
-        .returning({ id: lots.id });
+      for (const item of items) {
+        const pack = packById.get(item.packagingId)!;
+        const qty = toBaseUnits(item.quantity, pack.factor);
+        const unitCost = item.unitCost / pack.factor;
 
-      await tx
-        .insert(stockLevels)
-        .values({ locationId: item.locationId, lotId, quantity: qty })
-        .onConflictDoUpdate({
-          target: [stockLevels.locationId, stockLevels.lotId],
-          set: { quantity: sql`${stockLevels.quantity} + excluded.cantidad` },
+        // Lock the product so two receipts can't compute the average from the same old stock.
+        const [prod] = await tx.select({ averageCost: products.averageCost }).from(products).where(eq(products.id, pack.productId)).for("update");
+        const [{ onHand }] = await tx
+          .select({
+            onHand: sql<number>`coalesce(sum(${stockLevels.quantity}), 0)::int`,
+          })
+          .from(stockLevels)
+          .innerJoin(lots, eq(lots.id, stockLevels.lotId))
+          .where(eq(lots.productId, pack.productId));
+
+        const [{ id: lotId }] = await tx
+          .insert(lots)
+          .values({ productId: pack.productId, expiresOn: item.expiresOn })
+          .onConflictDoUpdate({
+            target: [lots.productId, lots.expiresOn],
+            set: { productId: sql`excluded.producto_id` },
+          })
+          .returning({ id: lots.id });
+
+        await tx
+          .insert(stockLevels)
+          .values({ locationId: item.locationId, lotId, quantity: qty })
+          .onConflictDoUpdate({
+            target: [stockLevels.locationId, stockLevels.lotId],
+            set: { quantity: sql`${stockLevels.quantity} + excluded.cantidad` },
+          });
+
+        await tx.insert(stockMovements).values({
+          type: movementType,
+          lotId,
+          locationId: item.locationId,
+          quantity: qty,
+          unitCost: Math.round(unitCost),
+          documentId: receiptId,
+          userId: me.id,
         });
+        await tx.insert(receiptItems).values({
+          receiptId,
+          packagingId: item.packagingId,
+          lotId,
+          locationId: item.locationId,
+          quantity: item.quantity,
+          cost: item.unitCost,
+        });
+        await tx
+          .update(products)
+          .set({
+            averageCost: weightedAverageCost(onHand, prod.averageCost, qty, unitCost),
+            lastCost: Math.round(unitCost),
+          })
+          .where(eq(products.id, pack.productId));
+      }
 
-      await tx.insert(stockMovements).values({
-        type: movementType,
-        lotId,
-        locationId: item.locationId,
-        quantity: qty,
-        unitCost: Math.round(unitCost),
-        documentId: receiptId,
-        userId: me.id,
+      // Products without a main supplier take this purchase's supplier (never overwritten).
+      if (supplierId)
+        await tx
+          .update(products)
+          .set({ supplierId })
+          .where(and(inArray(products.id, [...new Set(items.map((i) => packById.get(i.packagingId)!.productId))]), isNull(products.supplierId)));
+
+      // Learn how the supplier writes each product, so the next reading comes out "aprendido".
+      for (const item of items) {
+        const text = item.readText && normalizeText(item.readText);
+        if (!text) continue;
+        await tx
+          .insert(readAliases)
+          .values({ text, packagingId: item.packagingId })
+          .onConflictDoUpdate({ target: readAliases.text, set: { packagingId: item.packagingId, updatedAt: new Date() } });
+      }
+
+      await audit(tx, {
+        actorId: me.id,
+        action: r.type === "COMPRA" ? "receipt.create" : "opening-balance.create",
+        entity: "receipt",
+        entityId: receiptId,
+        details: { items: r.items.length, total, purchaseId: r.purchaseId },
       });
-      await tx.insert(receiptItems).values({
-        receiptId,
-        packagingId: item.packagingId,
-        lotId,
-        locationId: item.locationId,
-        quantity: item.quantity,
-        cost: item.unitCost,
-      });
-      await tx
-        .update(products)
-        .set({
-          averageCost: weightedAverageCost(onHand, prod.averageCost, qty, unitCost),
-          lastCost: Math.round(unitCost),
-        })
-        .where(eq(products.id, pack.productId));
-    }
-
-    // Products without a main supplier take this purchase's supplier (never overwritten).
-    if (supplierId)
-      await tx
-        .update(products)
-        .set({ supplierId })
-        .where(and(inArray(products.id, [...new Set(items.map((i) => packById.get(i.packagingId)!.productId))]), isNull(products.supplierId)));
-
-    // Learn how the supplier writes each product, so the next reading comes out "aprendido".
-    for (const item of items) {
-      const text = item.readText && normalizeText(item.readText);
-      if (!text) continue;
-      await tx
-        .insert(readAliases)
-        .values({ text, packagingId: item.packagingId })
-        .onConflictDoUpdate({ target: readAliases.text, set: { packagingId: item.packagingId, updatedAt: new Date() } });
-    }
-
-    await audit(tx, {
-      actorId: me.id,
-      action: r.type === "COMPRA" ? "receipt.create" : "opening-balance.create",
-      entity: "receipt",
-      entityId: receiptId,
-      details: { items: r.items.length, total },
+      if (r.purchaseId) await tx.update(purchases).set({ receiptId }).where(eq(purchases.id, r.purchaseId));
     });
-  });
+  } catch (e) {
+    if (e instanceof ReceiptError) return { error: e.message };
+    throw e;
+  }
+  revalidatePath("/compras");
 
   revalidatePath("/stock");
   // A higher cost can leave sale prices below the margin: send the owner to review them.

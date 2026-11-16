@@ -29,6 +29,7 @@ export async function listProducts(f: { q: string; categoryId: string; includeIn
       minStock: products.minStock,
       category: categories.name,
       brand: brands.name,
+      supplierId: products.supplierId,
       supplierName: suppliers.name,
     })
     .from(products)

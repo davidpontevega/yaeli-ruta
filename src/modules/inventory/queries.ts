@@ -85,10 +85,11 @@ export async function listStock(f: { q: string; categoryId: string; supplierId: 
       sku: p.sku,
       name: p.name,
       category: p.category,
+      supplierId: p.supplierId,
       supplierName: p.supplierName,
       minStock: p.minStock,
       status: stockStatus(total, p.minStock),
-      packagings: p.packagings.map((x) => ({ name: x.name, factor: x.factor })),
+      packagings: p.packagings.map((x) => ({ id: x.id, name: x.name, factor: x.factor })),
       total,
       value: f.withCost ? total * (mine[0]?.averageCost ?? 0) : null,
       lots: mine.map(({ location, expiresOn, quantity }) => ({

@@ -79,6 +79,7 @@ export const locations = pgTable("ubicaciones", {
   name: text("nombre").notNull().unique(),
   type: locationTypeEnum("tipo").notNull(),
   active: boolean("activo").notNull().default(true),
+  capacityKg: integer("capacidad_kg"), // vehicles: max load
 });
 
 export const categories = pgTable("categorias", {
@@ -350,5 +351,47 @@ export const accountMovements = pgTable(
       .on(t.customerId)
       .where(sql`${t.type} = 'SALDO_INICIAL'`),
     check("monto_no_cero", sql`${t.amount} <> 0`),
+  ],
+);
+
+// ── Purchases ───────────────────────────────────────────────────────────────
+
+export const purchaseTypeEnum = pgEnum("tipo_compra", ["ENVIA_PROVEEDOR", "RECOJO"]);
+export type PurchaseType = (typeof purchaseTypeEnum.enumValues)[number];
+export const purchaseStatusEnum = pgEnum("estado_compra", ["BORRADOR", "RECIBIDA", "ANULADA"]);
+
+// The owner's purchase list (the notebook sheet): sent to a supplier, or taken on his own truck.
+export const purchases = pgTable("compras", {
+  id: id(),
+  number: serial("numero").notNull().unique(),
+  type: purchaseTypeEnum("tipo").notNull(),
+  supplierId: uuid("proveedor_id").references(() => suppliers.id),
+  vehicleId: uuid("vehiculo_id").references(() => locations.id),
+  status: purchaseStatusEnum("estado").notNull().default("BORRADOR"),
+  receiptId: uuid("recepcion_id").references(() => receipts.id),
+  userId: uuid("usuario_id")
+    .notNull()
+    .references(() => users.id),
+  createdAt: createdAt(),
+});
+
+export const purchaseItems = pgTable(
+  "compra_items",
+  {
+    id: id(),
+    purchaseId: uuid("compra_id")
+      .notNull()
+      .references(() => purchases.id),
+    packagingId: uuid("presentacion_id")
+      .notNull()
+      .references(() => packagings.id),
+    quantity: integer("cantidad").notNull(), // in packagings
+    cost: integer("costo").notNull(), // céntimos per packaging
+    freight: integer("flete").notNull().default(0), // céntimos for the whole line
+  },
+  (t) => [
+    unique("compra_items_presentacion_uq").on(t.purchaseId, t.packagingId),
+    check("compra_cantidad_positiva", sql`${t.quantity} > 0`),
+    check("compra_costo_no_negativo", sql`${t.cost} >= 0 and ${t.freight} >= 0`),
   ],
 );
