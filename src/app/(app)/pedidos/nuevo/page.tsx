@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { requireUser } from "@/server/auth";
+import { BackLink } from "@/components/ui/back-link";
 import { listProducts } from "@/modules/catalog";
 import { getCustomer, listCustomers, listRoutes, nextVisitDate } from "@/modules/customers";
 import { todayInLima } from "@/modules/inventory";
@@ -15,6 +16,7 @@ export default async function NewOrderPage({ searchParams }: PageProps<"/pedidos
     const customers = await listCustomers({ q: "", routeId: "", includeInactive: false });
     return (
       <section className="flex flex-col gap-4">
+        <BackLink href="/pedidos" label="Pedidos" />
         <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Nuevo pedido</h1>
         <CustomerPicker customers={customers} />
       </section>
@@ -32,6 +34,7 @@ export default async function NewOrderPage({ searchParams }: PageProps<"/pedidos
   const route = routes.find((r) => r.id === customer.routeId)!;
   return (
     <section className="flex flex-col gap-4">
+      <BackLink href="/pedidos" label="Pedidos" />
       <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Nuevo pedido</h1>
       <OrderForm
         key={customer.id}

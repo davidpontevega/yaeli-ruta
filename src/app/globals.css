@@ -44,6 +44,23 @@ body {
   .tarjeta {
     @apply rounded-2xl border border-border bg-surface p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)];
   }
+  /* Soft teal button for secondary actions that still need to stand out (Deudores, Rutas…). */
+  .btn-suave {
+    @apply inline-flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 font-semibold text-teal-800 transition hover:bg-teal-100 active:scale-[0.98];
+  }
+  /* Filter bar: one white card, fields with room to breathe, toggles that light up when on. */
+  .filtros {
+    @apply flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)];
+  }
+  .filtro {
+    @apply h-11 min-w-0 flex-1 basis-44 rounded-xl border border-border bg-slate-50 px-3 text-sm outline-none focus:border-primary focus:bg-surface;
+  }
+  .filtro-check {
+    @apply flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-border px-3.5 text-sm font-medium text-slate-700 select-none has-[:checked]:border-teal-300 has-[:checked]:bg-teal-50 has-[:checked]:text-teal-800;
+  }
+  .filtro-check input {
+    @apply accent-teal-700;
+  }
   /* A list as one white card with rows divided by thin lines (design: Stock por proveedor). */
   .lista {
     @apply divide-y divide-slate-100 overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_1px_2px_rgba(15,23,42,0.04)];

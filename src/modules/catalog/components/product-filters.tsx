@@ -21,14 +21,9 @@ export function ProductFilters({
   canSeeInactive: boolean;
 }) {
   return (
-    <form className="flex flex-col gap-2 sm:flex-row">
-      <input
-        name="q"
-        defaultValue={q}
-        placeholder="Buscar nombre, código o escanear"
-        className="h-12 flex-1 rounded-xl border border-border bg-surface px-3"
-      />
-      <select name="cat" defaultValue={categoryId} className="h-12 rounded-xl border border-border bg-surface px-3">
+    <form className="filtros">
+      <input name="q" defaultValue={q} placeholder="Buscar nombre, código o escanear" className="filtro" />
+      <select name="cat" defaultValue={categoryId} className="filtro">
         <option value="">Todas las categorías</option>
         {categories.map((c) => (
           <option key={c.id} value={c.id}>
@@ -36,7 +31,7 @@ export function ProductFilters({
           </option>
         ))}
       </select>
-      <select name="proveedor" defaultValue={supplierId} aria-label="Proveedor" className="h-12 rounded-xl border border-border bg-surface px-3">
+      <select name="proveedor" defaultValue={supplierId} aria-label="Proveedor" className="filtro">
         <option value="">Todos los proveedores</option>
         {suppliers.map((s) => (
           <option key={s.id} value={s.id}>
@@ -47,11 +42,11 @@ export function ProductFilters({
       </select>
       {onlyMissing && <input type="hidden" name="falta" value="1" />}
       {canSeeInactive && (
-        <label className="flex items-center gap-2 text-sm">
+        <label className="filtro-check">
           <input type="checkbox" name="inactivos" value="1" defaultChecked={includeInactive} /> Inactivos
         </label>
       )}
-      <button className="btn-secundario h-12">Buscar</button>
+      <button className="btn-primario h-11 px-5">Buscar</button>
     </form>
   );
 }

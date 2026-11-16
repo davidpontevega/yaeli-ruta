@@ -1,4 +1,5 @@
 import { requireUser } from "@/server/auth";
+import { BackLink } from "@/components/ui/back-link";
 import { PriceReview, listPriceReview } from "@/modules/catalog";
 
 export default async function PricesPage({ searchParams }: PageProps<"/precios">) {
@@ -8,6 +9,7 @@ export default async function PricesPage({ searchParams }: PageProps<"/precios">
 
   return (
     <section className="flex flex-col gap-4">
+      <BackLink href="/productos" label="Productos" />
       <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Precios por revisar</h1>
       {raised > 0 && (
         <p className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">

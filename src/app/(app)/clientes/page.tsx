@@ -21,11 +21,11 @@ export default async function CustomersPage({ searchParams }: PageProps<"/client
     <section className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Clientes</h1>
-        <div className="flex items-center gap-3">
-          <Link href="/deudores" className="text-sm text-primary underline">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href="/deudores" className="btn-suave h-10 text-sm">
             Deudores
           </Link>
-          <Link href="/rutas" className="text-sm text-primary underline">
+          <Link href="/rutas" className="btn-suave h-10 text-sm">
             Rutas
           </Link>
           {routes.length > 0 && (

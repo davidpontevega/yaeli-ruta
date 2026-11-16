@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/server/auth";
+import { BackLink } from "@/components/ui/back-link";
 import { getCustomer } from "@/modules/customers";
 import { AccountView, AdjustmentForm, PaymentForm, getAccount } from "@/modules/accounts";
 
@@ -13,6 +14,7 @@ export default async function CustomerAccountPage({ params }: PageProps<"/client
   if (!customer) notFound();
   return (
     <section className="flex flex-col gap-4">
+      <BackLink href="/clientes" label="Clientes" />
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">{customer.name}</h1>
         <Link href={`/clientes/${customer.id}`} className="text-sm text-primary underline">

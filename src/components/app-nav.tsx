@@ -170,8 +170,7 @@ export function SectionTabs({ role }: { role: Role }) {
 }
 
 /**
- * Desktop (md+): fixed left menu with every section and its tabs, a "Nuevo pedido" shortcut for the owner,
- * and `footer` (who is signed in + Salir, rendered by the server layout).
+ * Desktop (md+): fixed left menu with every section and its tabs, and `footer` (who is signed in + Salir, rendered by the server layout).
  */
 export function SideNav({ role, brand, footer }: { role: Role; brand: string; footer: React.ReactNode }) {
   const { sections, current } = useCurrent(role);
@@ -183,11 +182,6 @@ export function SideNav({ role, brand, footer }: { role: Role; brand: string; fo
         </span>
         <span className="text-base font-bold">{brand}</span>
       </Link>
-      {role === "DUENO" && (
-        <Link href="/pedidos/nuevo" className="btn-primario flex h-10 items-center justify-center gap-2 text-sm">
-          <Icon d={PLUS} /> Nuevo pedido
-        </Link>
-      )}
       <nav aria-label="Secciones" className="flex flex-col gap-4">
         {sections.map((s) =>
           s.tabs.length === 1 && s.tabs[0].href === "/" ? (

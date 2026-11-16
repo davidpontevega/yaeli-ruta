@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { requireUser } from "@/server/auth";
+import { BackLink } from "@/components/ui/back-link";
 import { getPurchase, landedUnitCost } from "@/modules/purchases";
 import { isDocumentReaderEnabled } from "@/server/ai/document-reader";
 import { listProducts } from "@/modules/catalog";
@@ -18,6 +19,7 @@ export default async function NewReceiptPage({ searchParams }: PageProps<"/recep
   ]);
   return (
     <section className="flex flex-col gap-4">
+      <BackLink href="/compras" label="Compras" />
       <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Recibir mercadería{purchase && ` · compra #${purchase.number}`}</h1>
       {purchase && purchase.status !== "BORRADOR" && (
         <p className="tarjeta text-sm text-amber-700">

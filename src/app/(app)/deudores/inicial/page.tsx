@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { requireUser } from "@/server/auth";
+import { BackLink } from "@/components/ui/back-link";
 import { listRoutes } from "@/modules/customers";
 import { todayInLima } from "@/modules/inventory";
 import { InitialDebtForm, RouteFilter, listWithoutInitialDebt } from "@/modules/accounts";
@@ -11,6 +12,7 @@ export default async function InitialDebtPage({ searchParams }: PageProps<"/deud
   const [customers, routes] = await Promise.all([listWithoutInitialDebt({ routeId }), listRoutes()]);
   return (
     <section className="flex flex-col gap-4">
+      <BackLink href="/deudores" label="Deudores" />
       <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Deuda inicial</h1>
       <p className="text-sm text-muted">
         Pasa lo que cada cliente debe según el cuaderno. Deja vacío a quien no debe. Se carga una sola vez por cliente.

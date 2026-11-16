@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/server/auth";
+import { BackLink } from "@/components/ui/back-link";
 import { listCatalogOptions, listProducts } from "@/modules/catalog";
 import { PurchaseForm, defaultCosts, getPurchase, listMissingBySupplier, listVehicles } from "@/modules/purchases";
 
@@ -23,6 +24,7 @@ export default async function PurchasePage({ params }: PageProps<"/compras/[id]"
   ]);
   return (
     <section className="flex flex-col gap-4">
+      <BackLink href="/compras" label="Compras" />
       <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">
         Compra #{purchase.number}
         {STATUS[purchase.status]}

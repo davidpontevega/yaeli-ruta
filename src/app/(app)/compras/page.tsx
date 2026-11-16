@@ -14,10 +14,10 @@ export default async function PurchasesPage() {
         </Link>
       </div>
       <div className="flex flex-wrap gap-2 text-sm">
-        <Link href="/recepciones/nueva" className="btn-secundario flex h-10 items-center">
+        <Link href="/recepciones/nueva" className="btn-suave h-10">
           Recibir sin lista
         </Link>
-        <Link href="/proveedores" className="btn-secundario flex h-10 items-center">
+        <Link href="/proveedores" className="btn-suave h-10">
           Proveedores
         </Link>
       </div>

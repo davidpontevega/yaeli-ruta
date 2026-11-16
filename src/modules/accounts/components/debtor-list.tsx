@@ -5,8 +5,8 @@ import type { Debtor } from "../queries";
 /** GET form: ?ruta= */
 export function RouteFilter({ routeId, routes }: { routeId: string; routes: { id: string; name: string }[] }) {
   return (
-    <form className="flex gap-2">
-      <select name="ruta" defaultValue={routeId} aria-label="Ruta" className="h-12 flex-1 rounded-xl border border-border bg-surface px-3">
+    <form className="filtros">
+      <select name="ruta" defaultValue={routeId} aria-label="Ruta" className="filtro">
         <option value="">Todas las rutas</option>
         {routes.map((r) => (
           <option key={r.id} value={r.id}>
@@ -14,7 +14,7 @@ export function RouteFilter({ routeId, routes }: { routeId: string; routes: { id
           </option>
         ))}
       </select>
-      <button className="btn-secundario h-12">Ver</button>
+      <button className="btn-primario h-11 px-5">Ver</button>
     </form>
   );
 }

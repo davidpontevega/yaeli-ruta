@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/server/auth";
+import { BackLink } from "@/components/ui/back-link";
 import { getProductWithPackagings } from "@/modules/catalog";
 import { MovementList, listMovements } from "@/modules/inventory";
 
@@ -13,6 +14,7 @@ export default async function MovementsPage({ params }: PageProps<"/productos/[i
 
   return (
     <section className="flex flex-col gap-4">
+      <BackLink href="/productos" label="Productos" />
       <div>
         <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Movimientos</h1>
         <p className="text-muted">

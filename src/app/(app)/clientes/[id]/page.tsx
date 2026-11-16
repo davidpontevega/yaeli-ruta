@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/server/auth";
+import { BackLink } from "@/components/ui/back-link";
 import { toSolesInput } from "@/lib/money";
 import { CustomerForm, getCustomer, listRoutes } from "@/modules/customers";
 
@@ -12,6 +13,7 @@ export default async function EditCustomerPage({ params }: PageProps<"/clientes/
   if (!c) notFound();
   return (
     <section className="flex flex-col gap-4">
+      <BackLink href="/clientes" label="Clientes" />
       <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Editar cliente</h1>
       <CustomerForm
         routes={routes}

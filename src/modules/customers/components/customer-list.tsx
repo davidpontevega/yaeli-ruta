@@ -16,14 +16,9 @@ export function CustomerFilters({
   routes: RouteRow[];
 }) {
   return (
-    <form className="flex flex-col gap-2 sm:flex-row">
-      <input
-        name="q"
-        defaultValue={q}
-        placeholder="Buscar nombre o teléfono"
-        className="h-12 flex-1 rounded-xl border border-border bg-surface px-3"
-      />
-      <select name="ruta" defaultValue={routeId} className="h-12 rounded-xl border border-border bg-surface px-3">
+    <form className="filtros">
+      <input name="q" defaultValue={q} placeholder="Buscar nombre o teléfono" className="filtro" />
+      <select name="ruta" defaultValue={routeId} className="filtro">
         <option value="">Todas las rutas</option>
         {routes.map((r) => (
           <option key={r.id} value={r.id}>
@@ -31,10 +26,10 @@ export function CustomerFilters({
           </option>
         ))}
       </select>
-      <label className="flex items-center gap-2 text-sm">
+      <label className="filtro-check">
         <input type="checkbox" name="inactivos" value="1" defaultChecked={includeInactive} /> Ver inactivos
       </label>
-      <button className="btn-secundario h-12">Buscar</button>
+      <button className="btn-primario h-11 px-5">Buscar</button>
     </form>
   );
 }

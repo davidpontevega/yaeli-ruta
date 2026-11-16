@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/server/auth";
+import { BackLink } from "@/components/ui/back-link";
 import { toSolesInput } from "@/lib/money";
 import { toKgInput } from "@/lib/weight";
 import { ProductForm, getProductWithPackagings, listCatalogOptions } from "@/modules/catalog";
@@ -11,11 +12,16 @@ export default async function EditProductPage({ params }: PageProps<"/productos/
   const id = z.uuid().safeParse((await params).id);
   if (!id.success) notFound();
 
-  const [p, { categories, brands, suppliers }, lastCosts] = await Promise.all([getProductWithPackagings(id.data), listCatalogOptions(), getLastCosts()]);
+  const [p, { categories, brands, suppliers }, lastCosts] = await Promise.all([
+    getProductWithPackagings(id.data),
+    listCatalogOptions(),
+    getLastCosts(),
+  ]);
   if (!p) notFound();
 
   return (
     <section className="flex flex-col gap-4">
+      <BackLink href="/productos" label="Productos" />
       <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Editar producto</h1>
       <ProductForm
         categories={categories}
