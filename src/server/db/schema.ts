@@ -304,3 +304,37 @@ export const orderItems = pgTable(
   },
   (t) => [unique("pedido_items_presentacion_uq").on(t.orderId, t.packagingId), check("pedido_cantidad_positiva", sql`${t.quantity} > 0`)],
 );
+
+// ── Customer accounts ───────────────────────────────────────────────────────
+
+export const accountMovementTypeEnum = pgEnum("tipo_movimiento_cuenta", ["SALDO_INICIAL", "CARGO", "ABONO", "AJUSTE"]);
+export type AccountMovementType = (typeof accountMovementTypeEnum.enumValues)[number];
+export const paymentMethodEnum = pgEnum("medio_pago", ["EFECTIVO", "YAPE", "PLIN", "TRANSFERENCIA"]);
+export type PaymentMethod = (typeof paymentMethodEnum.enumValues)[number];
+
+// Append-only, like stock movements. Balance = sum(amount): + raises the debt, − pays it.
+export const accountMovements = pgTable(
+  "movimientos_cuenta",
+  {
+    id: id(),
+    customerId: uuid("cliente_id")
+      .notNull()
+      .references(() => customers.id),
+    type: accountMovementTypeEnum("tipo").notNull(),
+    amount: integer("monto").notNull(), // céntimos, signed
+    date: date("fecha").notNull(),
+    method: paymentMethodEnum("medio"), // ABONO only
+    note: text("nota"),
+    userId: uuid("usuario_id")
+      .notNull()
+      .references(() => users.id),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("movimientos_cuenta_cliente_idx").on(t.customerId, t.date),
+    uniqueIndex("movimientos_cuenta_saldo_inicial_uq")
+      .on(t.customerId)
+      .where(sql`${t.type} = 'SALDO_INICIAL'`),
+    check("monto_no_cero", sql`${t.amount} <> 0`),
+  ],
+);

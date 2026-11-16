@@ -12,7 +12,7 @@ export {
   warehouseStockByProduct,
 } from "./queries";
 export { parseReadResponse, fileType } from "./document-read";
-export { todayInLima, addDays } from "./expiry";
+export { todayInLima, addDays, daysUntil } from "./expiry";
 export { reserveReadSlot, recordReadResult } from "./read-limit";
 export { StockList } from "./components/stock-list";
 export { ReceiptForm } from "./components/receipt-form";

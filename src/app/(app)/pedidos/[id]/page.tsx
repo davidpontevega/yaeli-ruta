@@ -4,6 +4,7 @@ import { requireUser } from "@/server/auth";
 import { listProducts } from "@/modules/catalog";
 import { getCustomer, listRoutes } from "@/modules/customers";
 import { todayInLima } from "@/modules/inventory";
+import { balancesByCustomer } from "@/modules/accounts";
 import { OrderForm, OrderSummary, availableByProduct, getOrder } from "@/modules/orders";
 
 export default async function EditOrderPage({ params }: PageProps<"/pedidos/[id]">) {
@@ -22,10 +23,11 @@ export default async function EditOrderPage({ params }: PageProps<"/pedidos/[id]
       </section>
     );
 
-  const [routes, products, available] = await Promise.all([
+  const [routes, products, available, balances] = await Promise.all([
     listRoutes(),
     listProducts({ q: "", categoryId: "", includeInactive: false }),
     availableByProduct(order.id),
+    balancesByCustomer([customer.id]),
   ]);
   return (
     <section className="flex flex-col gap-4">
@@ -37,6 +39,7 @@ export default async function EditOrderPage({ params }: PageProps<"/pedidos/[id]
         initial={{ id: order.id, deliveryOn: order.deliveryOn, lines: order.items.map(({ packagingId, quantity }) => ({ packagingId, quantity })) }}
         lastOrder={null}
         today={todayInLima()}
+        account={{ balance: balances[customer.id] ?? 0, creditLimit: customer.creditLimit }}
       />
     </section>
   );

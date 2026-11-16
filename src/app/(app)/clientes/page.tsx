@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/server/auth";
 import { CustomerFilters, CustomerList, listCustomers, listRoutes } from "@/modules/customers";
+import { balancesByCustomer } from "@/modules/accounts";
 
 export default async function CustomersPage({ searchParams }: PageProps<"/clientes">) {
   await requireUser("DUENO");
@@ -13,6 +14,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/client
   const routes = await listRoutes();
   if (filters.routeId && !routes.some((r) => r.id === filters.routeId)) filters.routeId = "";
   const customers = routes.length ? await listCustomers(filters) : [];
+  const balances = await balancesByCustomer(customers.map((c) => c.id));
   const repeated = typeof sp.repetido === "string" ? sp.repetido : "";
 
   return (
@@ -46,7 +48,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/client
             <p className="tarjeta text-sm text-amber-700">Guardado. Ojo: ya había otro cliente llamado &quot;{repeated}&quot; en esta ruta.</p>
           )}
           <CustomerFilters {...filters} routes={routes} />
-          <CustomerList customers={customers} canReorder={!!filters.routeId && !filters.q} />
+          <CustomerList customers={customers} canReorder={!!filters.routeId && !filters.q} balances={balances} />
         </>
       )}
     </section>

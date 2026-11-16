@@ -16,6 +16,7 @@ const SECTIONS: Section[] = [
     tabs: [
       { href: "/pedidos", label: "Pedidos", ownerOnly: true },
       { href: "/clientes", label: "Clientes", ownerOnly: true },
+      { href: "/deudores", label: "Deudores", ownerOnly: true },
       { href: "/rutas", label: "Rutas", ownerOnly: true },
     ],
   },

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatSoles } from "@/lib/money";
 import type { CustomerRow, RouteRow } from "../queries";
 import { moveCustomer } from "../actions";
 
@@ -51,7 +52,15 @@ function MoveButton({ id, dir, disabled }: { id: string; dir: "up" | "down"; dis
 }
 
 /** `canReorder`: one route shown, unfiltered by text, so the list is that route's full visit order. */
-export function CustomerList({ customers, canReorder }: { customers: CustomerRow[]; canReorder: boolean }) {
+export function CustomerList({
+  customers,
+  canReorder,
+  balances,
+}: {
+  customers: CustomerRow[];
+  canReorder: boolean;
+  balances: Record<string, number>; // céntimos owed per customer
+}) {
   if (!customers.length) return <p className="tarjeta text-muted">No hay clientes con ese filtro.</p>;
   const groups = Map.groupBy(customers, (c) => c.routeName);
   return (
@@ -80,6 +89,12 @@ export function CustomerList({ customers, canReorder }: { customers: CustomerRow
                       {c.address}
                     </p>
                   </div>
+                  <Link
+                    href={`/clientes/${c.id}/cuenta`}
+                    className={`shrink-0 text-sm font-semibold ${(balances[c.id] ?? 0) > 0 ? "text-red-600" : "text-muted"}`}
+                  >
+                    {(balances[c.id] ?? 0) > 0 ? formatSoles(balances[c.id]) : "Al día"}
+                  </Link>
                   {c.active && (
                     <Link href={`/pedidos/nuevo?cliente=${c.id}`} className="btn-secundario flex h-10 shrink-0 items-center text-sm">
                       Pedido

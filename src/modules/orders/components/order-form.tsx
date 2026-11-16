@@ -17,6 +17,7 @@ export function OrderForm({
   initial,
   lastOrder,
   today,
+  account,
 }: {
   products: Product[];
   available: Record<string, number>; // base units per product, other pending orders already subtracted
@@ -24,6 +25,7 @@ export function OrderForm({
   initial: { id?: string; deliveryOn: string; lines: Line[] };
   lastOrder: { lines: Line[]; omitted: number } | null;
   today: string;
+  account: { balance: number; creditLimit: number | null }; // balance excludes this order (not delivered yet)
 }) {
   const [state, action, pending] = useActionState(saveOrder, undefined);
   const [cancelState, cancelAction, cancelling] = useActionState(cancelOrder, undefined);
@@ -70,6 +72,15 @@ export function OrderForm({
           <p className="font-semibold leading-tight">
             {customer.name} <span className="text-sm font-normal text-muted">· {customer.routeName}</span>
           </p>
+          <p className="text-sm">
+            <span className={account.balance > 0 ? "font-semibold text-red-600" : "text-muted"}>
+              {account.balance > 0 ? `Debe ${formatSoles(account.balance)}` : "Al día"}
+            </span>
+            {account.creditLimit !== null && <span className="text-muted"> · Límite {formatSoles(account.creditLimit)}</span>}
+          </p>
+          {account.creditLimit !== null && account.balance + orderTotal(priced) > account.creditLimit && (
+            <p className="text-sm font-semibold text-amber-700">Con este pedido pasa su límite</p>
+          )}
           <label className="flex items-center gap-2 text-sm font-medium">
             Entrega
             <input
