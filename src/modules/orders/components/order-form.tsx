@@ -65,6 +65,21 @@ export function OrderForm({
 
   const data = JSON.stringify({ id: initial.id, customerId: customer.id, deliveryOn, lines: known });
 
+  const totalBox = (placement: string) => (
+    <div className={`tarjeta flex flex-col gap-2.5 ${placement}`}>
+      <div className="flex items-baseline justify-between">
+        <span className="text-sm text-muted">
+          {known.length} producto{known.length === 1 ? "" : "s"}
+        </span>
+        <span className="cifra text-2xl">{formatSoles(orderTotal(priced))}</span>
+      </div>
+      <button disabled={pending || !known.length} className="btn-primario h-[52px] text-base">
+        {initial.id ? "Guardar cambios" : "Guardar pedido"}
+      </button>
+      {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+    </div>
+  );
+
   return (
     <div className="flex flex-col gap-3">
       {/* Phone: one column. Desktop: lines on the left, customer card on the right. */}
@@ -106,10 +121,16 @@ export function OrderForm({
           {lines.length > known.length && (
             <p className="text-sm text-amber-700">{lines.length - known.length} producto(s) inactivo(s) se quitarán al guardar.</p>
           )}
+          {totalBox("hidden lg:flex")}
         </div>
 
         <div className="flex min-w-0 flex-col gap-3 lg:order-1">
-          {known.map((l) => {
+          {/* Search first: adding a product never moves it out of sight. */}
+          <div className="tarjeta p-3">
+            <ProductPicker products={products} onPick={add} placeholder={known.length ? "+ Agregar otro producto" : "Busca el producto"} />
+          </div>
+          {/* Newest first, right under the search, so what you just added is in view. */}
+          {[...known].reverse().map((l) => {
             const { product, packaging } = byPackaging.get(l.packagingId)!;
             const free = available[product.id] ?? 0;
             const short = usedBase(product.id) > free;
@@ -175,21 +196,8 @@ export function OrderForm({
             );
           })}
 
-          <ProductPicker products={products} onPick={add} placeholder={known.length ? "+ Agregar otro producto" : "Busca el producto"} />
-
-          {/* Total and save stay above the bottom bar while scrolling the lines. */}
-          <div className="tarjeta sticky bottom-[calc(6rem+env(safe-area-inset-bottom))] z-10 md:bottom-4 flex flex-col gap-2.5 shadow-[0_-8px_24px_rgba(15,23,42,0.08)]">
-            <div className="flex items-baseline justify-between">
-              <span className="text-sm text-muted">
-                {known.length} producto{known.length === 1 ? "" : "s"}
-              </span>
-              <span className="cifra text-2xl">{formatSoles(orderTotal(priced))}</span>
-            </div>
-            <button disabled={pending || !known.length} className="btn-primario h-[52px] text-base">
-              {initial.id ? "Guardar cambios" : "Guardar pedido"}
-            </button>
-            {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
-          </div>
+          {/* Phone: total and save stick above the bottom bar. Desktop: they live in the right column. */}
+          {totalBox("sticky bottom-[calc(6rem+env(safe-area-inset-bottom))] z-10 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] lg:hidden")}
         </div>
       </form>
 
