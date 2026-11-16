@@ -1,5 +1,6 @@
 "use client";
 
+import { EmptyState } from "@/components/ui/empty-state";
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { formatSoles, parseSoles, toSolesInput } from "@/lib/money";
@@ -138,7 +139,7 @@ export function ReceiptForm({
     })),
   });
 
-  if (!locations.length) return <p className="tarjeta text-muted">Primero agrega un piso del almacén en Catálogo.</p>;
+  if (!locations.length) return <EmptyState text="Primero agrega un piso del almacén en Catálogo." />;
 
   return (
     <form

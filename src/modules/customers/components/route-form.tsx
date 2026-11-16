@@ -7,28 +7,31 @@ import { DAY_NAMES } from "../route-days";
 export function RouteForm({ initial }: { initial?: { id: string; name: string; days: number[] } }) {
   const [state, action, pending] = useActionState(saveRoute, undefined);
   return (
-    <form action={action} className="flex flex-col gap-2">
+    <form action={action} className="flex flex-col gap-4">
       <input type="hidden" name="id" value={initial?.id ?? ""} />
-      <input
-        name="name"
-        required
-        defaultValue={initial?.name}
-        placeholder="Nombre de la ruta"
-        aria-label="Nombre de la ruta"
-        className="h-10 rounded-xl border border-border bg-surface px-3"
-      />
-      <fieldset className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
-        <legend className="sr-only">Días de visita</legend>
-        {DAY_NAMES.map((d, i) => (
-          <label key={d} className="flex items-center gap-1">
-            <input type="checkbox" name="days" value={i + 1} defaultChecked={initial?.days.includes(i + 1)} /> {d}
-          </label>
-        ))}
+      <label className="campo-etiqueta">
+        Nombre de la ruta
+        <input name="name" required defaultValue={initial?.name} placeholder="Ej. Ruta Norte" />
+      </label>
+      <fieldset className="flex flex-col gap-1.5">
+        <legend className="mb-1.5 text-sm font-semibold text-slate-700">Días de visita</legend>
+        <div className="grid grid-cols-7 gap-1.5">
+          {DAY_NAMES.map((d, i) => (
+            <label key={d} className="pastilla min-w-0 px-0">
+              <input type="checkbox" name="days" value={i + 1} defaultChecked={initial?.days.includes(i + 1)} />
+              {d}
+            </label>
+          ))}
+        </div>
       </fieldset>
-      <button disabled={pending} className="btn-primario h-10 self-start text-sm">
-        {initial ? "Guardar" : "Crear ruta"}
+      <button disabled={pending} className="btn-primario h-11 text-sm">
+        {initial ? "Guardar cambios" : "Crear ruta"}
       </button>
-      {(state?.error || state?.ok) && <p className={`text-sm ${state.error ? "text-red-600" : "text-primary"}`}>{state.error ?? state.ok}</p>}
+      {(state?.error || state?.ok) && (
+        <p className={`rounded-xl px-3 py-2 text-sm ${state.error ? "bg-red-50 text-red-700" : "bg-teal-50 text-teal-800"}`}>
+          {state.error ?? state.ok}
+        </p>
+      )}
     </form>
   );
 }

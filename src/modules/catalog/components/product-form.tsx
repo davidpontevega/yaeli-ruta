@@ -5,6 +5,7 @@ import Link from "next/link";
 import { formatSoles, parseSoles, toSolesInput } from "@/lib/money";
 import { priceFromCost, realMarginPct } from "../pricing";
 import { saveProduct } from "../actions";
+import { ICONS, IconTile } from "@/components/ui/avatar";
 import type { CatalogOption } from "../queries";
 
 // costEdited: only a cost the owner typed in this form becomes the last cost (a prefilled one must not overwrite it).
@@ -112,6 +113,10 @@ export function ProductForm({
       </datalist>
 
       <div className="tarjeta flex flex-col gap-3">
+        <h2 className="titulo-tarjeta">
+          <IconTile d={ICONS.pencil} />
+          Datos del producto
+        </h2>
         <label className="campo">
           Nombre del producto
           <input value={p.name} onChange={(e) => set("name", e.target.value)} required placeholder="Ej. Galleta Soda Field 34g" autoFocus={!p.id} />
@@ -176,7 +181,13 @@ export function ProductForm({
       </div>
 
       <div className="tarjeta flex flex-col gap-3">
-        <p className="text-sm font-medium">¿También lo vendes por caja, display o fardo?</p>
+        <div className="flex flex-col gap-0.5">
+          <h2 className="titulo-tarjeta">
+            <IconTile d={ICONS.box} />
+            Presentaciones
+          </h2>
+          <p className="text-sm text-muted">¿También lo vendes por caja, display o fardo?</p>
+        </div>
         {larger.map((x, k) => {
           const i = k + 1;
           const price = parseSoles(x.price);

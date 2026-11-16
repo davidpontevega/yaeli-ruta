@@ -1,10 +1,12 @@
+import { EmptyState } from "@/components/ui/empty-state";
 import Link from "next/link";
 import { formatSoles } from "@/lib/money";
+import { Avatar } from "@/components/ui/avatar";
 import type { OrderDetail, OrderRow } from "../queries";
 
 /** Orders of one delivery date grouped by route, in visit order (the query sorts them). Total excludes cancelled orders. */
 export function OrderList({ orders }: { orders: OrderRow[] }) {
-  if (!orders.length) return <p className="tarjeta text-muted">No hay pedidos para esa fecha.</p>;
+  if (!orders.length) return <EmptyState text="No hay pedidos para esa fecha." />;
   const groups = Map.groupBy(orders, (o) => o.routeName);
   const total = orders.filter((o) => o.status !== "ANULADO").reduce((s, o) => s + o.total, 0);
   return (
@@ -20,16 +22,16 @@ export function OrderList({ orders }: { orders: OrderRow[] }) {
                     href={`/pedidos/${o.id}`}
                     className={`fila flex items-center gap-3 ${o.status === "ANULADO" ? "line-through opacity-50" : ""}`}
                   >
-                    <span className="w-10 shrink-0 text-sm text-muted">#{o.number}</span>
+                    <Avatar name={o.customerName} />
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold leading-tight">{o.customerName}</p>
                       <p className="text-xs text-muted">
-                        {o.lines} línea{o.lines === 1 ? "" : "s"}
+                        #{o.number} · {o.lines} línea{o.lines === 1 ? "" : "s"}
                         {o.status === "ANULADO" && " · anulado"}
                         {o.status === "ENTREGADO" && <span className="font-semibold text-emerald-700"> · entregado</span>}
                       </p>
                     </div>
-                    <p className="shrink-0 font-semibold">{formatSoles(o.total)}</p>
+                    <p className="cifra shrink-0">{formatSoles(o.total)}</p>
                   </Link>
                 </li>
               ))}

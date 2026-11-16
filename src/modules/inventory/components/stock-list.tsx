@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/ui/empty-state";
 import Link from "next/link";
 import { formatSoles } from "@/lib/money";
 import { formatDate, formatQty } from "../format";
@@ -12,7 +13,7 @@ const STATUS = {
 
 /** Grouped by main supplier (alphabetical, "Sin proveedor" last), each product with its status against the minimum. */
 export function StockList({ items }: { items: StockItem[] }) {
-  if (!items.length) return <p className="tarjeta text-muted">No hay productos con ese filtro.</p>;
+  if (!items.length) return <EmptyState text="No hay productos con ese filtro." />;
   const totalValue = items.reduce((s, p) => s + (p.value ?? 0), 0);
   const showValue = items.some((p) => p.value !== null);
 

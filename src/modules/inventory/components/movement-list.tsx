@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/ui/empty-state";
 import { formatSoles } from "@/lib/money";
 import { formatDate, formatQty } from "../format";
 import { MOVEMENT_LIMIT, type Movement } from "../queries";
@@ -6,7 +7,7 @@ const TYPE: Record<Movement["type"], string> = { INGRESO: "Compra", SALDO_INICIA
 const formatWhen = (d: Date) => d.toLocaleString("es-PE", { timeZone: "America/Lima", dateStyle: "short", timeStyle: "short" });
 
 export function MovementList({ movements, packagings }: { movements: Movement[]; packagings: { name: string; factor: number }[] }) {
-  if (!movements.length) return <p className="tarjeta text-muted">Este producto aún no tiene movimientos.</p>;
+  if (!movements.length) return <EmptyState text="Este producto aún no tiene movimientos." />;
   const qty = (n: number) => `${n < 0 ? "−" : "+"}${formatQty(Math.abs(n), packagings)}`;
   return (
     <>

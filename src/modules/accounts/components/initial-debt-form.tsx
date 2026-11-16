@@ -1,5 +1,6 @@
 "use client";
 
+import { EmptyState } from "@/components/ui/empty-state";
 import { useActionState } from "react";
 import { saveInitialDebts } from "../actions";
 import type { InitialDebtRow } from "../queries";
@@ -37,7 +38,7 @@ export function InitialDebtForm({ customers, today }: { customers: InitialDebtRo
           ))}
         </div>
       ) : (
-        <p className="tarjeta text-muted">Todos los clientes ya tienen su deuda inicial.</p>
+        <EmptyState text="Todos los clientes ya tienen su deuda inicial." tone="bg-emerald-50 text-emerald-600" />
       )}
       {customers.length > 0 && (
         <button disabled={pending} className="btn-primario sticky bottom-[calc(6rem+env(safe-area-inset-bottom))] h-12 md:bottom-4">

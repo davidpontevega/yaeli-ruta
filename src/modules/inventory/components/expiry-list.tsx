@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/ui/empty-state";
 import { formatSoles } from "@/lib/money";
 import type { ExpiryBucket } from "../expiry";
 import { formatDate, formatQty } from "../format";
@@ -14,7 +15,7 @@ const when = (days: number) =>
   days < 0 ? `venció hace ${-days} día${days === -1 ? "" : "s"}` : days === 0 ? "vence hoy" : `vence en ${days} día${days === 1 ? "" : "s"}`;
 
 export function ExpiryList({ lots }: { lots: ExpiringLot[] }) {
-  if (!lots.length) return <p className="tarjeta text-muted">Nada por vencer en 90 días.</p>;
+  if (!lots.length) return <EmptyState text="Nada por vencer en 90 días." tone="bg-emerald-50 text-emerald-600" />;
   return (
     <div className="grupos">
       {GROUPS.map((g) => {

@@ -1,5 +1,7 @@
+import { EmptyState } from "@/components/ui/empty-state";
 import Link from "next/link";
 import { formatSoles } from "@/lib/money";
+import { Avatar, Glyph, ICONS } from "@/components/ui/avatar";
 import type { CustomerRow, RouteRow } from "../queries";
 import { moveCustomer } from "../actions";
 
@@ -56,7 +58,7 @@ export function CustomerList({
   canReorder: boolean;
   balances: Record<string, number>; // céntimos owed per customer
 }) {
-  if (!customers.length) return <p className="tarjeta text-muted">No hay clientes con ese filtro.</p>;
+  if (!customers.length) return <EmptyState text="No hay clientes con ese filtro." />;
   const groups = Map.groupBy(customers, (c) => c.routeName);
   return (
     <div className="grupos">
@@ -68,13 +70,14 @@ export function CustomerList({
             <ul className="lista">
               {list.map((c) => (
                 <li key={c.id} className={`fila flex items-center gap-3 ${c.active ? "" : "opacity-50"}`}>
-                  {c.active && <span className="w-6 shrink-0 text-center text-sm text-muted">{c.routeOrder}</span>}
+                  <Avatar name={c.name} />
                   <div className="min-w-0 flex-1">
                     <Link href={`/clientes/${c.id}`} className="font-semibold leading-tight hover:underline">
                       {c.name}
                     </Link>
-                    {!c.active && <span className="ml-2 text-xs text-muted">inactivo</span>}
+                    {!c.active && <span className="chip ml-2 bg-slate-100 text-muted">inactivo</span>}
                     <p className="truncate text-xs text-muted">
+                      {c.active && <span className="mr-1 font-semibold text-slate-500">#{c.routeOrder}</span>}
                       {c.phone && (
                         <a href={`tel:${c.phone}`} className="text-primary underline">
                           {c.phone}
@@ -86,12 +89,13 @@ export function CustomerList({
                   </div>
                   <Link
                     href={`/clientes/${c.id}/cuenta`}
-                    className={`shrink-0 text-sm font-semibold ${(balances[c.id] ?? 0) > 0 ? "text-red-600" : "text-muted"}`}
+                    className={`chip shrink-0 ${(balances[c.id] ?? 0) > 0 ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"}`}
                   >
                     {(balances[c.id] ?? 0) > 0 ? formatSoles(balances[c.id]) : "Al día"}
                   </Link>
                   {c.active && (
-                    <Link href={`/pedidos/nuevo?cliente=${c.id}`} className="btn-secundario flex h-10 shrink-0 items-center text-sm">
+                    <Link href={`/pedidos/nuevo?cliente=${c.id}`} className="btn-suave h-9 shrink-0 px-3 text-sm">
+                      <Glyph d={ICONS.plus} />
                       Pedido
                     </Link>
                   )}

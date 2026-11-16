@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/ui/empty-state";
 import { formatDate } from "@/lib/date";
 import { formatSoles } from "@/lib/money";
 import { paymentLabel } from "@/lib/payment";
@@ -46,7 +47,7 @@ export function AccountView({ account, creditLimit }: { account: Account; credit
           ))}
         </ul>
       ) : (
-        <p className="tarjeta text-muted">Sin movimientos.</p>
+        <EmptyState text="Sin movimientos." />
       )}
       {movements.length === ACCOUNT_MOVEMENT_LIMIT && <p className="text-xs text-muted">Se muestran los últimos {ACCOUNT_MOVEMENT_LIMIT}.</p>}
     </div>

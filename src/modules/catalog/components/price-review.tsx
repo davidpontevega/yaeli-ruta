@@ -1,9 +1,10 @@
+import { EmptyState } from "@/components/ui/empty-state";
 import { formatSoles } from "@/lib/money";
 import { applyPrices } from "../actions";
 import type { PriceReviewItem } from "../queries";
 
 export function PriceReview({ items }: { items: PriceReviewItem[] }) {
-  if (!items.length) return <p className="tarjeta text-muted">Todos los precios cubren su margen.</p>;
+  if (!items.length) return <EmptyState text="Todos los precios cubren su margen." tone="bg-emerald-50 text-emerald-600" />;
   return (
     <form action={applyPrices} className="flex flex-col gap-3">
       <ul className="lista">

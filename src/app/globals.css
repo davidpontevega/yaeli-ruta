@@ -27,6 +27,29 @@ body {
   color: var(--foreground);
 }
 
+/* Every field: soft fill, green border and ring when focused (fields without their own classes too). */
+@layer base {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  select,
+  textarea {
+    transition:
+      border-color 0.15s,
+      box-shadow 0.15s,
+      background-color 0.15s;
+  }
+  input:not([type="checkbox"]):not([type="radio"]):focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15);
+  }
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: var(--primary);
+  }
+}
+
 @layer components {
   .btn-primario {
     @apply rounded-xl bg-primary px-4 font-semibold text-primary-foreground shadow-[0_6px_16px_rgba(15,118,110,0.25)] transition active:scale-[0.98] active:opacity-90 disabled:opacity-40 disabled:shadow-none;
@@ -35,11 +58,11 @@ body {
     @apply rounded-xl border border-border bg-surface px-4 font-semibold transition active:scale-[0.98] active:bg-slate-100 disabled:opacity-40;
   }
   .campo {
-    @apply flex flex-col gap-1 text-sm font-medium;
+    @apply flex flex-col gap-1.5 text-sm font-semibold text-slate-700;
   }
   .campo input,
   .campo select {
-    @apply h-12 rounded-xl border border-border bg-surface px-3 text-base font-normal outline-none focus:border-primary;
+    @apply h-12 rounded-xl border border-border bg-slate-50 px-3 text-base font-normal text-foreground outline-none focus:border-primary focus:bg-surface;
   }
   .tarjeta {
     @apply rounded-2xl border border-border bg-surface p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)];
@@ -60,6 +83,29 @@ body {
   }
   .filtro-check input {
     @apply accent-teal-700;
+  }
+  /* Toggle shown as a pill (days of a route…): the checkbox is hidden, the pill lights up when on. */
+  .pastilla {
+    @apply flex h-10 min-w-12 cursor-pointer items-center justify-center rounded-xl border border-border bg-surface px-3 text-sm font-semibold text-slate-600 transition select-none hover:border-teal-300 has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-teal-200;
+  }
+  .pastilla input {
+    @apply sr-only;
+  }
+  /* Small colored label. */
+  .chip {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+  /* Card title with an icon tile. */
+  .titulo-tarjeta {
+    @apply flex items-center gap-3 text-base font-bold;
+  }
+  /* Field with its label on top. */
+  .campo-etiqueta {
+    @apply flex flex-col gap-1.5 text-sm font-semibold text-slate-700;
+  }
+  .campo-etiqueta input,
+  .campo-etiqueta select {
+    @apply h-11 rounded-xl border border-border bg-slate-50 px-3 text-base font-normal text-foreground focus:bg-surface;
   }
   /* A list as one white card with rows divided by thin lines (design: Stock por proveedor). */
   .lista {

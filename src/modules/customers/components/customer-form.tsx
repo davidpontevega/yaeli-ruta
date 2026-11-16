@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { saveCustomer } from "../actions";
+import { ICONS, IconTile } from "@/components/ui/avatar";
 
 type Option = { id: string; name: string };
 export type CustomerDraft = {
@@ -23,6 +24,10 @@ export function CustomerForm({ routes, initial }: { routes: Option[]; initial: C
   return (
     <form action={action} className="tarjeta flex flex-col gap-3">
       <input type="hidden" name="id" value={initial.id} />
+      <h2 className="titulo-tarjeta">
+        <IconTile d={ICONS.users} />
+        Datos del cliente
+      </h2>
       <div className="grid gap-3 md:grid-cols-3">
         <label className="flex flex-col gap-1 text-sm font-medium">
           Nombre

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { formatSoles } from "@/lib/money";
+import { Avatar } from "@/components/ui/avatar";
 import { setProductActive } from "../actions";
 import { PRODUCT_LIST_LIMIT, type ProductListItem } from "../queries";
 
@@ -13,7 +14,8 @@ export function ProductList({ products, canEdit }: { products: ProductListItem[]
         {products.map((p) => (
           <li key={p.id} className={`fila flex flex-col gap-2 ${p.active ? "" : "opacity-60"}`}>
             <div className="flex items-start justify-between gap-2">
-              <div>
+              <Avatar name={p.name} />
+              <div className="min-w-0 flex-1">
                 <p className="font-semibold leading-tight">{p.name}</p>
                 <p className="text-xs text-muted">
                   {p.sku} · {p.category}
