@@ -28,13 +28,8 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
           </Link>
         )}
       </div>
-      {review.length > 0 && (
-        <Link href="/precios" className="tarjeta flex items-center justify-between border-sky-300 bg-sky-50 text-sm font-medium text-sky-800">
-          {review.length} precio{review.length === 1 ? "" : "s"} por revisar: subió el costo <span>→</span>
-        </Link>
-      )}
       <ProductFilters {...filters} categories={categories} suppliers={suppliers} canSeeInactive={isOwner} />
-      <ProductList products={products} canEdit={isOwner} />
+      <ProductList products={products} canEdit={isOwner} priceReview={review.length} />
     </section>
   );
 }

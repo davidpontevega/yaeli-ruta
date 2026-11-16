@@ -16,7 +16,17 @@ export default async function PricesPage({ searchParams }: PageProps<"/precios">
           Ingreso guardado. Subió el costo de {raised} producto{raised === 1 ? "" : "s"}: revisa sus precios de venta.
         </p>
       )}
-      <p className="text-sm text-muted">Precio sugerido = último costo × (1 + tu margen), redondeado hacia arriba a 10 céntimos.</p>
+      <div className="tarjeta flex items-start gap-3 border-sky-200 bg-sky-50">
+        <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-700">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 16v-4M12 8h.01" />
+          </svg>
+        </span>
+        <p className="text-sm text-sky-900">
+          <b>Precio sugerido</b> = último costo × (1 + tu % de ganancia), redondeado hacia arriba a S/ 0.10. Desmarca los que no quieras cambiar.
+        </p>
+      </div>
       <PriceReview items={items} />
     </section>
   );
