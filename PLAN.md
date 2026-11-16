@@ -193,11 +193,15 @@ Problemas a resolver:
 | 008 — Pedidos por teléfono | Solo el dueño. Buscar cliente → "repetir último pedido" o agregar productos con presentación y cantidad. Muestra el stock disponible (avisa, no bloquea). Precio general guardado en cada línea. Fecha de entrega: por defecto el próximo día de su ruta. Lista de pedidos por fecha y ruta; editar o anular mientras esté pendiente. | 007 |
 | 009 — Cuenta corriente y cobros | `movimientos_cuenta` append-only. **Deuda inicial** pasada del cuaderno. Cobro en oficina. Ajuste del dueño con motivo. Ficha del cliente con saldo y movimientos. Deudores por ruta con antigüedad. Aviso de límite de crédito en el pedido. | 007 |
 | 010 — Entrega desde la oficina (puente) | Marcar un pedido como entregado sin hoja de ruta: descuenta stock del almacén en orden **FEFO**, carga la deuda al cliente y registra lo que pagó. Permite dejar el papel antes de la fase 4. La fase 4 reutiliza la salida FEFO y el cargo. | 008, 009 |
-| 011 — Precios especiales | Precio por cliente y presentación (solo el dueño). El pedido lo usa si existe. | 008 |
-| 012 — Estado de cuenta | PDF del estado de cuenta por cliente para compartir por WhatsApp. | 009 |
-| 013 — Sugerencia de compra | Venta promedio semanal (de las entregas), días de cobertura, productos bajo mínimo o con poca cobertura agrupados por proveedor. Orden de compra simple que se comparte con el proveedor. | 010 (necesita historial de ventas) |
+| 011 — Proveedor y peso por producto | Proveedor principal por producto (se llena con la última compra y se puede cambiar) y peso por presentación. Productos y Stock por proveedor, con estado (OK / bajo el mínimo / agotado). | 006 |
+| 012 — Costo, % y precio al registrar | En el formulario del producto: Costo · % ganancia · Precio por presentación; el precio sale de costo × (1 + %), redondeado a S/ 0.10. Un % por producto. | 006 |
+| 013 — Lista de compra | Dos tipos: el proveedor envía, o "voy con mi camión". Columnas Cantidad · Producto · Peso · Flete (a mano) · Costo. Totales de peso contra la capacidad del vehículo, flete aparte y costo. Compartir o imprimir. "Recibir esta compra": el flete se reparte por peso en el costo. | 011 |
+| 014 — Sugerencia de compra | Venta promedio semanal (de las entregas), días de cobertura, productos bajo mínimo o con poca cobertura. Llena la lista de compra por proveedor. | 010, 013 |
+| 015 — Precios especiales | Precio por cliente y presentación (solo el dueño). El pedido lo usa si existe. | 008 |
+| 016 — Estado de cuenta | PDF del estado de cuenta por cliente para compartir por WhatsApp. | 009 |
 
-Orden recomendado: 007 → 008 → 009 → 010 (con esto el negocio ya deja el papel) → 011 → 012 → 013.
+Hechos: 007 → 008 → 009 → 010 (el negocio ya deja el papel). Siguen, a pedido del cliente (16-nov-2026): 011 → 012 → 013 → 014 → 015 → 016.
+Decisiones: un proveedor principal por producto; flete escrito a mano por línea y pagado aparte del costo de la mercadería, pero sumado al costo del producto al recibir; un % por producto; 2 vehículos (furgón y camión) con capacidad en kg por definir.
 
 Orden pensado para dar valor rápido: con la fase 2 el dueño ya ve sus vencimientos
 aunque siga repartiendo en papel.
