@@ -9,7 +9,7 @@ import type { Role } from "@/server/db/schema";
 type Tab = { href: string; label: string; icon?: string; ownerOnly?: boolean; also?: string[] };
 type Section = { label: string; icon: string; tabs: Tab[] };
 
-// 4 sections × at most 2 tabs. Less frequent screens live behind buttons inside their tab.
+// 4 sections × 2–3 tabs. Less frequent screens live behind buttons inside their tab.
 const SECTIONS: Section[] = [
   { label: "Inicio", icon: "M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z", tabs: [{ href: "/", label: "Inicio" }] },
   {
@@ -35,7 +35,12 @@ const SECTIONS: Section[] = [
     label: "Almacén",
     icon: "M3 8l9-5 9 5v12H3zM7 20v-8h10v8M7 15h10",
     tabs: [
-      { href: "/stock", label: "Stock", icon: "M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8M12 13v8", also: ["/vencimientos"] },
+      { href: "/stock", label: "Stock", icon: "M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8M12 13v8" },
+      {
+        href: "/vencimientos",
+        label: "Por vencer",
+        icon: "M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM12 14v3M12 20h.01",
+      },
       {
         href: "/compras",
         label: "Compras",

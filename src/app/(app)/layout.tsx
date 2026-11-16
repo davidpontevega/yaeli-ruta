@@ -20,7 +20,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   const badges: NavBadges = {
     "/pedidos": { n: pending, tone: "info" },
     "/clientes": { n: debtors, tone: "alert" },
-    "/stock": { n: alerts.lowStock + alerts.expired, tone: "warn" },
+    "/stock": { n: alerts.lowStock, tone: "warn" },
+    "/vencimientos": { n: alerts.expired + alerts.within30, tone: alerts.expired ? "alert" : "warn" },
     "/productos": { n: review.length, tone: "info" },
   };
   return (
