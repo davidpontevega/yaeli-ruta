@@ -1,7 +1,7 @@
 ---
 id: 007
 title: Rutas y clientes
-status: draft
+status: done
 module: customers (nuevo)
 ---
 
@@ -25,22 +25,22 @@ No incluye:
 - Importar clientes desde Excel: se cargan a mano (pocos campos).
 
 ## Criterios de aceptación
-- [ ] AC1 — `/rutas` (dueño): lista de rutas con sus días ("Lun · Jue") y N° de clientes activos.
+- [x] AC1 — `/rutas` (dueño): lista de rutas con sus días ("Lun · Jue") y N° de clientes activos.
   - Crear y editar con nombre (único sin distinguir mayúsculas) y días con checks Lun…Dom (al menos 1).
   - Se llega desde un link en `/clientes`.
-- [ ] AC2 — `/clientes` (dueño): clientes activos agrupados por ruta, en orden de visita, con nombre, teléfono (link `tel:`) y dirección si tiene.
+- [x] AC2 — `/clientes` (dueño): clientes activos agrupados por ruta, en orden de visita, con nombre, teléfono (link `tel:`) y dirección si tiene.
   - Filtro por ruta y búsqueda por nombre o teléfono (sin tildes ni mayúsculas).
   - Botón "Nuevo cliente". Link "Clientes" en la cabecera (solo dueño).
   - Sin rutas creadas: aviso "Primero crea una ruta" con link a `/rutas`.
-- [ ] AC3 — Nuevo y editar cliente: nombre, teléfono y ruta visibles; dirección, referencia y límite de crédito (S/, vacío = sin límite) dentro de `<details>` "Más opciones".
+- [x] AC3 — Nuevo y editar cliente: nombre, teléfono y ruta visibles; dirección, referencia y límite de crédito (S/, vacío = sin límite) dentro de `<details>` "Más opciones".
   - Teléfono: 9 dígitos o vacío (se guardan solo los dígitos).
   - Un cliente nuevo, o uno que cambia de ruta, queda **al final** del orden de esa ruta.
   - Nombre repetido en la misma ruta: aviso, no bloquea (puede haber dos "Bodega Rosa").
-- [ ] AC4 — Orden de visita: en el filtro de una ruta, cada cliente tiene botones ↑ y ↓ que lo cambian con el vecino, en una transacción.
+- [x] AC4 — Orden de visita: en el filtro de una ruta, cada cliente tiene botones ↑ y ↓ que lo cambian con el vecino, en una transacción.
   - El orden queda sin huecos (1, 2, 3…), aunque se desactiven o muevan clientes.
-- [ ] AC5 — Desactivar o reactivar cliente desde editar. Los inactivos no salen en la lista (casilla "Ver inactivos") ni en el orden de la ruta.
+- [x] AC5 — Desactivar o reactivar cliente desde editar. Los inactivos no salen en la lista (casilla "Ver inactivos") ni en el orden de la ruta.
   - No se borran: tendrán pedidos y deuda.
-- [ ] AC6 — Auditoría `route.create|update`, `customer.create|update|reorder`. El repartidor que entra a `/rutas` o `/clientes` es redirigido por `requireUser("DUENO")`.
+- [x] AC6 — Auditoría `route.create|update`, `customer.create|update|reorder`. El repartidor que entra a `/rutas` o `/clientes` es redirigido por `requireUser("DUENO")`.
 
 ## Datos (migración nueva)
 - `rutas` (`routes`): id, `nombre` text unique, `dias` smallint[] (1 = lunes … 7 = domingo), `creado_en`.
@@ -65,13 +65,13 @@ No incluye:
 - `LINKS` de `app-header.tsx` (se agrega "Clientes").
 
 ## Tareas
-- [ ] T1 — Esquema y migración · `src/server/db/schema.ts`, `drizzle/*`
-- [ ] T2 — Días de ruta puros, con tests · `src/modules/customers/route-days.ts`, `route-days.test.ts`
-- [ ] T3 — Esquemas, consultas e index · `src/modules/customers/schemas.ts`, `queries.ts`, `index.ts`
-- [ ] T4 — Rutas: acción, componentes y página · `actions.ts` (`saveRoute`), `components/route-list.tsx`, `route-form.tsx`, `src/app/(app)/rutas/page.tsx`
-- [ ] T5 — Cliente: acción y formulario · `actions.ts` (`saveCustomer`), `components/customer-form.tsx`, `src/app/(app)/clientes/nuevo/page.tsx`, `clientes/[id]/page.tsx`
-- [ ] T6 — Lista, filtros y orden de visita · `actions.ts` (`moveCustomer`), `components/customer-list.tsx`, `src/app/(app)/clientes/page.tsx`
-- [ ] T7 — Link en la cabecera · `src/components/app-header.tsx`
+- [x] T1 — Esquema y migración · `src/server/db/schema.ts`, `drizzle/*`
+- [x] T2 — Días de ruta puros, con tests · `src/modules/customers/route-days.ts`, `route-days.test.ts`
+- [x] T3 — Esquemas, consultas e index · `src/modules/customers/schemas.ts`, `queries.ts`, `index.ts`
+- [x] T4 — Rutas: acción, componentes y página · `actions.ts` (`saveRoute`), `components/route-list.tsx`, `route-form.tsx`, `src/app/(app)/rutas/page.tsx`
+- [x] T5 — Cliente: acción y formulario · `actions.ts` (`saveCustomer`), `components/customer-form.tsx`, `src/app/(app)/clientes/nuevo/page.tsx`, `clientes/[id]/page.tsx`
+- [x] T6 — Lista, filtros y orden de visita · `actions.ts` (`moveCustomer`), `components/customer-list.tsx`, `src/app/(app)/clientes/page.tsx`
+- [x] T7 — Link en la cabecera · `src/components/app-header.tsx`
 
 ## Paralelismo
 Grupo 0: T1. Luego T2 y T3 en paralelo. Después T4 → T5 → T6 en serie (comparten `actions.ts`). T7 en cualquier momento.
@@ -81,3 +81,20 @@ Grupo 0: T1. Luego T2 y T3 en paralelo. Después T4 → T5 → T6 en serie (comp
   la deuda actual está en un cuaderno, por cliente, y se carga como "deuda inicial" en el spec 009.
 - ponytail: subir/bajar de a uno. Si una ruta pasa de ~40 clientes y reordenar se hace pesado, arrastrar y soltar (spec aparte).
 - La cabecera queda con 8 links; si en el celular no entran, se agrupan en un menú (spec aparte).
+
+## Implementación
+- Migración `drizzle/0005_lonely_bullseye.sql` (solo tablas nuevas) aplicada en Neon. Nombre de ruta único con índice sobre `lower(nombre)`.
+- 41 tests (2 nuevos de `route-days`). E2E local 24/24 (usuarios, rutas y clientes temporales, borrados):
+  - Ruta creada con días "Lun · Jue"; nombre repetido con otra capitalización y ruta sin días: rechazados.
+  - Cliente nuevo al final (1..4); teléfono "987 654 321" se guarda como dígitos; límite S/ 150.50 = 15050; teléfono de 5 dígitos rechazado; nombre repetido avisa.
+  - ↑ cambia con el vecino; búsqueda "CIA" encuentra "Cía"; búsqueda por teléfono.
+  - Cambio de ruta y desactivar cierran el hueco; reactivar va al final; "Ver inactivos".
+  - Auditoría `route.create`, `customer.create|update|reorder`. Repartidor redirigido en las 4 pantallas; link "Clientes" solo para el dueño.
+- Desvíos:
+  - Los cambios de orden bloquean las filas de las rutas afectadas (`FOR UPDATE`, ids ordenados) para no dejar huecos ni repetidos con dos guardados a la vez.
+  - El aviso de nombre repetido se muestra en `/clientes` después de guardar (`?repetido=`), porque guardar no se bloquea.
+  - Activo/inactivo es una casilla del formulario de edición (no una acción aparte).
+  - La búsqueda ignora tildes con `translate` en SQL (Productos solo ignora mayúsculas).
+- Review vuelta 1: APROBADO con menores. Hechos: un `FOR UPDATE` por ruta en orden de id; tras el bloqueo se relee el cliente
+  (si cambió de ruta entre medias, `saveCustomer` pide reintentar y `moveCustomer` no hace nada); `saveRoute` con id inexistente da error
+  y no audita; `%` y `_` de la búsqueda se escapan. `optionalText` sigue local (distinta forma que el de inventario).

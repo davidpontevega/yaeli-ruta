@@ -1,5 +1,21 @@
 import { sql } from "drizzle-orm";
-import { boolean, check, date, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  check,
+  date,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  smallint,
+  text,
+  timestamp,
+  unique,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 // TS keys in English; SQL names stay in Spanish (already migrated). Renaming a SQL name = new migration.
 
@@ -215,3 +231,35 @@ export const readAliases = pgTable("alias_lectura", {
     .references(() => packagings.id),
   updatedAt: timestamp("actualizado_en", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ── Customers ───────────────────────────────────────────────────────────────
+
+export const routes = pgTable(
+  "rutas",
+  {
+    id: id(),
+    name: text("nombre").notNull(),
+    days: smallint("dias").array().notNull(), // ISO weekday: 1 = Monday … 7 = Sunday
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("rutas_nombre_uq").on(sql`lower(${t.name})`)],
+);
+
+export const customers = pgTable(
+  "clientes",
+  {
+    id: id(),
+    name: text("nombre").notNull(),
+    phone: text("telefono"), // digits only
+    address: text("direccion"),
+    reference: text("referencia"),
+    routeId: uuid("ruta_id")
+      .notNull()
+      .references(() => routes.id),
+    routeOrder: integer("orden_en_ruta").notNull(), // 1..n among the route's active customers
+    creditLimit: integer("limite_credito"), // céntimos; null = no limit
+    active: boolean("activo").notNull().default(true),
+    createdAt: createdAt(),
+  },
+  (t) => [index("clientes_ruta_orden_idx").on(t.routeId, t.routeOrder)],
+);

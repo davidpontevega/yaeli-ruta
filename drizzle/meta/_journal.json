@@ -36,6 +36,13 @@
       "when": 1793988059179,
       "tag": "0004_typical_demogoblin",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794840365254,
+      "tag": "0005_lonely_bullseye",
+      "breakpoints": true
     }
   ]
 }
