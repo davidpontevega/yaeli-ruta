@@ -41,7 +41,7 @@ export default async function StockPage({ searchParams }: PageProps<"/stock">) {
           </Link>
         ))}
       </div>
-      <StockList items={items} />
+      <StockList items={items} expiring={expiring} canBuy={isOwner} />
     </section>
   );
 }
