@@ -6,7 +6,7 @@ import { useState } from "react";
 import type { Role } from "@/server/db/schema";
 
 /** `also`: pages reached from inside this tab (buttons), so the tab stays highlighted there. */
-type Tab = { href: string; label: string; ownerOnly?: boolean; also?: string[] };
+type Tab = { href: string; label: string; icon?: string; ownerOnly?: boolean; also?: string[] };
 type Section = { label: string; icon: string; tabs: Tab[] };
 
 // 4 sections × at most 2 tabs. Less frequent screens live behind buttons inside their tab.
@@ -16,24 +16,52 @@ const SECTIONS: Section[] = [
     label: "Ventas",
     icon: "M3 3h2l2.5 12h11L21 7H6.2M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm9 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2z",
     tabs: [
-      { href: "/pedidos", label: "Pedidos", ownerOnly: true },
-      { href: "/clientes", label: "Clientes", ownerOnly: true, also: ["/deudores", "/rutas"] },
+      {
+        href: "/pedidos",
+        label: "Pedidos",
+        icon: "M3 3h2l2.5 12h11L21 7H6.2M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm9 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2z",
+        ownerOnly: true,
+      },
+      {
+        href: "/clientes",
+        label: "Clientes",
+        icon: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75",
+        ownerOnly: true,
+        also: ["/deudores", "/rutas"],
+      },
     ],
   },
   {
     label: "Almacén",
     icon: "M3 8l9-5 9 5v12H3zM7 20v-8h10v8M7 15h10",
     tabs: [
-      { href: "/stock", label: "Stock", also: ["/vencimientos"] },
-      { href: "/compras", label: "Compras", ownerOnly: true, also: ["/recepciones", "/proveedores"] },
+      { href: "/stock", label: "Stock", icon: "M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8M12 13v8", also: ["/vencimientos"] },
+      {
+        href: "/compras",
+        label: "Compras",
+        icon: "M1 3h15v13H1zM16 8h4l3 3v5h-7zM5.5 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18.5 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4z",
+        ownerOnly: true,
+        also: ["/recepciones", "/proveedores"],
+      },
     ],
   },
   {
     label: "Más",
     icon: "M4 6h16M4 12h16M4 18h16",
     tabs: [
-      { href: "/productos", label: "Productos", also: ["/precios"] },
-      { href: "/catalogo", label: "Ajustes", ownerOnly: true, also: ["/usuarios"] },
+      {
+        href: "/productos",
+        label: "Productos",
+        icon: "M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8zM7 7h.01",
+        also: ["/precios"],
+      },
+      {
+        href: "/catalogo",
+        label: "Ajustes",
+        icon: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z",
+        ownerOnly: true,
+        also: ["/usuarios"],
+      },
     ],
   },
 ];
@@ -59,11 +87,11 @@ function useCurrent(role: Role) {
   return { sections, current };
 }
 
-function Icon({ d }: { d: string }) {
+function Icon({ d, small }: { d: string; small?: boolean }) {
   return (
     <svg
       viewBox="0 0 24 24"
-      className="h-6 w-6"
+      className={small ? "h-5 w-5 shrink-0" : "h-6 w-6"}
       fill="none"
       stroke="currentColor"
       strokeWidth={1.8}
@@ -176,38 +204,31 @@ export function SideNav({ role, brand, footer }: { role: Role; brand: string; fo
   const { sections, current } = useCurrent(role);
   return (
     <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col gap-5 overflow-y-auto border-r border-border bg-surface px-3.5 py-5 md:flex print:hidden">
-      <Link href="/" className="flex items-center gap-2.5 px-1.5">
-        <span className="font-display flex h-[34px] w-[34px] items-center justify-center rounded-[10px] bg-primary font-bold text-primary-foreground">
-          {brand.charAt(0)}
-        </span>
-        <span className="text-base font-bold">{brand}</span>
+      <Link href="/" className="px-3 text-lg font-bold tracking-tight">
+        {brand}
       </Link>
-      <nav aria-label="Secciones" className="flex flex-col gap-4">
-        {sections.map((s) =>
-          s.tabs.length === 1 && s.tabs[0].href === "/" ? (
-            <Link
-              key={s.label}
-              href="/"
-              className={`flex h-10 items-center gap-2.5 rounded-[10px] px-3 text-sm ${s === current?.section ? "bg-teal-50 font-semibold text-teal-800" : "font-medium text-slate-700 hover:bg-slate-100"}`}
-            >
-              <Icon d={s.icon} />
-              {s.label}
-            </Link>
-          ) : (
+      {/* Section titles are small grey labels; the screens under them are items with an icon (like NicFarma). */}
+      <nav aria-label="Secciones" className="flex flex-col gap-5">
+        {sections.map((s) => {
+          const items = s.tabs.length === 1 && s.tabs[0].href === "/" ? [{ ...s.tabs[0], icon: s.icon }] : s.tabs;
+          return (
             <div key={s.label} className="flex flex-col gap-0.5">
-              <span className="rotulo px-3 pb-1">{s.label}</span>
-              {s.tabs.map((t) => (
+              {items[0].href !== "/" && (
+                <span className="px-3 pb-1.5 text-[11px] font-bold tracking-[0.08em] text-slate-400 uppercase">{s.label}</span>
+              )}
+              {items.map((t) => (
                 <Link
                   key={t.href}
                   href={t.href}
-                  className={`flex h-9 items-center rounded-[10px] px-3 text-sm ${t === current?.tab ? "bg-teal-50 font-semibold text-teal-800" : "text-slate-700 hover:bg-slate-100"}`}
+                  className={`flex h-10 items-center gap-3 rounded-xl px-3 text-[15px] ${t === current?.tab || (t.href === "/" && s === current?.section) ? "bg-teal-50 font-semibold text-teal-800" : "font-medium text-slate-700 hover:bg-slate-100"}`}
                 >
+                  {t.icon && <Icon d={t.icon} small />}
                   {t.label}
                 </Link>
               ))}
             </div>
-          ),
-        )}
+          );
+        })}
       </nav>
       <div className="mt-auto">{footer}</div>
     </aside>
