@@ -121,3 +121,22 @@ export function sellablePackagings(tx: Tx, ids: string[]) {
     .orderBy(asc(products.id)) // lock rows in product id order, like receiveGoods and deliverOrder
     .for("share");
 }
+
+/** Orders due today (not cancelled): how many, how many delivered, total, and count per route. */
+export async function todaySummary() {
+  const rows = await db
+    .select({ status: orders.status, total: orders.total, routeName: routes.name })
+    .from(orders)
+    .innerJoin(customers, eq(customers.id, orders.customerId))
+    .innerJoin(routes, eq(routes.id, customers.routeId))
+    .where(and(eq(orders.deliveryOn, todayInLima()), ne(orders.status, "ANULADO")));
+  const perRoute = new Map<string, number>();
+  for (const r of rows) perRoute.set(r.routeName, (perRoute.get(r.routeName) ?? 0) + 1);
+  return {
+    count: rows.length,
+    delivered: rows.filter((r) => r.status === "ENTREGADO").length,
+    total: rows.reduce((s, r) => s + r.total, 0),
+    routes: [...perRoute].map(([name, n]) => ({ name, n })),
+  };
+}
+export type TodaySummary = Awaited<ReturnType<typeof todaySummary>>;

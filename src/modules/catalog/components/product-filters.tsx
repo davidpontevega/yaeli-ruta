@@ -22,7 +22,12 @@ export function ProductFilters({
 }) {
   return (
     <form className="flex flex-col gap-2 sm:flex-row">
-      <input name="q" defaultValue={q} placeholder="Buscar nombre, código o escanear" className="h-12 flex-1 rounded-xl border border-border bg-surface px-3" />
+      <input
+        name="q"
+        defaultValue={q}
+        placeholder="Buscar nombre, código o escanear"
+        className="h-12 flex-1 rounded-xl border border-border bg-surface px-3"
+      />
       <select name="cat" defaultValue={categoryId} className="h-12 rounded-xl border border-border bg-surface px-3">
         <option value="">Todas las categorías</option>
         {categories.map((c) => (
@@ -40,11 +45,7 @@ export function ProductFilters({
         ))}
         <option value="none">Sin proveedor</option>
       </select>
-      {onlyMissing !== undefined && (
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="falta" value="1" defaultChecked={onlyMissing} /> Solo lo que falta
-        </label>
-      )}
+      {onlyMissing && <input type="hidden" name="falta" value="1" />}
       {canSeeInactive && (
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" name="inactivos" value="1" defaultChecked={includeInactive} /> Inactivos

@@ -122,16 +122,34 @@ export function OrderForm({
                 </button>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  max={MAX_QTY}
-                  value={l.quantity || ""}
-                  onChange={(e) => setLine(l.packagingId, { quantity: Math.min(MAX_QTY, Math.max(0, Math.trunc(Number(e.target.value)))) })}
-                  aria-label="Cantidad"
-                  className="h-10 w-20 rounded-xl border border-border bg-surface px-3"
-                />
+                <div className="flex items-center overflow-hidden rounded-xl border border-border">
+                  <button
+                    type="button"
+                    aria-label="Menos"
+                    onClick={() => setLine(l.packagingId, { quantity: Math.max(1, l.quantity - 1) })}
+                    className="h-11 w-11 bg-slate-50 text-lg active:bg-slate-100"
+                  >
+                    −
+                  </button>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={MAX_QTY}
+                    value={l.quantity || ""}
+                    onChange={(e) => setLine(l.packagingId, { quantity: Math.min(MAX_QTY, Math.max(0, Math.trunc(Number(e.target.value)))) })}
+                    aria-label="Cantidad"
+                    className="h-11 w-12 border-0 bg-surface text-center font-bold outline-none"
+                  />
+                  <button
+                    type="button"
+                    aria-label="Más"
+                    onClick={() => setLine(l.packagingId, { quantity: Math.min(MAX_QTY, l.quantity + 1) })}
+                    className="h-11 w-11 bg-slate-50 text-lg active:bg-slate-100"
+                  >
+                    +
+                  </button>
+                </div>
                 <select
                   value={l.packagingId}
                   onChange={(e) => setLine(l.packagingId, { packagingId: e.target.value })}
@@ -144,7 +162,7 @@ export function OrderForm({
                     </option>
                   ))}
                 </select>
-                <p className="ml-auto font-semibold">{formatSoles(l.quantity * packaging.salePrice)}</p>
+                <p className="cifra ml-auto text-[15px]">{formatSoles(l.quantity * packaging.salePrice)}</p>
               </div>
               <p className={`text-xs ${short ? "font-semibold text-amber-700" : "text-muted"}`}>
                 {short && "Falta stock · "}Disp.: {free ? formatQty(free, product.packagings) : "sin stock"}
@@ -155,14 +173,19 @@ export function OrderForm({
 
         <ProductPicker products={products} onPick={add} placeholder={known.length ? "+ Agregar otro producto" : "Busca el producto"} />
 
-        <div className="flex items-center justify-between text-lg font-bold">
-          <span>Total</span>
-          <span>{formatSoles(orderTotal(priced))}</span>
+        {/* Total and save stay above the bottom bar while scrolling the lines. */}
+        <div className="tarjeta sticky bottom-[calc(6rem+env(safe-area-inset-bottom))] z-10 md:bottom-4 flex flex-col gap-2.5 shadow-[0_-8px_24px_rgba(15,23,42,0.08)]">
+          <div className="flex items-baseline justify-between">
+            <span className="text-sm text-muted">
+              {known.length} producto{known.length === 1 ? "" : "s"}
+            </span>
+            <span className="cifra text-2xl">{formatSoles(orderTotal(priced))}</span>
+          </div>
+          <button disabled={pending || !known.length} className="btn-primario h-[52px] text-base">
+            {initial.id ? "Guardar cambios" : "Guardar pedido"}
+          </button>
+          {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
         </div>
-        <button disabled={pending || !known.length} className="btn-primario h-12">
-          {initial.id ? "Guardar cambios" : "Guardar pedido"}
-        </button>
-        {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       </form>
 
       {initial.id && (

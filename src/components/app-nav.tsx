@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import type { Role } from "@/server/db/schema";
 
 /** `also`: pages reached from inside this tab (buttons), so the tab stays highlighted there. */
@@ -75,23 +76,72 @@ function Icon({ d }: { d: string }) {
   );
 }
 
-/** Mobile: fixed bar at the bottom. Desktop: the same sections inline in the header. */
+const PLUS = "M12 5v14M5 12h14";
+/** Quick actions behind the central "+" (owner only): the daily tasks, one tap from anywhere. */
+const QUICK = [
+  { href: "/pedidos/nuevo", label: "Nuevo pedido", hint: "Un cliente llamó" },
+  { href: "/deudores", label: "Registrar cobro", hint: "Pagó en la oficina" },
+  { href: "/compras/nueva", label: "Nueva compra", hint: "Lista para el proveedor" },
+  { href: "/recepciones/nueva", label: "Recibir mercadería", hint: "Llegó o leer factura" },
+];
+
+/** Mobile: floating bar at the bottom (with "+" for the owner). Desktop: the same sections inline in the header. */
 export function SectionNav({ role }: { role: Role }) {
   const { sections, current } = useCurrent(role);
+  const [open, setOpen] = useState(false);
+  const owner = role === "DUENO";
+  const item = (s: Section) => (
+    <Link
+      key={s.label}
+      href={s.tabs[0].href}
+      className={`flex flex-col items-center gap-0.5 py-1 text-[11px] ${s === current?.section ? "font-semibold text-primary" : "font-medium text-muted"}`}
+    >
+      <Icon d={s.icon} />
+      {s.label}
+    </Link>
+  );
+  const half = Math.ceil(sections.length / 2);
   return (
     <>
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] md:hidden print:hidden">
-        <div className="mx-auto flex max-w-3xl">
-          {sections.map((s) => (
-            <Link
-              key={s.label}
-              href={s.tabs[0].href}
-              className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-xs font-medium ${s === current?.section ? "text-primary" : "text-muted"}`}
+      {open && (
+        <div className="fixed inset-0 z-30 flex flex-col justify-end bg-slate-900/35 md:hidden print:hidden">
+          <button type="button" aria-label="Cerrar" onClick={() => setOpen(false)} className="flex-1" />
+          <div className="flex flex-col gap-2 rounded-t-3xl bg-surface px-4 pt-3 pb-[calc(1.75rem+env(safe-area-inset-bottom))]">
+            <div className="mb-2 h-1 w-10 self-center rounded-full bg-slate-300" aria-hidden />
+            {QUICK.map((q, i) => (
+              <Link
+                key={q.href}
+                href={q.href}
+                onClick={() => setOpen(false)}
+                className={`flex min-h-12 items-center gap-3 rounded-2xl px-4 py-3 font-semibold ${i === 0 ? "bg-teal-50" : "bg-slate-50"}`}
+              >
+                {q.label}
+                <span className="ml-auto text-xs font-normal text-muted">{q.hint}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+      <nav
+        aria-label="Secciones"
+        className="fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-20 rounded-[22px] border border-border bg-surface shadow-[0_8px_24px_rgba(15,23,42,0.10)] md:hidden print:hidden"
+      >
+        <div
+          className="mx-auto grid h-[68px] max-w-3xl items-center"
+          style={{ gridTemplateColumns: `repeat(${sections.length + (owner ? 1 : 0)}, minmax(0, 1fr))` }}
+        >
+          {owner ? sections.slice(0, half).map(item) : sections.map(item)}
+          {owner && (
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              aria-label="Acciones rápidas"
+              className="flex h-[52px] w-[52px] items-center justify-center justify-self-center rounded-[18px] bg-primary text-primary-foreground shadow-[0_6px_16px_rgba(15,118,110,0.35)] active:scale-95"
             >
-              <Icon d={s.icon} />
-              {s.label}
-            </Link>
-          ))}
+              <Icon d={PLUS} />
+            </button>
+          )}
+          {owner && sections.slice(half).map(item)}
         </div>
       </nav>
       <nav className="hidden gap-1 text-sm md:flex">
@@ -99,7 +149,7 @@ export function SectionNav({ role }: { role: Role }) {
           <Link
             key={s.label}
             href={s.tabs[0].href}
-            className={`rounded-lg px-3 py-1.5 font-medium ${s === current?.section ? "bg-slate-100 text-primary" : "hover:bg-slate-100"}`}
+            className={`rounded-lg px-3 py-1.5 font-medium ${s === current?.section ? "bg-teal-50 text-primary" : "hover:bg-slate-100"}`}
           >
             {s.label}
           </Link>
@@ -109,21 +159,23 @@ export function SectionNav({ role }: { role: Role }) {
   );
 }
 
-/** Tabs of the current section (hidden when the section has only one page). */
+/** Tabs of the current section as a segmented switch (hidden when the section has only one page). */
 export function SectionTabs({ role }: { role: Role }) {
   const { current } = useCurrent(role);
   if (!current || current.section.tabs.length < 2) return null;
   return (
-    <nav className="mx-auto flex max-w-3xl gap-1 overflow-x-auto px-4 pt-3 text-sm print:hidden">
-      {current.section.tabs.map((t) => (
-        <Link
-          key={t.href}
-          href={t.href}
-          className={`shrink-0 rounded-full px-3 py-1.5 font-medium ${t === current.tab ? "bg-primary text-primary-foreground" : "bg-slate-100"}`}
-        >
-          {t.label}
-        </Link>
-      ))}
+    <nav className="mx-auto w-full max-w-3xl px-4 pt-3 print:hidden">
+      <div className="grid rounded-xl bg-slate-200/70 p-1" style={{ gridTemplateColumns: `repeat(${current.section.tabs.length}, minmax(0, 1fr))` }}>
+        {current.section.tabs.map((t) => (
+          <Link
+            key={t.href}
+            href={t.href}
+            className={`flex h-9 items-center justify-center rounded-[9px] text-sm ${t === current.tab ? "bg-surface font-semibold shadow-sm" : "font-medium text-muted"}`}
+          >
+            {t.label}
+          </Link>
+        ))}
+      </div>
     </nav>
   );
 }

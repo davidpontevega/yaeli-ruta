@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
+  --background: #f5f6f8;
   --surface: #ffffff;
   --foreground: #0f172a;
-  --muted: #64748b;
-  --border: #e2e8f0;
+  --muted: #5b6472; /* 5.9:1 on white, readable even at 11px */
+  --border: #e5e7eb;
   --primary: #0f766e;
   --primary-foreground: #ffffff;
 }
@@ -19,6 +19,7 @@
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --font-sans: var(--font-inter);
+  --font-display: var(--font-display-face);
 }
 
 body {
@@ -28,10 +29,10 @@ body {
 
 @layer components {
   .btn-primario {
-    @apply rounded-xl bg-primary px-4 font-semibold text-primary-foreground active:opacity-80 disabled:opacity-40;
+    @apply rounded-xl bg-primary px-4 font-semibold text-primary-foreground shadow-[0_6px_16px_rgba(15,118,110,0.25)] transition active:scale-[0.98] active:opacity-90 disabled:opacity-40 disabled:shadow-none;
   }
   .btn-secundario {
-    @apply rounded-xl border border-border bg-surface px-4 font-medium active:bg-slate-100 disabled:opacity-40;
+    @apply rounded-xl border border-border bg-surface px-4 font-semibold transition active:scale-[0.98] active:bg-slate-100 disabled:opacity-40;
   }
   .campo {
     @apply flex flex-col gap-1 text-sm font-medium;
@@ -41,6 +42,14 @@ body {
     @apply h-12 rounded-xl border border-border bg-surface px-3 text-base font-normal outline-none focus:border-primary;
   }
   .tarjeta {
-    @apply rounded-2xl border border-border bg-surface p-4;
+    @apply rounded-2xl border border-border bg-surface p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)];
+  }
+  /* Big figures (money, counts): display face with tabular digits. */
+  .cifra {
+    @apply font-display font-semibold tracking-tight tabular-nums;
+  }
+  /* Small uppercase section label. */
+  .rotulo {
+    @apply text-xs font-semibold uppercase tracking-wider text-muted;
   }
 }

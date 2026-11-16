@@ -78,9 +78,11 @@ export function DeliveryForm({ orderId, items, balance }: { orderId: string; ite
           ))}
         </select>
       </div>
-      <button disabled={pending || total === 0} className="btn-primario h-12">
-        Confirmar entrega
-      </button>
+      <div className="sticky bottom-[calc(6rem+env(safe-area-inset-bottom))] z-10 md:bottom-4">
+        <button disabled={pending || total === 0} className="btn-primario h-[52px] w-full text-base">
+          Confirmar entrega · {formatSoles(total)}
+        </button>
+      </div>
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
     </form>
   );

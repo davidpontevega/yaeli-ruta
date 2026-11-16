@@ -96,17 +96,13 @@ export function listWithoutInitialDebt(f: { routeId: string }) {
 }
 export type InitialDebtRow = Awaited<ReturnType<typeof listWithoutInitialDebt>>[number];
 
-/** Sum of every positive customer balance (what customers owe in total). */
-export async function totalReceivable() {
-  const [r] = await db
-    .select({ total: sql`coalesce(sum(b), 0)`.mapWith(Number) })
-    .from(
-      db
-        .select({ b: sql`sum(${accountMovements.amount})`.as("b") })
-        .from(accountMovements)
-        .groupBy(accountMovements.customerId)
-        .as("balances"),
-    )
-    .where(sql`b > 0`);
-  return r.total;
+/** For the home card: total owed, how many owe, and how many are past their credit limit. */
+export async function receivableSummary() {
+  const debtors = await listDebtors({ routeId: "" });
+  return {
+    total: debtors.reduce((s, d) => s + d.balance, 0),
+    debtors: debtors.length,
+    overLimit: debtors.filter((d) => d.creditLimit !== null && d.balance > d.creditLimit).length,
+  };
 }
+export type ReceivableSummary = Awaited<ReturnType<typeof receivableSummary>>;

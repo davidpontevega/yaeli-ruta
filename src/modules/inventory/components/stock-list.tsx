@@ -5,9 +5,9 @@ import type { StockItem } from "../queries";
 
 const NO_SUPPLIER = "Sin proveedor";
 const STATUS = {
-  out: { label: "Agotado", className: "bg-red-100 text-red-700" },
-  low: { label: "Bajo", className: "bg-amber-100 text-amber-800" },
-  ok: { label: "OK", className: "bg-emerald-100 text-emerald-800" },
+  out: { label: "Agotado", className: "bg-red-100 text-red-700", bar: "bg-red-600" },
+  low: { label: "Bajo", className: "bg-amber-100 text-amber-800", bar: "bg-amber-600" },
+  ok: { label: "OK", className: "bg-emerald-100 text-emerald-800", bar: "bg-emerald-600" },
 } as const;
 
 /** Grouped by main supplier (alphabetical, "Sin proveedor" last), each product with its status against the minimum. */
@@ -43,7 +43,8 @@ export function StockList({ items }: { items: StockItem[] }) {
                   <li key={p.id} className="tarjeta">
                     <details>
                       <summary className="flex cursor-pointer list-none items-start justify-between gap-2">
-                        <div>
+                        <span className={`w-2 self-stretch rounded-full ${STATUS[p.status].bar}`} aria-hidden />
+                        <div className="min-w-0 flex-1">
                           <p className="font-semibold leading-tight">{p.name}</p>
                           <p className="text-xs text-muted">
                             {p.sku} · {p.category}

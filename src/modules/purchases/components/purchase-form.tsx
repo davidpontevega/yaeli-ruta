@@ -112,7 +112,7 @@ export function PurchaseForm({
       <div className="tarjeta sticky top-14 z-10 flex flex-col gap-1 text-sm print:static">
         <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
           <span>
-            Peso <b>{formatKg(totals.weight)}</b>
+            Peso <b className="cifra">{formatKg(totals.weight)}</b>
             {capacity && ` / ${formatKg(capacity)}`}
           </span>
           <span>
@@ -124,7 +124,7 @@ export function PurchaseForm({
             </span>
           )}
           <span>
-            Total <b>{formatSoles(totals.total)}</b>
+            Total <b className="cifra text-primary">{formatSoles(totals.total)}</b>
           </span>
         </div>
         {capacity && (
