@@ -7,6 +7,7 @@ import { formatSoles, parseSoles, toSolesInput } from "@/lib/money";
 import { formatKg } from "@/lib/weight";
 import { cancelPurchase, savePurchase } from "../actions";
 import { lineWeight, purchaseTotals } from "../purchase-math";
+import { ICONS, IconTile } from "@/components/ui/avatar";
 import type { PurchaseType } from "@/server/db/schema";
 
 type Packaging = { id: string; name: string; factor: number; weightGrams: number | null };
@@ -111,22 +112,29 @@ export function PurchaseForm({
     <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:grid-rows-[auto_1fr] lg:items-start lg:[grid-template-areas:'form_totals'_'form_actions']">
       {/* Totals stay visible while scrolling the lines. */}
       <div className="tarjeta sticky top-14 z-10 flex flex-col gap-1 text-sm md:top-4 lg:[grid-area:totals] print:static">
-        <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
-          <span>
-            Peso <b className="cifra">{formatKg(totals.weight)}</b>
-            {capacity && ` / ${formatKg(capacity)}`}
-          </span>
-          <span>
-            Mercadería <b>{formatSoles(totals.goods)}</b>
-          </span>
+        <h2 className="titulo-tarjeta text-sm">
+          <IconTile d={recojo ? ICONS.truck : ICONS.box} tone={recojo ? "bg-sky-50 text-sky-700" : "bg-teal-50 text-teal-700"} />
+          Resumen de la compra
+        </h2>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl bg-slate-50 px-3 py-2">
+            <span className="block text-[11px] font-medium text-muted">Peso{capacity ? ` / ${formatKg(capacity)}` : ""}</span>
+            <span className={`cifra text-lg ${capacity && totals.weight > capacity ? "text-red-700" : ""}`}>{formatKg(totals.weight)}</span>
+          </div>
+          <div className="rounded-xl bg-slate-50 px-3 py-2">
+            <span className="block text-[11px] font-medium text-muted">Mercadería</span>
+            <span className="cifra text-lg">{formatSoles(totals.goods)}</span>
+          </div>
           {recojo && (
-            <span>
-              Flete <b>{formatSoles(totals.freight)}</b>
-            </span>
+            <div className="rounded-xl bg-slate-50 px-3 py-2">
+              <span className="block text-[11px] font-medium text-muted">Flete</span>
+              <span className="cifra text-lg">{formatSoles(totals.freight)}</span>
+            </div>
           )}
-          <span>
-            Total <b className="cifra text-primary">{formatSoles(totals.total)}</b>
-          </span>
+          <div className={`rounded-xl bg-teal-50 px-3 py-2 ${recojo ? "" : "col-span-2"}`}>
+            <span className="block text-[11px] font-medium text-teal-800">Total</span>
+            <span className="cifra text-lg text-primary">{formatSoles(totals.total)}</span>
+          </div>
         </div>
         {capacity && (
           <div className="h-2 overflow-hidden rounded-full bg-slate-100" aria-hidden>
@@ -144,14 +152,28 @@ export function PurchaseForm({
         <input type="hidden" name="data" value={data} />
         <fieldset disabled={!editable} className="flex flex-col gap-3">
           <div className="tarjeta flex flex-col gap-3">
+            <h2 className="titulo-tarjeta">¿Cómo vas a comprar?</h2>
             <div className="grid grid-cols-2 gap-2">
               {TYPES.map(([v, l]) => (
                 <button
                   key={v}
                   type="button"
                   onClick={() => setType(v)}
-                  className={`h-12 rounded-xl border text-sm font-medium ${type === v ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}
+                  className={`flex h-14 items-center justify-center gap-2 rounded-xl border text-sm font-semibold transition ${type === v ? "border-primary bg-primary text-primary-foreground shadow-[0_6px_16px_rgba(15,118,110,0.25)]" : "border-border bg-surface text-slate-700 hover:border-teal-300"}`}
                 >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d={v === "RECOJO" ? ICONS.truck : ICONS.box} />
+                  </svg>
                   {l}
                 </button>
               ))}
@@ -188,7 +210,7 @@ export function PurchaseForm({
               )}
             </div>
             {supplierId && editable && (
-              <button type="button" onClick={addMissing} className="btn-secundario h-12">
+              <button type="button" onClick={addMissing} className="btn-suave h-12 justify-center">
                 Agregar lo que falta de este proveedor
               </button>
             )}
