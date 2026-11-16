@@ -109,7 +109,7 @@ export function PurchaseForm({
   return (
     <div className="flex flex-col gap-3">
       {/* Totals stay visible while scrolling the lines. */}
-      <div className="tarjeta sticky top-14 z-10 flex flex-col gap-1 text-sm print:static">
+      <div className="tarjeta sticky top-14 z-10 md:top-4 flex flex-col gap-1 text-sm print:static">
         <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
           <span>
             Peso <b className="cifra">{formatKg(totals.weight)}</b>

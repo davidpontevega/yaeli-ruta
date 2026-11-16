@@ -85,7 +85,7 @@ const QUICK = [
   { href: "/recepciones/nueva", label: "Recibir mercadería", hint: "Llegó o leer factura" },
 ];
 
-/** Mobile: floating bar at the bottom (with "+" for the owner). Desktop: the same sections inline in the header. */
+/** Mobile only: floating bar at the bottom (with "+" for the owner). Desktop uses SideNav. */
 export function SectionNav({ role }: { role: Role }) {
   const { sections, current } = useCurrent(role);
   const [open, setOpen] = useState(false);
@@ -144,17 +144,6 @@ export function SectionNav({ role }: { role: Role }) {
           {owner && sections.slice(half).map(item)}
         </div>
       </nav>
-      <nav className="hidden gap-1 text-sm md:flex">
-        {sections.map((s) => (
-          <Link
-            key={s.label}
-            href={s.tabs[0].href}
-            className={`rounded-lg px-3 py-1.5 font-medium ${s === current?.section ? "bg-teal-50 text-primary" : "hover:bg-slate-100"}`}
-          >
-            {s.label}
-          </Link>
-        ))}
-      </nav>
     </>
   );
 }
@@ -164,7 +153,7 @@ export function SectionTabs({ role }: { role: Role }) {
   const { current } = useCurrent(role);
   if (!current || current.section.tabs.length < 2) return null;
   return (
-    <nav className="mx-auto w-full max-w-3xl px-4 pt-3 print:hidden">
+    <nav className="mx-auto w-full max-w-3xl px-4 pt-3 md:hidden print:hidden">
       <div className="grid rounded-xl bg-slate-200/70 p-1" style={{ gridTemplateColumns: `repeat(${current.section.tabs.length}, minmax(0, 1fr))` }}>
         {current.section.tabs.map((t) => (
           <Link
@@ -177,5 +166,56 @@ export function SectionTabs({ role }: { role: Role }) {
         ))}
       </div>
     </nav>
+  );
+}
+
+/**
+ * Desktop (md+): fixed left menu with every section and its tabs, a "Nuevo pedido" shortcut for the owner,
+ * and `footer` (who is signed in + Salir, rendered by the server layout).
+ */
+export function SideNav({ role, brand, footer }: { role: Role; brand: string; footer: React.ReactNode }) {
+  const { sections, current } = useCurrent(role);
+  return (
+    <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col gap-5 overflow-y-auto border-r border-border bg-surface px-3.5 py-5 md:flex print:hidden">
+      <Link href="/" className="flex items-center gap-2.5 px-1.5">
+        <span className="font-display flex h-[34px] w-[34px] items-center justify-center rounded-[10px] bg-primary font-bold text-primary-foreground">
+          {brand.charAt(0)}
+        </span>
+        <span className="text-base font-bold">{brand}</span>
+      </Link>
+      {role === "DUENO" && (
+        <Link href="/pedidos/nuevo" className="btn-primario flex h-10 items-center justify-center gap-2 text-sm">
+          <Icon d={PLUS} /> Nuevo pedido
+        </Link>
+      )}
+      <nav aria-label="Secciones" className="flex flex-col gap-4">
+        {sections.map((s) =>
+          s.tabs.length === 1 && s.tabs[0].href === "/" ? (
+            <Link
+              key={s.label}
+              href="/"
+              className={`flex h-10 items-center gap-2.5 rounded-[10px] px-3 text-sm ${s === current?.section ? "bg-teal-50 font-semibold text-teal-800" : "font-medium text-slate-700 hover:bg-slate-100"}`}
+            >
+              <Icon d={s.icon} />
+              {s.label}
+            </Link>
+          ) : (
+            <div key={s.label} className="flex flex-col gap-0.5">
+              <span className="rotulo px-3 pb-1">{s.label}</span>
+              {s.tabs.map((t) => (
+                <Link
+                  key={t.href}
+                  href={t.href}
+                  className={`flex h-9 items-center rounded-[10px] px-3 text-sm ${t === current?.tab ? "bg-teal-50 font-semibold text-teal-800" : "text-slate-700 hover:bg-slate-100"}`}
+                >
+                  {t.label}
+                </Link>
+              ))}
+            </div>
+          ),
+        )}
+      </nav>
+      <div className="mt-auto">{footer}</div>
+    </aside>
   );
 }

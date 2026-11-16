@@ -6,7 +6,7 @@ import { SectionNav } from "./app-nav";
 
 export function AppHeader({ user }: { user: CurrentUser }) {
   return (
-    <header className="sticky top-0 z-10 border-b border-border bg-surface pt-[env(safe-area-inset-top)] print:hidden">
+    <header className="sticky top-0 z-10 border-b border-border bg-surface pt-[env(safe-area-inset-top)] md:hidden print:hidden">
       <div className="mx-auto flex h-14 max-w-3xl items-center justify-between gap-3 px-4">
         <Link href="/" className="text-lg font-bold text-primary">
           {BRAND.name}
