@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { locationTypeEnum } from "@/server/db/schema";
 import { solesSchema } from "@/lib/money-schema";
+import { parseKg } from "@/lib/weight";
 
 export const productSchema = z
   .object({
@@ -9,6 +10,7 @@ export const productSchema = z
     name: z.string().trim().min(2, "Falta el nombre").max(120),
     categoryId: z.uuid("Elige una categoría"),
     brandId: z.uuid().nullable(),
+    supplierId: z.uuid().nullable(),
     minStock: z.coerce.number().int().min(0),
     marginPct: z.coerce.number().int().min(0).max(300),
     packagings: z
@@ -23,6 +25,11 @@ export const productSchema = z
             .trim()
             .max(30)
             .transform((s) => s || null),
+          weightKg: z.string().transform((s, ctx) => {
+            const g = parseKg(s);
+            if (g === undefined) ctx.addIssue({ code: "custom", message: `Peso inválido: "${s}" (kg, hasta 3 decimales)` });
+            return g ?? null;
+          }),
         }),
       )
       .min(1),

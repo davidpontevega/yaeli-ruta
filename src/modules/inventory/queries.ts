@@ -16,6 +16,7 @@ import {
   suppliers,
 } from "@/server/db/schema";
 import { listProducts } from "@/modules/catalog";
+import { stockStatus } from "@/lib/quantity";
 import { addDays, daysUntil, expiryBucket, todayInLima, type ExpiryBucket } from "./expiry";
 
 /** Warehouse floors where goods can be received (vehicles get stock by transfer, later). */
@@ -40,11 +41,15 @@ export async function getLastCosts(): Promise<Record<string, number>> {
   return Object.fromEntries(rows.map((r) => [r.packagingId, r.cost]));
 }
 
-/** Active products with stock per lot and location. `value` (céntimos) only when `withCost`. */
-export async function listStock(f: { q: string; categoryId: string; withCost: boolean }) {
+/**
+ * Active products with stock per lot and location, and their status against the minimum. `value` (céntimos) only when `withCost`.
+ * `onlyMissing`: only low or out-of-stock products.
+ */
+export async function listStock(f: { q: string; categoryId: string; supplierId: string; onlyMissing: boolean; withCost: boolean }) {
   const items = await listProducts({
     q: f.q,
     categoryId: f.categoryId,
+    supplierId: f.supplierId,
     includeInactive: false,
   });
   const rows = items.length
@@ -72,7 +77,7 @@ export async function listStock(f: { q: string; categoryId: string; withCost: bo
         .orderBy(asc(lots.expiresOn), asc(locations.name))
     : [];
 
-  return items.map((p) => {
+  const list = items.map((p) => {
     const mine = rows.filter((r) => r.productId === p.id);
     const total = mine.reduce((s, r) => s + r.quantity, 0);
     return {
@@ -80,6 +85,9 @@ export async function listStock(f: { q: string; categoryId: string; withCost: bo
       sku: p.sku,
       name: p.name,
       category: p.category,
+      supplierName: p.supplierName,
+      minStock: p.minStock,
+      status: stockStatus(total, p.minStock),
       packagings: p.packagings.map((x) => ({ name: x.name, factor: x.factor })),
       total,
       value: f.withCost ? total * (mine[0]?.averageCost ?? 0) : null,
@@ -90,6 +98,7 @@ export async function listStock(f: { q: string; categoryId: string; withCost: bo
       })),
     };
   });
+  return f.onlyMissing ? list.filter((p) => p.status !== "ok") : list;
 }
 
 export type StockItem = Awaited<ReturnType<typeof listStock>>[number];

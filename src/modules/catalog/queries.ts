@@ -1,25 +1,40 @@
 import "server-only";
-import { and, asc, count, eq, ilike, inArray, or, type SQL } from "drizzle-orm";
+import { and, asc, count, eq, ilike, inArray, isNull, or, type SQL } from "drizzle-orm";
+import { z } from "zod";
 import { db } from "@/server/db";
-import { brands, categories, locations, packagings, products } from "@/server/db/schema";
+import { brands, categories, locations, packagings, products, suppliers } from "@/server/db/schema";
 import { needsReview, priceUnitCost, realMarginPct, suggestedPrice } from "./pricing";
 
 export const PRODUCT_LIST_LIMIT = 200;
 
-/** Products with their packagings. `q` matches name, code or any packaging barcode. */
-export async function listProducts(f: { q: string; categoryId: string; includeInactive: boolean }) {
+/** Products with their packagings. `q` matches name, code or any packaging barcode. `supplierId`: "" all, "none" without supplier. */
+export async function listProducts(f: { q: string; categoryId: string; includeInactive: boolean; supplierId?: string }) {
   const where: (SQL | undefined)[] = [f.includeInactive ? undefined : eq(products.active, true)];
   if (f.categoryId) where.push(eq(products.categoryId, f.categoryId));
+  // An id that isn't a uuid (hand-edited URL) is ignored instead of failing the query.
+  const sup = f.supplierId;
+  if (sup === "none") where.push(isNull(products.supplierId));
+  else if (sup && z.uuid().safeParse(sup).success) where.push(eq(products.supplierId, sup));
   if (f.q) {
     const byBarcode = db.select({ id: packagings.productId }).from(packagings).where(eq(packagings.barcode, f.q));
     where.push(or(ilike(products.name, `%${f.q}%`), ilike(products.sku, `%${f.q}%`), inArray(products.id, byBarcode)));
   }
 
   const rows = await db
-    .select({ id: products.id, sku: products.sku, name: products.name, active: products.active, category: categories.name, brand: brands.name })
+    .select({
+      id: products.id,
+      sku: products.sku,
+      name: products.name,
+      active: products.active,
+      minStock: products.minStock,
+      category: categories.name,
+      brand: brands.name,
+      supplierName: suppliers.name,
+    })
     .from(products)
     .innerJoin(categories, eq(categories.id, products.categoryId))
     .leftJoin(brands, eq(brands.id, products.brandId))
+    .leftJoin(suppliers, eq(suppliers.id, products.supplierId))
     .where(and(...where))
     .orderBy(asc(categories.name), asc(products.name))
     .limit(PRODUCT_LIST_LIMIT);
@@ -51,12 +66,13 @@ export async function getProductWithPackagings(id: string) {
 
 export type CatalogOption = { id: string; name: string };
 
-export async function listCatalogOptions(): Promise<{ categories: CatalogOption[]; brands: CatalogOption[] }> {
-  const [cats, brs] = await Promise.all([
+export async function listCatalogOptions(): Promise<{ categories: CatalogOption[]; brands: CatalogOption[]; suppliers: CatalogOption[] }> {
+  const [cats, brs, sups] = await Promise.all([
     db.select({ id: categories.id, name: categories.name }).from(categories).orderBy(asc(categories.name)),
     db.select({ id: brands.id, name: brands.name }).from(brands).orderBy(asc(brands.name)),
+    db.select({ id: suppliers.id, name: suppliers.name }).from(suppliers).orderBy(asc(suppliers.name)),
   ]);
-  return { categories: cats, brands: brs };
+  return { categories: cats, brands: brs, suppliers: sups };
 }
 
 /** Categories and brands with product counts, plus locations. */

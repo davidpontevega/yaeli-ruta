@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { formatSoles } from "@/lib/money";
 import type { SupplierStats } from "../queries";
 import { SupplierPhoneForm } from "./supplier-phone-form";
@@ -12,7 +13,9 @@ export function SupplierList({ suppliers }: { suppliers: SupplierStats[] }) {
       {suppliers.map((s) => (
         <li key={s.id} className="tarjeta flex flex-col gap-2">
           <div className="flex items-start justify-between gap-2">
-            <p className="font-semibold leading-tight">{s.name}</p>
+            <Link href={`/stock?proveedor=${s.id}`} className="font-semibold leading-tight text-primary hover:underline">
+              {s.name}
+            </Link>
             <p className="shrink-0 text-right font-semibold">{formatSoles(s.total)}</p>
           </div>
           <p className="text-xs text-muted">

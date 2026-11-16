@@ -10,8 +10,10 @@ export default async function StockPage({ searchParams }: PageProps<"/stock">) {
   const filters = {
     q: typeof sp.q === "string" ? sp.q.trim() : "",
     categoryId: typeof sp.cat === "string" ? sp.cat : "",
+    supplierId: typeof sp.proveedor === "string" ? sp.proveedor : "",
+    onlyMissing: sp.falta === "1",
   };
-  const [items, { categories }] = await Promise.all([listStock({ ...filters, withCost: isOwner }), listCatalogOptions()]);
+  const [items, { categories, suppliers }] = await Promise.all([listStock({ ...filters, withCost: isOwner }), listCatalogOptions()]);
 
   return (
     <section className="flex flex-col gap-4">
@@ -23,7 +25,7 @@ export default async function StockPage({ searchParams }: PageProps<"/stock">) {
           </Link>
         )}
       </div>
-      <ProductFilters {...filters} includeInactive={false} categories={categories} canSeeInactive={false} />
+      <ProductFilters {...filters} includeInactive={false} categories={categories} suppliers={suppliers} canSeeInactive={false} />
       <StockList items={items} />
     </section>
   );

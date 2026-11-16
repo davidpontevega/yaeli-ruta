@@ -1,17 +1,23 @@
 import type { CatalogOption } from "../queries";
 
-/** GET form: filters live in the URL (?q=&cat=&inactivos=1). */
+/** GET form: filters live in the URL (?q=&cat=&proveedor=&inactivos=1&falta=1). `onlyMissing` undefined hides that checkbox. */
 export function ProductFilters({
   q,
   categoryId,
+  supplierId,
   includeInactive,
+  onlyMissing,
   categories,
+  suppliers,
   canSeeInactive,
 }: {
   q: string;
   categoryId: string;
+  supplierId: string;
   includeInactive: boolean;
+  onlyMissing?: boolean;
   categories: CatalogOption[];
+  suppliers: CatalogOption[];
   canSeeInactive: boolean;
 }) {
   return (
@@ -25,6 +31,20 @@ export function ProductFilters({
           </option>
         ))}
       </select>
+      <select name="proveedor" defaultValue={supplierId} aria-label="Proveedor" className="h-12 rounded-xl border border-border bg-surface px-3">
+        <option value="">Todos los proveedores</option>
+        {suppliers.map((s) => (
+          <option key={s.id} value={s.id}>
+            {s.name}
+          </option>
+        ))}
+        <option value="none">Sin proveedor</option>
+      </select>
+      {onlyMissing !== undefined && (
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="falta" value="1" defaultChecked={onlyMissing} /> Solo lo que falta
+        </label>
+      )}
       {canSeeInactive && (
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" name="inactivos" value="1" defaultChecked={includeInactive} /> Inactivos

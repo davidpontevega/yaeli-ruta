@@ -9,9 +9,10 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
   const filters = {
     q: typeof sp.q === "string" ? sp.q.trim() : "",
     categoryId: typeof sp.cat === "string" ? sp.cat : "",
+    supplierId: typeof sp.proveedor === "string" ? sp.proveedor : "",
     includeInactive: sp.inactivos === "1" && isOwner,
   };
-  const [products, { categories }] = await Promise.all([listProducts(filters), listCatalogOptions()]);
+  const [products, { categories, suppliers }] = await Promise.all([listProducts(filters), listCatalogOptions()]);
 
   return (
     <section className="flex flex-col gap-4">
@@ -23,7 +24,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
           </Link>
         )}
       </div>
-      <ProductFilters {...filters} categories={categories} canSeeInactive={isOwner} />
+      <ProductFilters {...filters} categories={categories} suppliers={suppliers} canSeeInactive={isOwner} />
       <ProductList products={products} canEdit={isOwner} />
     </section>
   );

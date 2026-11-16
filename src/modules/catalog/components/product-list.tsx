@@ -18,6 +18,7 @@ export function ProductList({ products, canEdit }: { products: ProductListItem[]
                 <p className="text-xs text-muted">
                   {p.sku} · {p.category}
                   {p.brand && ` · ${p.brand}`}
+                  {p.supplierName && ` · ${p.supplierName}`}
                   {!p.active && " · Inactivo"}
                 </p>
               </div>

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/server/auth";
 import { toSolesInput } from "@/lib/money";
+import { toKgInput } from "@/lib/weight";
 import { ProductForm, getProductWithPackagings, listCatalogOptions } from "@/modules/catalog";
 
 export default async function EditProductPage({ params }: PageProps<"/productos/[id]">) {
@@ -9,7 +10,7 @@ export default async function EditProductPage({ params }: PageProps<"/productos/
   const id = z.uuid().safeParse((await params).id);
   if (!id.success) notFound();
 
-  const [p, { categories, brands }] = await Promise.all([getProductWithPackagings(id.data), listCatalogOptions()]);
+  const [p, { categories, brands, suppliers }] = await Promise.all([getProductWithPackagings(id.data), listCatalogOptions()]);
   if (!p) notFound();
 
   return (
@@ -18,12 +19,14 @@ export default async function EditProductPage({ params }: PageProps<"/productos/
       <ProductForm
         categories={categories}
         brands={brands}
+        suppliers={suppliers}
         initial={{
           id: p.id,
           sku: p.sku,
           name: p.name,
           categoryId: p.categoryId,
           brandId: p.brandId ?? "",
+          supplierId: p.supplierId ?? "",
           minStock: p.minStock,
           marginPct: p.marginPct,
           packagings: p.packagings.map((x) => ({
@@ -32,6 +35,7 @@ export default async function EditProductPage({ params }: PageProps<"/productos/
             factor: String(x.factor),
             price: toSolesInput(x.salePrice),
             barcode: x.barcode ?? "",
+            weightKg: toKgInput(x.weightGrams),
           })),
         }}
       />

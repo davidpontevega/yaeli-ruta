@@ -17,3 +17,8 @@ export const formatQty = (qty: number, packagings: { name: string; factor: numbe
   splitByPackaging(qty, packagings)
     .map((x) => `${x.count} ${x.name}`)
     .join(" + ");
+
+export type StockStatus = "out" | "low" | "ok";
+
+/** Out of stock, below the minimum (both in base units), or fine. */
+export const stockStatus = (total: number, minStock: number): StockStatus => (total <= 0 ? "out" : total < minStock ? "low" : "ok");

@@ -6,13 +6,14 @@ import { formatSoles, parseSoles } from "@/lib/money";
 import { saveProduct } from "../actions";
 import type { CatalogOption } from "../queries";
 
-type PackagingDraft = { key: string; id?: string; name: string; factor: string; price: string; barcode: string };
+type PackagingDraft = { key: string; id?: string; name: string; factor: string; price: string; barcode: string; weightKg: string };
 export type ProductDraft = {
   id?: string;
   sku: string;
   name: string;
   categoryId: string;
   brandId: string;
+  supplierId: string;
   minStock: number;
   marginPct: number;
   packagings: Omit<PackagingDraft, "key">[];
@@ -24,13 +25,23 @@ const PACKS = ["caja", "display", "fardo", "bulto", "pack", "tira", "docena", "p
 let seq = 0;
 const newKey = () => `k${seq++}`;
 
-export function ProductForm({ initial, categories, brands }: { initial: ProductDraft; categories: CatalogOption[]; brands: CatalogOption[] }) {
+export function ProductForm({
+  initial,
+  categories,
+  brands,
+  suppliers,
+}: {
+  initial: ProductDraft;
+  categories: CatalogOption[];
+  brands: CatalogOption[];
+  suppliers: CatalogOption[];
+}) {
   const [state, action, pending] = useActionState(saveProduct, undefined);
   const [p, setP] = useState(initial);
   const [packs, setPacks] = useState<PackagingDraft[]>(() => initial.packagings.map((x) => ({ ...x, key: newKey() })));
 
   const set = <K extends keyof ProductDraft>(k: K, v: ProductDraft[K]) => setP((s) => ({ ...s, [k]: v }));
-  const setPack = (i: number, field: "name" | "factor" | "price", v: string) =>
+  const setPack = (i: number, field: "name" | "factor" | "price" | "weightKg", v: string) =>
     setPacks((s) => s.map((x, j) => (j === i ? { ...x, [field]: v } : x)));
 
   const [base, ...larger] = packs;
@@ -40,7 +51,15 @@ export function ProductForm({ initial, categories, brands }: { initial: ProductD
     ...p,
     id: p.id || undefined,
     brandId: p.brandId || null,
-    packagings: packs.map((x, i) => ({ id: x.id, name: x.name, factor: i === 0 ? "1" : x.factor, price: x.price, barcode: x.barcode })),
+    supplierId: p.supplierId || null,
+    packagings: packs.map((x, i) => ({
+      id: x.id,
+      name: x.name,
+      factor: i === 0 ? "1" : x.factor,
+      price: x.price,
+      barcode: x.barcode,
+      weightKg: x.weightKg,
+    })),
   });
 
   return (
@@ -73,7 +92,18 @@ export function ProductForm({ initial, categories, brands }: { initial: ProductD
             ))}
           </select>
         </label>
-        <div className="grid grid-cols-2 gap-3">
+        <label className="campo">
+          Proveedor
+          <select value={p.supplierId} onChange={(e) => set("supplierId", e.target.value)}>
+            <option value="">Sin proveedor</option>
+            {suppliers.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="grid grid-cols-3 gap-3">
           <label className="campo">
             Se vende por
             <input list="units" value={base.name} onChange={(e) => setPack(0, "name", e.target.value)} required />
@@ -81,6 +111,10 @@ export function ProductForm({ initial, categories, brands }: { initial: ProductD
           <label className="campo">
             Precio S/
             <input inputMode="decimal" value={base.price} onChange={(e) => setPack(0, "price", e.target.value)} required placeholder="0.50" />
+          </label>
+          <label className="campo">
+            Peso kg
+            <input inputMode="decimal" value={base.weightKg} onChange={(e) => setPack(0, "weightKg", e.target.value)} placeholder="Opcional" />
           </label>
         </div>
       </div>
@@ -124,6 +158,14 @@ export function ProductForm({ initial, categories, brands }: { initial: ProductD
                   aria-label="Precio"
                   className="h-11 w-20 min-w-0 rounded-xl border border-border bg-surface px-2"
                 />
+                <input
+                  inputMode="decimal"
+                  value={x.weightKg}
+                  onChange={(e) => setPack(i, "weightKg", e.target.value)}
+                  placeholder="kg"
+                  aria-label="Peso kg"
+                  className="h-11 w-16 min-w-0 rounded-xl border border-border bg-surface px-2"
+                />
                 <button type="button" onClick={() => setPacks((s) => s.filter((_, j) => j !== i))} className="ml-auto text-muted" aria-label="Quitar">
                   ✕
                 </button>
@@ -138,7 +180,7 @@ export function ProductForm({ initial, categories, brands }: { initial: ProductD
         })}
         <button
           type="button"
-          onClick={() => setPacks((s) => [...s, { key: newKey(), name: "caja", factor: "", price: "", barcode: "" }])}
+          onClick={() => setPacks((s) => [...s, { key: newKey(), name: "caja", factor: "", price: "", barcode: "", weightKg: "" }])}
           className="btn-secundario h-10 text-sm"
         >
           + Agregar caja / display

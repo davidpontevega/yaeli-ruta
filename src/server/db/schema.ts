@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
   check,
   date,
@@ -107,6 +108,7 @@ export const products = pgTable(
     lastCost: integer("ultimo_costo").notNull().default(0),
     marginPct: integer("margen_pct").notNull().default(15),
     active: boolean("activo").notNull().default(true),
+    supplierId: uuid("proveedor_id").references((): AnyPgColumn => suppliers.id), // main supplier; filled by the first purchase
     createdAt: createdAt(),
   },
   (t) => [index("productos_categoria_idx").on(t.categoryId)],
@@ -124,8 +126,13 @@ export const packagings = pgTable(
     factor: integer("factor").notNull(),
     barcode: text("codigo_barras").unique(),
     salePrice: integer("precio_venta").notNull(),
+    weightGrams: integer("peso_gramos"), // for truck load in purchase lists
   },
-  (t) => [uniqueIndex("presentaciones_producto_nombre_uq").on(t.productId, t.name), check("factor_positivo", sql`${t.factor} > 0`)],
+  (t) => [
+    uniqueIndex("presentaciones_producto_nombre_uq").on(t.productId, t.name),
+    check("factor_positivo", sql`${t.factor} > 0`),
+    check("peso_positivo", sql`${t.weightGrams} > 0`),
+  ],
 );
 
 // ── Inventory ───────────────────────────────────────────────────────────────

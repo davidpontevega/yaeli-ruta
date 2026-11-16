@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { audit, db } from "@/server/db";
 import {
   locations,
@@ -162,6 +162,13 @@ export async function receiveGoods(_: FormState, form: FormData): Promise<FormSt
         })
         .where(eq(products.id, pack.productId));
     }
+
+    // Products without a main supplier take this purchase's supplier (never overwritten).
+    if (supplierId)
+      await tx
+        .update(products)
+        .set({ supplierId })
+        .where(and(inArray(products.id, [...new Set(items.map((i) => packById.get(i.packagingId)!.productId))]), isNull(products.supplierId)));
 
     // Learn how the supplier writes each product, so the next reading comes out "aprendido".
     for (const item of items) {

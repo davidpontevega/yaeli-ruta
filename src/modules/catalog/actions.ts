@@ -28,6 +28,7 @@ export async function saveProduct(_: FormState, form: FormData): Promise<FormSta
     name: p.name,
     categoryId: p.categoryId,
     brandId: p.brandId,
+    supplierId: p.supplierId,
     baseUnit: p.packagings[0].name,
     minStock: p.minStock,
     marginPct: p.marginPct,
@@ -56,7 +57,7 @@ export async function saveProduct(_: FormState, form: FormData): Promise<FormSta
       // ponytail: removed packagings are hard-deleted; once received/sold the FK blocks it (handled below) → switch to deactivate if it annoys.
       await tx.delete(packagings).where(and(eq(packagings.productId, pid), keep.length ? notInArray(packagings.id, keep) : undefined));
       for (const x of p.packagings) {
-        const row = { productId: pid, name: x.name, factor: x.factor, salePrice: x.price, barcode: x.barcode };
+        const row = { productId: pid, name: x.name, factor: x.factor, salePrice: x.price, barcode: x.barcode, weightGrams: x.weightKg };
         if (x.id) await tx.update(packagings).set(row).where(and(eq(packagings.id, x.id), eq(packagings.productId, pid)));
         else await tx.insert(packagings).values(row);
       }
