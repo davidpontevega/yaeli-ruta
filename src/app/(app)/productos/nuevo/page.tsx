@@ -19,7 +19,7 @@ export default async function NewProductPage() {
           supplierId: "",
           minStock: 0,
           marginPct: 15,
-          packagings: [{ name: "unidad", factor: "1", price: "", barcode: "", weightKg: "" }],
+          packagings: [{ name: "unidad", factor: "1", cost: "", price: "", barcode: "", weightKg: "" }],
         }}
       />
     </section>

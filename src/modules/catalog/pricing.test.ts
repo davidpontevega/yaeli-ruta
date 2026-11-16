@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { needsReview, priceUnitCost, realMarginPct, suggestedPrice } from "./pricing";
+import { baseUnitCost, needsReview, priceFromCost, priceUnitCost, realMarginPct, suggestedPrice } from "./pricing";
 
 test("priceUnitCost: last cost first, then average, else null", () => {
   assert.equal(priceUnitCost(63, 60), 63);
@@ -33,4 +33,16 @@ test("needsReview ignores cost-rounding noise, flags real rises", () => {
   // cost rose to 75 c/u: 70.00 vs 72.00 cost → flagged
   assert.equal(needsReview(7000, 75, 96, 15), true);
   assert.equal(needsReview(100, null, 1, 15), false);
+});
+
+test("price from cost", () => {
+  assert.equal(priceFromCost(1000, 20), 1200);
+  assert.equal(priceFromCost(83, 15), 100); // 95.45 → up to 1.00
+  assert.equal(priceFromCost(0, 20), 0);
+});
+
+test("base unit cost from the smallest packaging with cost", () => {
+  assert.equal(baseUnitCost([{ factor: 12, cost: 1100 }, { factor: 1, cost: 100 }]), 100);
+  assert.equal(baseUnitCost([{ factor: 1, cost: null }, { factor: 12, cost: 1100 }]), 92);
+  assert.equal(baseUnitCost([{ factor: 1, cost: null }]), null);
 });

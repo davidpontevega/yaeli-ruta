@@ -28,3 +28,12 @@ export function needsReview(price: number, unitCost: number | null, factor: numb
   if (!unitCost) return false;
   return price * 100 < unitCost * factor * (100 + marginPct - MARGIN_TOLERANCE_PCT);
 }
+
+/** Sale price of a packaging from its cost: cost × (1 + margin%), rounded UP to 10 céntimos. */
+export const priceFromCost = (cost: number, marginPct: number) => suggestedPrice(cost, 1, marginPct) ?? 0;
+
+/** Cost per base unit from the smallest packaging that has a cost (boxes are usually cheaper per unit). null if none. */
+export function baseUnitCost(packagings: { factor: number; cost: number | null }[]): number | null {
+  const p = [...packagings].sort((a, b) => a.factor - b.factor).find((x) => x.cost !== null && x.cost > 0);
+  return p ? Math.round(p.cost! / p.factor) : null;
+}

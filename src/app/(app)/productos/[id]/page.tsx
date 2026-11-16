@@ -4,13 +4,14 @@ import { requireUser } from "@/server/auth";
 import { toSolesInput } from "@/lib/money";
 import { toKgInput } from "@/lib/weight";
 import { ProductForm, getProductWithPackagings, listCatalogOptions } from "@/modules/catalog";
+import { getLastCosts } from "@/modules/inventory";
 
 export default async function EditProductPage({ params }: PageProps<"/productos/[id]">) {
   await requireUser("DUENO");
   const id = z.uuid().safeParse((await params).id);
   if (!id.success) notFound();
 
-  const [p, { categories, brands, suppliers }] = await Promise.all([getProductWithPackagings(id.data), listCatalogOptions()]);
+  const [p, { categories, brands, suppliers }, lastCosts] = await Promise.all([getProductWithPackagings(id.data), listCatalogOptions(), getLastCosts()]);
   if (!p) notFound();
 
   return (
@@ -35,6 +36,8 @@ export default async function EditProductPage({ params }: PageProps<"/productos/
             factor: String(x.factor),
             price: toSolesInput(x.salePrice),
             barcode: x.barcode ?? "",
+            // Cost of its last receipt; else the product's last cost per unit × factor; else empty.
+            cost: lastCosts[x.id] ? toSolesInput(lastCosts[x.id]) : p.lastCost ? toSolesInput(p.lastCost * x.factor) : "",
             weightKg: toKgInput(x.weightGrams),
           })),
         }}

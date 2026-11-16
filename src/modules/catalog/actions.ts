@@ -11,6 +11,7 @@ import type { FormState } from "@/lib/form-state";
 import { catalogNameSchema, productSchema } from "./schemas";
 import { listPriceReview } from "./queries";
 import { nextSku, skuPrefix } from "./sku";
+import { baseUnitCost } from "./pricing";
 
 export async function saveProduct(_: FormState, form: FormData): Promise<FormState> {
   const me = await requireUser("DUENO");
@@ -33,6 +34,8 @@ export async function saveProduct(_: FormState, form: FormData): Promise<FormSta
     minStock: p.minStock,
     marginPct: p.marginPct,
   };
+  // Typed cost becomes the product's last cost (what /precios prices from); without a cost it stays as is.
+  const lastCost = baseUnitCost(p.packagings);
 
   try {
     await db.transaction(async (tx) => {
@@ -47,10 +50,11 @@ export async function saveProduct(_: FormState, form: FormData): Promise<FormSta
         );
       }
       let productId = p.id;
+      const row = lastCost === null ? values : { ...values, lastCost };
       if (productId) {
-        await tx.update(products).set(values).where(eq(products.id, productId));
+        await tx.update(products).set(row).where(eq(products.id, productId));
       } else {
-        [{ id: productId }] = await tx.insert(products).values(values).returning({ id: products.id });
+        [{ id: productId }] = await tx.insert(products).values(row).returning({ id: products.id });
       }
       const pid = productId!;
       const keep = p.packagings.flatMap((x) => (x.id ? [x.id] : []));
@@ -61,7 +65,13 @@ export async function saveProduct(_: FormState, form: FormData): Promise<FormSta
         if (x.id) await tx.update(packagings).set(row).where(and(eq(packagings.id, x.id), eq(packagings.productId, pid)));
         else await tx.insert(packagings).values(row);
       }
-      await audit(tx, { actorId: me.id, action: p.id ? "product.update" : "product.create", entity: "product", entityId: pid });
+      await audit(tx, {
+        actorId: me.id,
+        action: p.id ? "product.update" : "product.create",
+        entity: "product",
+        entityId: pid,
+        details: lastCost === null ? undefined : { lastCost },
+      });
     });
   } catch (e) {
     if (isUniqueViolation(e)) return { error: "Código o código de barras repetido" };

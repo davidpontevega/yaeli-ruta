@@ -2,6 +2,7 @@ import { z } from "zod";
 import { locationTypeEnum } from "@/server/db/schema";
 import { solesSchema } from "@/lib/money-schema";
 import { parseKg } from "@/lib/weight";
+import { parseSoles } from "@/lib/money";
 
 export const productSchema = z
   .object({
@@ -25,6 +26,12 @@ export const productSchema = z
             .trim()
             .max(30)
             .transform((s) => s || null),
+          cost: z.string().transform((s, ctx) => {
+            if (!s.trim()) return null;
+            const v = parseSoles(s);
+            if (v === null) ctx.addIssue({ code: "custom", message: `Costo inválido: "${s}"` });
+            return v;
+          }),
           weightKg: z.string().transform((s, ctx) => {
             const g = parseKg(s);
             if (g === undefined) ctx.addIssue({ code: "custom", message: `Peso inválido: "${s}" (kg, hasta 3 decimales)` });

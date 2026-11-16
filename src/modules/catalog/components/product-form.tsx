@@ -2,11 +2,23 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { formatSoles, parseSoles } from "@/lib/money";
+import { formatSoles, parseSoles, toSolesInput } from "@/lib/money";
+import { priceFromCost, realMarginPct } from "../pricing";
 import { saveProduct } from "../actions";
 import type { CatalogOption } from "../queries";
 
-type PackagingDraft = { key: string; id?: string; name: string; factor: string; price: string; barcode: string; weightKg: string };
+// costEdited: only a cost the owner typed in this form becomes the last cost (a prefilled one must not overwrite it).
+type PackagingDraft = {
+  key: string;
+  id?: string;
+  name: string;
+  factor: string;
+  cost: string;
+  costEdited?: boolean;
+  price: string;
+  barcode: string;
+  weightKg: string;
+};
 export type ProductDraft = {
   id?: string;
   sku: string;
@@ -21,6 +33,16 @@ export type ProductDraft = {
 
 const UNITS = ["unidad", "paquete", "bolsa", "botella", "lata", "barra", "sachet", "pote", "sobre"];
 const PACKS = ["caja", "display", "fardo", "bulto", "pack", "tira", "docena", "paquete"];
+
+/** "Ganas X%" under a packaging: amber below the target, red below cost. */
+function MarginNote({ cost, price, target }: { cost: string; price: string; target: number }) {
+  const c = parseSoles(cost);
+  const pr = parseSoles(price);
+  if (!c || pr === null) return null;
+  if (pr < c) return <p className="text-xs font-semibold text-red-600">Vendes bajo costo</p>;
+  const pct = realMarginPct(pr, c, 1)!;
+  return <p className={`text-xs ${pct < target ? "font-semibold text-amber-700" : "text-muted"}`}>Ganas {pct}%</p>;
+}
 
 let seq = 0;
 const newKey = () => `k${seq++}`;
@@ -43,6 +65,18 @@ export function ProductForm({
   const set = <K extends keyof ProductDraft>(k: K, v: ProductDraft[K]) => setP((s) => ({ ...s, [k]: v }));
   const setPack = (i: number, field: "name" | "factor" | "price" | "weightKg", v: string) =>
     setPacks((s) => s.map((x, j) => (j === i ? { ...x, [field]: v } : x)));
+  // Cost or margin change → price recalculated (the owner may still edit the price afterwards).
+  const priced = (x: PackagingDraft, margin: number) => {
+    const c = parseSoles(x.cost);
+    return c ? { ...x, price: toSolesInput(priceFromCost(c, margin)) } : x;
+  };
+  const setCost = (i: number, v: string) =>
+    setPacks((s) => s.map((x, j) => (j === i ? priced({ ...x, cost: v, costEdited: true }, p.marginPct) : x)));
+  const [marginText, setMarginText] = useState(String(initial.marginPct));
+  const setMargin = (v: number) => {
+    set("marginPct", v);
+    setPacks((s) => s.map((x) => priced(x, v)));
+  };
 
   const [base, ...larger] = packs;
   const unit = base.name || "unidad";
@@ -56,6 +90,7 @@ export function ProductForm({
       id: x.id,
       name: x.name,
       factor: i === 0 ? "1" : x.factor,
+      cost: x.costEdited ? x.cost : "",
       price: x.price,
       barcode: x.barcode,
       weightKg: x.weightKg,
@@ -92,31 +127,51 @@ export function ProductForm({
             ))}
           </select>
         </label>
-        <label className="campo">
-          Proveedor
-          <select value={p.supplierId} onChange={(e) => set("supplierId", e.target.value)}>
-            <option value="">Sin proveedor</option>
-            {suppliers.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
+          <label className="campo">
+            Proveedor
+            <select value={p.supplierId} onChange={(e) => set("supplierId", e.target.value)}>
+              <option value="">Sin proveedor</option>
+              {suppliers.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="campo">
+            % de ganancia
+            <input
+              type="number"
+              min={0}
+              max={300}
+              inputMode="numeric"
+              value={marginText}
+              onChange={(e) => {
+                // An empty field while typing a new % must not reprice everything at 0%.
+                setMarginText(e.target.value);
+                if (e.target.value !== "") setMargin(Number(e.target.value));
+              }}
+            />
+          </label>
           <label className="campo">
             Se vende por
             <input list="units" value={base.name} onChange={(e) => setPack(0, "name", e.target.value)} required />
           </label>
           <label className="campo">
-            Precio S/
-            <input inputMode="decimal" value={base.price} onChange={(e) => setPack(0, "price", e.target.value)} required placeholder="0.50" />
-          </label>
-          <label className="campo">
             Peso kg
             <input inputMode="decimal" value={base.weightKg} onChange={(e) => setPack(0, "weightKg", e.target.value)} placeholder="Opcional" />
           </label>
+          <label className="campo">
+            Costo S/
+            <input inputMode="decimal" value={base.cost} onChange={(e) => setCost(0, e.target.value)} placeholder="Opcional" />
+          </label>
+          <label className="campo">
+            Precio S/
+            <input inputMode="decimal" value={base.price} onChange={(e) => setPack(0, "price", e.target.value)} required placeholder="0.50" />
+          </label>
         </div>
+        <MarginNote cost={base.cost} price={base.price} target={p.marginPct} />
       </div>
 
       <div className="tarjeta flex flex-col gap-3">
@@ -149,7 +204,15 @@ export function ProductForm({
                   className="h-11 w-16 rounded-xl border border-border bg-surface px-2"
                 />
                 <span className="truncate">{unit}</span>
-                <span>a S/</span>
+                <span>costo S/</span>
+                <input
+                  inputMode="decimal"
+                  value={x.cost}
+                  onChange={(e) => setCost(i, e.target.value)}
+                  aria-label="Costo"
+                  className="h-11 w-20 min-w-0 rounded-xl border border-border bg-surface px-2"
+                />
+                <span>precio S/</span>
                 <input
                   inputMode="decimal"
                   value={x.price}
@@ -175,12 +238,13 @@ export function ProductForm({
                   Sale a {formatSoles(Math.round(price / factor))} por {unit}
                 </p>
               )}
+              <MarginNote cost={x.cost} price={x.price} target={p.marginPct} />
             </div>
           );
         })}
         <button
           type="button"
-          onClick={() => setPacks((s) => [...s, { key: newKey(), name: "caja", factor: "", price: "", barcode: "", weightKg: "" }])}
+          onClick={() => setPacks((s) => [...s, { key: newKey(), name: "caja", factor: "", cost: "", price: "", barcode: "", weightKg: "" }])}
           className="btn-secundario h-10 text-sm"
         >
           + Agregar caja / display
@@ -208,10 +272,6 @@ export function ProductForm({
           <label className="campo">
             Avisar si quedan menos de ({unit})
             <input type="number" min={0} inputMode="numeric" value={p.minStock} onChange={(e) => set("minStock", Number(e.target.value))} />
-          </label>
-          <label className="campo">
-            Ganancia que quiero %
-            <input type="number" min={0} max={300} inputMode="numeric" value={p.marginPct} onChange={(e) => set("marginPct", Number(e.target.value))} />
           </label>
         </div>
       </details>
