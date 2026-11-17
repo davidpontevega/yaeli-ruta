@@ -4,7 +4,7 @@ import { formatSoles } from "@/lib/money";
 import { paymentLabel } from "@/lib/payment";
 import { ACCOUNT_MOVEMENT_LIMIT, type Account } from "../queries";
 
-const TYPE: Record<string, string> = { SALDO_INICIAL: "Deuda inicial", CARGO: "Entrega", ABONO: "Cobro", AJUSTE: "Ajuste" };
+export const MOVEMENT_LABEL: Record<string, string> = { SALDO_INICIAL: "Deuda inicial", CARGO: "Entrega", ABONO: "Cobro", AJUSTE: "Ajuste" };
 
 /** Balance header + movements newest first, each with the balance after it. */
 export function AccountView({ account, creditLimit }: { account: Account; creditLimit: number | null }) {
@@ -28,7 +28,7 @@ export function AccountView({ account, creditLimit }: { account: Account; credit
           {movements.map((m) => (
             <li key={m.id} className="fila flex items-start justify-between gap-2 text-sm">
               <div className="min-w-0">
-                <p className="font-semibold">{TYPE[m.type]}</p>
+                <p className="font-semibold">{MOVEMENT_LABEL[m.type]}</p>
                 <p className="text-xs text-muted">
                   {formatDate(m.date)}
                   {m.method && ` · ${paymentLabel(m.method)}`}

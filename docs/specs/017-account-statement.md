@@ -1,7 +1,7 @@
 ---
 id: 017
 title: Estado de cuenta por cliente
-status: approved
+status: done
 module: accounts
 ---
 
@@ -15,14 +15,14 @@ Incluye: la página `/clientes/[id]/estado` optimizada para imprimir, con filtro
 No incluye: librería de PDF ni generación en el servidor; enlace público para el cliente (la página es solo del dueño); detalle de productos de cada pedido; envío automático.
 
 ## Criterios de aceptación
-- [ ] AC1 — Solo el dueño: `requireUser("DUENO")` en la página. El repartidor es redirigido. El saldo no es un costo, pero el estado de cuenta es una herramienta del dueño, igual que la ficha de 009.
-- [ ] AC2 — Periodo con dos `<input type="date">` (`desde`, `hasta`) en un formulario GET, sin JS. Por defecto: `hasta` = hoy (Lima), `desde` = hoy − 30 días. Fechas inválidas, `desde > hasta` o `hasta` futura → se usa el periodo por defecto.
-- [ ] AC3 — Saldo anterior = suma de los movimientos con `fecha < desde`. Los movimientos con `desde ≤ fecha ≤ hasta` se listan del más viejo al más nuevo (fecha, tipo, pedido / medio / nota, monto con signo, saldo después).
-- [ ] AC4 — Resumen: Saldo anterior · Entregas (SALDO_INICIAL + CARGO) · Cobros (ABONO, en positivo) · Ajustes (AJUSTE, con signo) · Saldo al `hasta`. Se cumple saldo anterior + entregas − cobros + ajustes = saldo final.
-- [ ] AC5 — Encabezado impreso: `BRAND.company`, nombre y teléfono del cliente, periodo y fecha de emisión. Al imprimir se ocultan la navegación, el filtro y los botones (`print:hidden`). La tabla cabe en A4 vertical.
-- [ ] AC6 — Sin movimientos en el periodo: se ve el resumen (saldo anterior = saldo final) y el texto "Sin movimientos en este periodo".
-- [ ] AC7 — "Enviar por WhatsApp" abre `https://wa.me/<51+número>?text=…` (sin número si el cliente no tiene teléfono) con: empresa, cliente, periodo, las 5 cifras del resumen y "Te envío el detalle en PDF". Sin enlace a la app.
-- [ ] AC8 — La ficha `/clientes/[id]/cuenta` muestra el enlace "Estado de cuenta". Cliente inexistente o id no uuid → `notFound()`.
+- [x] AC1 — Solo el dueño: `requireUser("DUENO")` en la página. El repartidor es redirigido. El saldo no es un costo, pero el estado de cuenta es una herramienta del dueño, igual que la ficha de 009.
+- [x] AC2 — Periodo con dos `<input type="date">` (`desde`, `hasta`) en un formulario GET, sin JS. Por defecto: `hasta` = hoy (Lima), `desde` = hoy − 30 días. Fechas inválidas, `desde > hasta` o `hasta` futura → se usa el periodo por defecto.
+- [x] AC3 — Saldo anterior = suma de los movimientos con `fecha < desde`. Los movimientos con `desde ≤ fecha ≤ hasta` se listan del más viejo al más nuevo (fecha, tipo, pedido / medio / nota, monto con signo, saldo después).
+- [x] AC4 — Resumen: Saldo anterior · Entregas (SALDO_INICIAL + CARGO) · Cobros (ABONO, en positivo) · Ajustes (AJUSTE, con signo) · Saldo al `hasta`. Se cumple saldo anterior + entregas − cobros + ajustes = saldo final.
+- [x] AC5 — Encabezado impreso: `BRAND.company`, nombre y teléfono del cliente, periodo y fecha de emisión. Al imprimir se ocultan la navegación, el filtro y los botones (`print:hidden`). La tabla cabe en A4 vertical.
+- [x] AC6 — Sin movimientos en el periodo: se ve el resumen (saldo anterior = saldo final) y el texto "Sin movimientos en este periodo".
+- [x] AC7 — "Enviar por WhatsApp" abre `https://wa.me/<51+número>?text=…` (sin número si el cliente no tiene teléfono) con: empresa, cliente, periodo, las 5 cifras del resumen y "Te envío el detalle en PDF". Sin enlace a la app.
+- [x] AC8 — La ficha `/clientes/[id]/cuenta` muestra el enlace "Estado de cuenta". Cliente inexistente o id no uuid → `notFound()`.
 
 ## Datos
 Sin cambios de esquema. Lee `movimientos_cuenta` (009).
@@ -48,11 +48,11 @@ Nuevo:
 - `StatementShare` (cliente): no hay un botón de imprimir/compartir reutilizable; es lo único que necesita JS.
 
 ## Tareas
-- [ ] T1 — `buildStatement` puro con test: sin movimientos; todo antes del periodo (solo saldo anterior); movimientos en el borde `desde`/`hasta`; después de `hasta` no cuentan; ajuste negativo; identidad de AC4 · `src/modules/accounts/account-math.ts`, `account-math.test.ts`
-- [ ] T2 — `waNumber` a `src/lib/phone.ts` con test (9 dígitos → 51…, con espacios, ya con 51) y `supplier-list.tsx` lo importa · `src/lib/phone.ts`, `src/lib/phone.test.ts`, `src/modules/inventory/components/supplier-list.tsx`
-- [ ] T3 — `statementPeriodSchema` con test del defecto y los inválidos de AC2; `movementsOf` + `getStatement` · `src/modules/accounts/schemas.ts`, `schemas.test.ts`, `queries.ts`
-- [ ] T4 — `StatementView` (servidor: encabezado, resumen, tabla, filtro GET) y `StatementShare` (`"use client"`: WhatsApp + Imprimir, `print:hidden`); exportar `TYPE` como `MOVEMENT_LABEL` desde `account-view.tsx`; exports en el index · `src/modules/accounts/components/statement-view.tsx`, `statement-share.tsx`, `account-view.tsx`, `index.ts`
-- [ ] T5 — Página y enlace desde la ficha · `src/app/(app)/clientes/[id]/estado/page.tsx`, `src/app/(app)/clientes/[id]/cuenta/page.tsx`
+- [x] T1 — `buildStatement` puro con test: sin movimientos; todo antes del periodo (solo saldo anterior); movimientos en el borde `desde`/`hasta`; después de `hasta` no cuentan; ajuste negativo; identidad de AC4 · `src/modules/accounts/account-math.ts`, `account-math.test.ts`
+- [x] T2 — `waNumber` a `src/lib/phone.ts` con test (9 dígitos → 51…, con espacios, ya con 51) y `supplier-list.tsx` lo importa · `src/lib/phone.ts`, `src/lib/phone.test.ts`, `src/modules/inventory/components/supplier-list.tsx`
+- [x] T3 — `statementPeriodSchema` con test del defecto y los inválidos de AC2; `movementsOf` + `getStatement` · `src/modules/accounts/schemas.ts`, `schemas.test.ts`, `queries.ts`
+- [x] T4 — `StatementView` (servidor: encabezado, resumen, tabla, filtro GET) y `StatementShare` (`"use client"`: WhatsApp + Imprimir, `print:hidden`); exportar `TYPE` como `MOVEMENT_LABEL` desde `account-view.tsx`; exports en el index · `src/modules/accounts/components/statement-view.tsx`, `statement-share.tsx`, `account-view.tsx`, `index.ts`
+- [x] T5 — Página y enlace desde la ficha · `src/app/(app)/clientes/[id]/estado/page.tsx`, `src/app/(app)/clientes/[id]/cuenta/page.tsx`
 
 ## Paralelismo
 Paralelo: [T1] [T2]. Luego T3 → T4 → T5 (T4 usa T3; T5 usa T4).

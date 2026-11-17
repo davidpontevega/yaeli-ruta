@@ -3,7 +3,7 @@ import { and, asc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { db } from "@/server/db";
 import { accountMovements, customers, orders, routes } from "@/server/db/schema";
 import { daysUntil, todayInLima } from "@/modules/inventory";
-import { debtSince } from "./account-math";
+import { buildStatement, debtSince } from "./account-math";
 
 export const ACCOUNT_MOVEMENT_LIMIT = 100;
 const balance = sql`sum(${accountMovements.amount})`.mapWith(Number);
@@ -21,10 +21,9 @@ export async function balancesByCustomer(customerIds?: string[]): Promise<Record
 
 const ageDays = (since: string | null) => (since ? -daysUntil(since, todayInLima()) : null);
 
-/** Balance, debt age and the last movements (newest first) with the balance after each one. */
-export async function getAccount(customerId: string) {
-  // ponytail: reads every movement of the customer (needed for FIFO age). Fine for thousands per customer.
-  const all = await db
+/** Every movement of the customer, oldest first, with its order number. */
+function movementsOf(customerId: string) {
+  return db
     .select({
       id: accountMovements.id,
       type: accountMovements.type,
@@ -38,6 +37,12 @@ export async function getAccount(customerId: string) {
     .leftJoin(orders, eq(orders.id, accountMovements.orderId))
     .where(eq(accountMovements.customerId, customerId))
     .orderBy(asc(accountMovements.date), asc(accountMovements.createdAt));
+}
+
+/** Balance, debt age and the last movements (newest first) with the balance after each one. */
+export async function getAccount(customerId: string) {
+  // ponytail: reads every movement of the customer (needed for FIFO age). Fine for thousands per customer.
+  const all = await movementsOf(customerId);
   let running = 0;
   const withBalance = all.map((m) => ({ ...m, balance: (running += m.amount) }));
   return {
@@ -47,6 +52,13 @@ export async function getAccount(customerId: string) {
   };
 }
 export type Account = Awaited<ReturnType<typeof getAccount>>;
+
+/** Statement for [from, to]: opening balance, totals and the movements of the period. */
+export async function getStatement(customerId: string, from: string, to: string) {
+  // ponytail: reads every movement for the opening balance; becomes a SQL sum if a customer reaches thousands.
+  return buildStatement(await movementsOf(customerId), from, to);
+}
+export type Statement = Awaited<ReturnType<typeof getStatement>>;
 
 /** Customers who owe, oldest debt first. */
 export async function listDebtors(f: { routeId: string }) {

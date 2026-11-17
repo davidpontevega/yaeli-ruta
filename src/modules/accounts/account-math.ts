@@ -26,3 +26,25 @@ export function debtSince(movements: { amount: number; date: string }[]): string
   }
   return open[0]?.date ?? null;
 }
+
+/**
+ * Account statement for [from, to] (YYYY-MM-DD, both inclusive). `movements` in chronological order.
+ * opening + charges − payments + adjustments = closing.
+ */
+export function buildStatement<M extends { type: string; amount: number; date: string }>(movements: M[], from: string, to: string) {
+  let opening = 0;
+  let charges = 0;
+  let payments = 0;
+  let adjustments = 0;
+  const rows: (M & { balance: number })[] = [];
+  for (const m of movements) {
+    if (m.date < from) opening += m.amount;
+    else if (m.date <= to) {
+      if (m.type === "ABONO") payments -= m.amount;
+      else if (m.type === "AJUSTE") adjustments += m.amount;
+      else charges += m.amount; // SALDO_INICIAL, CARGO
+      rows.push({ ...m, balance: opening + charges - payments + adjustments });
+    }
+  }
+  return { opening, charges, payments, adjustments, closing: opening + charges - payments + adjustments, rows };
+}

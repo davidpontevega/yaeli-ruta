@@ -17,9 +17,14 @@ export default async function CustomerAccountPage({ params }: PageProps<"/client
       <BackLink href="/clientes" label="Clientes" />
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">{customer.name}</h1>
-        <Link href={`/clientes/${customer.id}`} className="text-sm text-primary underline">
-          Editar cliente
-        </Link>
+        <div className="flex gap-3">
+          <Link href={`/clientes/${customer.id}/estado`} className="text-sm text-primary underline">
+            Estado de cuenta
+          </Link>
+          <Link href={`/clientes/${customer.id}`} className="text-sm text-primary underline">
+            Editar cliente
+          </Link>
+        </div>
       </div>
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="flex flex-col gap-3 lg:sticky lg:top-6 lg:order-2">

@@ -43,3 +43,15 @@ export const adjustmentSchema = z.object({
     }),
   note: z.string().trim().min(3, "Escribe el motivo").max(200),
 });
+
+/**
+ * Statement period from the GET filter (`desde`, `hasta`). Invalid dates, `desde > hasta` or a future `hasta`
+ * → the default period [defaultFrom, today].
+ */
+export function statementPeriodSchema(today: string, defaultFrom: string) {
+  const fallback = { from: defaultFrom, to: today };
+  return z
+    .object({ desde: z.iso.date().optional(), hasta: z.iso.date().optional() })
+    .transform(({ desde = defaultFrom, hasta = today }) => (desde <= hasta && hasta <= today ? { from: desde, to: hasta } : fallback))
+    .catch(fallback);
+}

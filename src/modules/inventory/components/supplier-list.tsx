@@ -3,15 +3,11 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Stat } from "@/components/ui/stat";
 import { Avatar } from "@/components/ui/avatar";
 import { formatSoles } from "@/lib/money";
+import { waNumber } from "@/lib/phone";
 import type { SupplierStats } from "../queries";
 import { SupplierPhoneForm } from "./supplier-phone-form";
 
 const formatDay = (d: Date) => d.toLocaleDateString("es-PE", { timeZone: "America/Lima", day: "2-digit", month: "2-digit", year: "numeric" });
-/** wa.me needs the country code: a 9-digit Peruvian mobile gets 51 in front. */
-const waNumber = (phone: string) => {
-  const d = phone.replace(/\D/g, "");
-  return d.length === 9 ? `51${d}` : d;
-};
 
 /** Per supplier: active products and how many are low or out of stock (from the stock list). */
 export type SupplierProducts = Record<string, { products: number; missing: number }>;
