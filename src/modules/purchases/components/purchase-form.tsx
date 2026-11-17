@@ -128,53 +128,87 @@ export function PurchaseForm({
 
   return (
     // Phone: totals, list, actions in one column. Desktop: the list on the left; totals and actions on the right.
-    <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:grid-rows-[auto_1fr] lg:items-start lg:[grid-template-areas:'form_totals'_'form_actions']">
-      {/* Totals stay visible while scrolling the lines. */}
-      <div className="tarjeta sticky top-14 z-10 flex flex-col gap-1 text-sm md:top-4 lg:[grid-area:totals] print:static">
-        <h2 className="titulo-tarjeta text-sm">
-          <IconTile d={recojo ? ICONS.truck : ICONS.box} tone={recojo ? "bg-sky-50 text-sky-700" : "bg-teal-50 text-teal-700"} />
-          Resumen de la compra
-        </h2>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-xl bg-slate-50 px-3 py-2">
-            <span className="block text-[11px] font-medium text-muted">Peso{capacity ? ` / ${formatKg(capacity)}` : ""}</span>
-            <span className={`cifra text-lg ${capacity && totals.weight > capacity ? "text-red-700" : ""}`}>{formatKg(totals.weight)}</span>
-          </div>
-          <div className="rounded-xl bg-slate-50 px-3 py-2">
-            <span className="block text-[11px] font-medium text-muted">Mercadería</span>
-            <span className="cifra text-lg">{formatSoles(totals.goods)}</span>
-          </div>
-          {recojo && (
+    <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+      {/* Desktop: summary and actions move together in one sticky column. Phone: the wrapper vanishes (contents) and order puts the summary on top, actions at the end. */}
+      <div className="contents lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1 lg:flex lg:flex-col lg:gap-3">
+        {/* Totals stay visible while scrolling the lines. */}
+        <div className="tarjeta sticky top-14 z-10 order-1 flex flex-col gap-1 text-sm md:top-4 lg:static print:static">
+          <h2 className="titulo-tarjeta text-sm">
+            <IconTile d={recojo ? ICONS.truck : ICONS.box} tone={recojo ? "bg-sky-50 text-sky-700" : "bg-teal-50 text-teal-700"} />
+            Resumen de la compra
+          </h2>
+          <div className="grid grid-cols-2 gap-2">
             <div className="rounded-xl bg-slate-50 px-3 py-2">
-              <span className="block text-[11px] font-medium text-muted">Flete</span>
-              <span className="cifra text-lg">{formatSoles(totals.freight)}</span>
+              <span className="block text-[11px] font-medium text-muted">Peso{capacity ? ` / ${formatKg(capacity)}` : ""}</span>
+              <span className={`cifra text-lg ${capacity && totals.weight > capacity ? "text-red-700" : ""}`}>{formatKg(totals.weight)}</span>
+            </div>
+            <div className="rounded-xl bg-slate-50 px-3 py-2">
+              <span className="block text-[11px] font-medium text-muted">Mercadería</span>
+              <span className="cifra text-lg">{formatSoles(totals.goods)}</span>
+            </div>
+            {recojo && (
+              <div className="rounded-xl bg-slate-50 px-3 py-2">
+                <span className="block text-[11px] font-medium text-muted">Flete</span>
+                <span className="cifra text-lg">{formatSoles(totals.freight)}</span>
+              </div>
+            )}
+            <div className={`rounded-xl bg-teal-50 px-3 py-2 ${recojo ? "" : "col-span-2"}`}>
+              <span className="block text-[11px] font-medium text-teal-800">Total</span>
+              <span className="cifra text-lg text-primary">{formatSoles(totals.total)}</span>
+            </div>
+          </div>
+          {capacity && (
+            <div className="h-2 overflow-hidden rounded-full bg-slate-100" aria-hidden>
+              <div
+                className={`h-full ${totals.weight > capacity ? "bg-red-600" : "bg-primary"}`}
+                style={{ width: `${Math.min(100, (totals.weight * 100) / capacity)}%` }}
+              />
             </div>
           )}
-          <div className={`rounded-xl bg-teal-50 px-3 py-2 ${recojo ? "" : "col-span-2"}`}>
-            <span className="block text-[11px] font-medium text-teal-800">Total</span>
-            <span className="cifra text-lg text-primary">{formatSoles(totals.total)}</span>
-          </div>
+          {capacity && totals.weight > capacity && <p className="font-semibold text-red-600">Se pasa de la carga del vehículo</p>}
+          {totals.noWeight > 0 && <p className="text-xs text-amber-700">{totals.noWeight} producto(s) sin peso: complétalo en Productos.</p>}
+          {/* Save lives in the summary, which stays in view: no scrolling to the end of a long list. */}
+          {editable && (
+            <button form="purchase-form" disabled={pending || !known.length} className="btn-primario mt-1 h-12 print:hidden">
+              {initial.id ? "Guardar cambios" : "Guardar lista"} · {known.length} producto{known.length === 1 ? "" : "s"}
+            </button>
+          )}
+          {state?.error && <p className="text-sm text-red-600 print:hidden">{state.error}</p>}
         </div>
-        {capacity && (
-          <div className="h-2 overflow-hidden rounded-full bg-slate-100" aria-hidden>
-            <div
-              className={`h-full ${totals.weight > capacity ? "bg-red-600" : "bg-primary"}`}
-              style={{ width: `${Math.min(100, (totals.weight * 100) / capacity)}%` }}
-            />
-          </div>
-        )}
-        {capacity && totals.weight > capacity && <p className="font-semibold text-red-600">Se pasa de la carga del vehículo</p>}
-        {totals.noWeight > 0 && <p className="text-xs text-amber-700">{totals.noWeight} producto(s) sin peso: complétalo en Productos.</p>}
-        {/* Save lives in the summary, which stays in view: no scrolling to the end of a long list. */}
-        {editable && (
-          <button form="purchase-form" disabled={pending || !known.length} className="btn-primario mt-1 h-12 print:hidden">
-            {initial.id ? "Guardar cambios" : "Guardar lista"} · {known.length} producto{known.length === 1 ? "" : "s"}
-          </button>
-        )}
-        {state?.error && <p className="text-sm text-red-600 print:hidden">{state.error}</p>}
+        <div className="order-3 flex flex-col gap-3 print:hidden">
+          {initial.id && known.length > 0 && (
+            <div className="grid grid-cols-2 gap-2 print:hidden">
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-secundario flex h-12 items-center justify-center text-sm"
+              >
+                Enviar por WhatsApp
+              </a>
+              <button type="button" onClick={() => window.print()} className="btn-secundario h-12 text-sm">
+                Imprimir
+              </button>
+            </div>
+          )}
+          {initial.id && editable && (
+            <Link href={`/recepciones/nueva?compra=${initial.id}`} className="btn-primario flex h-12 items-center justify-center print:hidden">
+              Recibir esta compra
+            </Link>
+          )}
+          {initial.id && editable && (
+            <form action={cancelAction} onSubmit={(e) => !confirm("¿Anular esta compra?") && e.preventDefault()} className="print:hidden">
+              <input type="hidden" name="id" value={initial.id} />
+              <button disabled={cancelling} className="h-12 w-full rounded-xl border border-red-300 text-red-600">
+                Anular compra
+              </button>
+              {cancelState?.error && <p className="text-sm text-red-600">{cancelState.error}</p>}
+            </form>
+          )}
+        </div>
       </div>
 
-      <form id="purchase-form" action={action} className="flex min-w-0 flex-col gap-3 lg:[grid-area:form] print:hidden">
+      <form id="purchase-form" action={action} className="order-2 flex min-w-0 flex-col gap-3 lg:col-start-1 lg:row-start-1 print:hidden">
         <input type="hidden" name="data" value={data} />
         <fieldset disabled={!editable} className="flex flex-col gap-3">
           <div className="tarjeta flex flex-col gap-3">
@@ -366,40 +400,8 @@ export function PurchaseForm({
         </fieldset>
       </form>
 
-      <div className="flex flex-col gap-3 lg:[grid-area:actions] print:hidden">
-        {initial.id && known.length > 0 && (
-          <div className="grid grid-cols-2 gap-2 print:hidden">
-            <a
-              href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
-              target="_blank"
-              rel="noreferrer"
-              className="btn-secundario flex h-12 items-center justify-center text-sm"
-            >
-              Enviar por WhatsApp
-            </a>
-            <button type="button" onClick={() => window.print()} className="btn-secundario h-12 text-sm">
-              Imprimir
-            </button>
-          </div>
-        )}
-        {initial.id && editable && (
-          <Link href={`/recepciones/nueva?compra=${initial.id}`} className="btn-primario flex h-12 items-center justify-center print:hidden">
-            Recibir esta compra
-          </Link>
-        )}
-        {initial.id && editable && (
-          <form action={cancelAction} onSubmit={(e) => !confirm("¿Anular esta compra?") && e.preventDefault()} className="print:hidden">
-            <input type="hidden" name="id" value={initial.id} />
-            <button disabled={cancelling} className="h-12 w-full rounded-xl border border-red-300 text-red-600">
-              Anular compra
-            </button>
-            {cancelState?.error && <p className="text-sm text-red-600">{cancelState.error}</p>}
-          </form>
-        )}
-      </div>
-
       {/* Paper version: the notebook sheet. */}
-      <table className="hidden w-full text-sm print:table">
+      <table className="order-4 hidden w-full text-sm lg:col-span-2 print:table">
         <thead>
           <tr className="border-b text-left">
             <th>Cant.</th>
