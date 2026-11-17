@@ -1,4 +1,5 @@
 import { requireUser } from "@/server/auth";
+import { createSupplier } from "@/modules/inventory";
 import { BackLink } from "@/components/ui/back-link";
 import { listCatalogOptions, listProducts } from "@/modules/catalog";
 import { PurchaseForm, defaultCosts, listMissingBySupplier, listVehicles } from "@/modules/purchases";
@@ -19,6 +20,7 @@ export default async function NewPurchasePage() {
       <PurchaseForm
         products={products}
         suppliers={suppliers}
+        createSupplier={createSupplier}
         vehicles={vehicles}
         costs={costs}
         missing={missing}

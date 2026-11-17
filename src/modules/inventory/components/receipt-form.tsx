@@ -8,6 +8,7 @@ import type { ReceiptType } from "@/server/db/schema";
 import { receiveGoods } from "../actions";
 import { costFromLine, matchLine, type LineMatch, type ReadDocument } from "../document-read";
 import { ProductPicker } from "@/components/ui/product-picker";
+import { Avatar, Glyph, ICONS } from "@/components/ui/avatar";
 import { ReadDocumentButton } from "./read-document-button";
 
 type Option = { id: string; name: string };
@@ -154,35 +155,46 @@ export function ReceiptForm({
       </datalist>
 
       <div className="tarjeta flex flex-col gap-3 lg:sticky lg:top-6 lg:[grid-area:top]">
+        <h2 className="titulo-tarjeta">¿Qué estás registrando?</h2>
         <div className="grid grid-cols-2 gap-2">
           {(
             [
-              ["COMPRA", "Llegó mercadería"],
-              ["SALDO_INICIAL", "Ya lo tengo (inventario inicial)"],
+              ["COMPRA", "Llegó mercadería", "una compra", ICONS.truck],
+              ["SALDO_INICIAL", "Ya lo tengo", "inventario inicial", ICONS.box],
             ] as const
-          ).map(([value, label]) => (
+          ).map(([value, label, hint, icon]) => (
             <button
               key={value}
               type="button"
               onClick={() => setType(value)}
               aria-pressed={type === value}
-              className={`min-h-12 rounded-xl border px-2 text-sm font-medium ${type === value ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}
+              className={`flex min-h-16 flex-col items-center justify-center gap-0.5 rounded-xl border px-2 text-sm font-semibold transition ${type === value ? "border-primary bg-primary text-primary-foreground shadow-[0_6px_16px_rgba(15,118,110,0.25)]" : "border-border bg-surface text-slate-700 hover:border-teal-300"}`}
             >
-              {label}
+              <span className="flex items-center gap-1.5">
+                <Glyph d={icon} />
+                {label}
+              </span>
+              <span className={`text-xs font-normal ${type === value ? "text-teal-50" : "text-muted"}`}>{hint}</span>
             </button>
           ))}
         </div>
         {type === "COMPRA" && (
           <>
             <ReadDocumentButton onRead={addRead} aiEnabled={aiEnabled} />
-            <div className="grid grid-cols-2 gap-3">
-              <label className="campo">
-                Proveedor (opcional)
-                <input value={supplier} onChange={(e) => setSupplier(e.target.value)} maxLength={80} list="suppliers" />
+            <div className="flex flex-col gap-3">
+              <label className="campo-etiqueta">
+                Proveedor
+                <input
+                  value={supplier}
+                  onChange={(e) => setSupplier(e.target.value)}
+                  maxLength={80}
+                  list="suppliers"
+                  placeholder="Escribe o elige (si es nuevo, se crea)"
+                />
               </label>
-              <label className="campo">
-                N° guía / factura (opcional)
-                <input value={document} onChange={(e) => setDocument(e.target.value)} maxLength={80} />
+              <label className="campo-etiqueta">
+                N° guía / factura
+                <input value={document} onChange={(e) => setDocument(e.target.value)} maxLength={80} placeholder="Opcional, ej. F001-123" />
               </label>
             </div>
           </>
@@ -199,8 +211,9 @@ export function ReceiptForm({
           const pack = p?.packagings.find((x) => x.id === l.packagingId);
           return (
             <div key={l.key} className={`tarjeta flex flex-col gap-3 ${l.status && l.status !== "alias" ? "border-amber-300" : ""}`}>
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex flex-col gap-1">
+              <div className="flex items-start justify-between gap-3">
+                <Avatar name={p ? p.name : "?"} tone={p ? undefined : "bg-red-100 text-red-700"} />
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <p className="font-semibold leading-tight">{p ? p.name : "Producto no encontrado"}</p>
                   {l.readText && (
                     <p className="text-xs text-muted">
@@ -211,7 +224,12 @@ export function ReceiptForm({
                     </p>
                   )}
                 </div>
-                <button type="button" onClick={() => setLines((s) => s.filter((x) => x.key !== l.key))} className="text-muted" aria-label="Quitar">
+                <button
+                  type="button"
+                  onClick={() => setLines((s) => s.filter((x) => x.key !== l.key))}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-red-50 hover:text-red-600"
+                  aria-label="Quitar"
+                >
                   ✕
                 </button>
               </div>
@@ -287,13 +305,20 @@ export function ReceiptForm({
         })}
       </div>
 
-      <div className="flex flex-col gap-2 lg:[grid-area:bottom]">
-        <div className="text-right">
-          <p className="font-semibold">Total {formatSoles(total)}</p>
+      <div className="flex flex-col gap-3 lg:[grid-area:bottom]">
+        <div className="tarjeta flex flex-col gap-2">
+          <div className="flex items-baseline justify-between">
+            <span className="text-sm text-muted">
+              {lines.length} producto{lines.length === 1 ? "" : "s"}
+            </span>
+            <span className="cifra text-2xl text-primary">{formatSoles(total)}</span>
+          </div>
           {readTotal !== null && (
-            <p className={`text-sm ${readTotal === total ? "text-muted" : "font-medium text-red-600"}`}>
+            <p
+              className={`rounded-lg px-2.5 py-1.5 text-sm ${readTotal === total ? "bg-emerald-50 text-emerald-800" : "bg-red-50 font-medium text-red-700"}`}
+            >
               Total en el documento {formatSoles(readTotal)}
-              {readTotal !== total && " — no cuadra, revisa"}
+              {readTotal === total ? " · cuadra" : " · no cuadra, revisa"}
             </p>
           )}
         </div>

@@ -37,3 +37,18 @@ export const supplierPhoneSchema = z.object({
     .regex(/^[\d\s+()-]*$/, "Solo números en el teléfono")
     .transform((s) => s || null),
 });
+
+export const newSupplierSchema = z.object({
+  name: z
+    .string()
+    .transform((s) => s.replace(/\s+/g, " ").trim())
+    .pipe(z.string().min(2, "Escribe el nombre del proveedor").max(80)),
+  phone: z
+    .string()
+    .trim()
+    .max(30)
+    .regex(/^[\d\s+()-]*$/, "Solo números en el teléfono")
+    .transform((v) => v || null)
+    .optional()
+    .transform((v) => v ?? null),
+});

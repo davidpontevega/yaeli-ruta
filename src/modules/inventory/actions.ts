@@ -20,7 +20,7 @@ import {
 import { requireUser } from "@/server/auth";
 import { listPriceReview } from "@/modules/catalog";
 import type { FormState } from "@/lib/form-state";
-import { receiptSchema, supplierPhoneSchema } from "./schemas";
+import { receiptSchema, newSupplierSchema, supplierPhoneSchema } from "./schemas";
 import { toBaseUnits, weightedAverageCost } from "./stock-math";
 import { normalizeText } from "./document-read";
 
@@ -230,4 +230,27 @@ export async function updateSupplierPhone(_: FormState, form: FormData): Promise
   });
   revalidatePath("/proveedores");
   return { ok: "Guardado" };
+}
+
+export type SupplierCreated = { error?: string; ok?: string; id?: string; name?: string };
+
+/** New supplier from Proveedores, the purchase list or the product form (name matched ignoring case and extra spaces). */
+export async function createSupplier(_: SupplierCreated | undefined, form: FormData): Promise<SupplierCreated> {
+  const me = await requireUser("DUENO");
+  const input = newSupplierSchema.safeParse(Object.fromEntries(form));
+  if (!input.success) return { error: input.error.issues[0].message };
+  const { name, phone } = input.data;
+  const [found] = await db
+    .select({ id: suppliers.id, name: suppliers.name })
+    .from(suppliers)
+    .where(sql`lower(${suppliers.name}) = lower(${name})`)
+    .limit(1);
+  if (found) return { error: `Ya existe «${found.name}»`, id: found.id, name: found.name };
+  const created = await db.transaction(async (tx) => {
+    const [s] = await tx.insert(suppliers).values({ name, phone }).returning({ id: suppliers.id, name: suppliers.name });
+    await audit(tx, { actorId: me.id, action: "supplier.create", entity: "supplier", entityId: s.id, details: { name } });
+    return s;
+  });
+  revalidatePath("/proveedores");
+  return { ok: `Proveedor «${created.name}» creado`, ...created };
 }

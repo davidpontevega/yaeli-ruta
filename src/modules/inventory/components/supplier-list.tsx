@@ -9,7 +9,9 @@ const formatDay = (d: Date) => d.toLocaleDateString("es-PE", { timeZone: "Americ
 
 export function SupplierList({ suppliers }: { suppliers: SupplierStats[] }) {
   if (!suppliers.length)
-    return <EmptyState text="Aún no hay proveedores. Se crean solos al registrar una compra con el nombre del proveedor." />;
+    return (
+      <EmptyState text="Aún no hay proveedores. Crea el primero con «Nuevo proveedor»; también se crean solos al recibir mercadería con su nombre." />
+    );
   return (
     <ul className="lista">
       {suppliers.map((s) => (

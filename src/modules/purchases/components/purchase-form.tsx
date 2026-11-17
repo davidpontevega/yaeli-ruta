@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { ProductPicker } from "@/components/ui/product-picker";
+import { SupplierQuickAdd } from "@/components/ui/supplier-quick-add";
 import { formatSoles, parseSoles, toSolesInput } from "@/lib/money";
 import { formatKg } from "@/lib/weight";
 import { cancelPurchase, savePurchase } from "../actions";
@@ -13,6 +14,10 @@ import type { PurchaseType } from "@/server/db/schema";
 type Packaging = { id: string; name: string; factor: number; weightGrams: number | null };
 type Product = { id: string; name: string; sku: string; active: boolean; supplierId: string | null; packagings: Packaging[] };
 type Option = { id: string; name: string };
+type SupplierAction = (
+  state: { error?: string; ok?: string; id?: string; name?: string } | undefined,
+  form: FormData,
+) => Promise<{ error?: string; ok?: string; id?: string; name?: string }>;
 type Vehicle = Option & { capacityKg: number | null };
 type Draft = { packagingId: string; quantity: string; cost: string; freight: string };
 
@@ -23,8 +28,9 @@ const TYPES = [
 
 export function PurchaseForm({
   products,
-  suppliers,
+  suppliers: initialSuppliers,
   vehicles,
+  createSupplier,
   costs,
   missing,
   initial,
@@ -32,6 +38,8 @@ export function PurchaseForm({
 }: {
   products: Product[];
   suppliers: Option[];
+  /** Server action to add a supplier from here (the page passes it). */
+  createSupplier: SupplierAction;
   vehicles: Vehicle[];
   /** Cost to prefill per packaging (céntimos). */
   costs: Record<string, number>;
@@ -52,6 +60,7 @@ export function PurchaseForm({
   const [cancelState, cancelAction, cancelling] = useActionState(cancelPurchase, undefined);
   const [type, setType] = useState<PurchaseType>(initial.type);
   const [supplierId, setSupplierId] = useState(initial.supplierId);
+  const [supplierList, setSupplierList] = useState(initialSuppliers);
   const [vehicleId, setVehicleId] = useState(initial.vehicleId);
   const [lines, setLines] = useState<Draft[]>(
     initial.lines.map((l) => ({
@@ -186,12 +195,21 @@ export function PurchaseForm({
                 className="h-12 min-w-0 flex-1 rounded-xl border border-border bg-surface px-3"
               >
                 <option value="">{recojo ? "Varios proveedores" : "Elige el proveedor"}</option>
-                {suppliers.map((s) => (
+                {supplierList.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>
                 ))}
               </select>
+              {editable && (
+                <SupplierQuickAdd
+                  action={createSupplier}
+                  onCreated={(c) => {
+                    setSupplierList((l) => (l.some((x) => x.id === c.id) ? l : [...l, c].sort((a, b) => a.name.localeCompare(b.name))));
+                    setSupplierId(c.id);
+                  }}
+                />
+              )}
               {recojo && (
                 <select
                   value={vehicleId}
@@ -224,6 +242,15 @@ export function PurchaseForm({
                 onPick={add}
                 placeholder={known.length ? "+ Agregar otro producto" : "Busca el producto"}
               />
+            </div>
+          )}
+          {editable && !known.length && (
+            <div className="flex flex-col items-center gap-1.5 rounded-2xl border-2 border-dashed border-slate-200 px-4 py-8 text-center">
+              <p className="font-semibold">Tu lista está vacía</p>
+              <p className="max-w-sm text-sm text-muted">
+                Busca productos arriba
+                {supplierId ? " o toca «Agregar lo que falta de este proveedor»" : ", o elige un proveedor para agregar lo que le falta"}.
+              </p>
             </div>
           )}
           {[...known].reverse().map((l) => {

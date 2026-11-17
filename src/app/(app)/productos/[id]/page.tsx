@@ -5,7 +5,7 @@ import { BackLink } from "@/components/ui/back-link";
 import { toSolesInput } from "@/lib/money";
 import { toKgInput } from "@/lib/weight";
 import { ProductForm, getProductWithPackagings, listCatalogOptions } from "@/modules/catalog";
-import { getLastCosts } from "@/modules/inventory";
+import { getLastCosts, createSupplier } from "@/modules/inventory";
 
 export default async function EditProductPage({ params }: PageProps<"/productos/[id]">) {
   await requireUser("DUENO");
@@ -27,6 +27,7 @@ export default async function EditProductPage({ params }: PageProps<"/productos/
         categories={categories}
         brands={brands}
         suppliers={suppliers}
+        createSupplier={createSupplier}
         initial={{
           id: p.id,
           sku: p.sku,

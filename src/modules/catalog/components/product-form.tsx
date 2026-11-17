@@ -5,6 +5,7 @@ import Link from "next/link";
 import { formatSoles, parseSoles, toSolesInput } from "@/lib/money";
 import { priceFromCost, realMarginPct } from "../pricing";
 import { saveProduct } from "../actions";
+import { SupplierQuickAdd } from "@/components/ui/supplier-quick-add";
 import { ICONS, IconTile } from "@/components/ui/avatar";
 import type { CatalogOption } from "../queries";
 
@@ -52,15 +53,22 @@ export function ProductForm({
   initial,
   categories,
   brands,
-  suppliers,
+  suppliers: initialSuppliers,
+  createSupplier,
 }: {
   initial: ProductDraft;
   categories: CatalogOption[];
   brands: CatalogOption[];
   suppliers: CatalogOption[];
+  /** Server action to add a supplier from here (the page passes it). */
+  createSupplier: (
+    state: { error?: string; ok?: string; id?: string; name?: string } | undefined,
+    form: FormData,
+  ) => Promise<{ error?: string; ok?: string; id?: string; name?: string }>;
 }) {
   const [state, action, pending] = useActionState(saveProduct, undefined);
   const [p, setP] = useState(initial);
+  const [suppliers, setSuppliers] = useState(initialSuppliers);
   const [packs, setPacks] = useState<PackagingDraft[]>(() => initial.packagings.map((x) => ({ ...x, key: newKey() })));
 
   const set = <K extends keyof ProductDraft>(k: K, v: ProductDraft[K]) => setP((s) => ({ ...s, [k]: v }));
@@ -144,6 +152,15 @@ export function ProductForm({
               ))}
             </select>
           </label>
+          <div className="col-span-2 -mt-1">
+            <SupplierQuickAdd
+              action={createSupplier}
+              onCreated={(c) => {
+                setSuppliers((l) => (l.some((x) => x.id === c.id) ? l : [...l, c].sort((a, b) => a.name.localeCompare(b.name))));
+                set("supplierId", c.id);
+              }}
+            />
+          </div>
           <label className="campo">
             % de ganancia
             <input

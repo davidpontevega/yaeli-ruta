@@ -110,7 +110,7 @@ export function ReadDocumentButton({ onRead, aiEnabled }: { onRead: (doc: ReadDo
           </button>
         </div>
       ) : (
-        <button type="button" onClick={() => input.current?.click()} className="btn-secundario h-12">
+        <button type="button" onClick={() => input.current?.click()} className="btn-suave h-12 w-full justify-center">
           📷 Leer factura (foto o PDF)
         </button>
       )}

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/server/auth";
+import { createSupplier } from "@/modules/inventory";
 import { BackLink } from "@/components/ui/back-link";
 import { listCatalogOptions, listProducts } from "@/modules/catalog";
 import { PurchaseForm, defaultCosts, getPurchase, listMissingBySupplier, listVehicles } from "@/modules/purchases";
@@ -32,6 +33,7 @@ export default async function PurchasePage({ params }: PageProps<"/compras/[id]"
       <PurchaseForm
         products={products}
         suppliers={suppliers}
+        createSupplier={createSupplier}
         vehicles={vehicles}
         costs={costs}
         missing={missing}

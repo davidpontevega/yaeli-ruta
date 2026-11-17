@@ -1,4 +1,5 @@
 import { requireUser } from "@/server/auth";
+import { createSupplier } from "@/modules/inventory";
 import { BackLink } from "@/components/ui/back-link";
 import { ProductForm, listCatalogOptions } from "@/modules/catalog";
 
@@ -13,6 +14,7 @@ export default async function NewProductPage() {
         categories={categories}
         brands={brands}
         suppliers={suppliers}
+        createSupplier={createSupplier}
         initial={{
           sku: "",
           name: "",
