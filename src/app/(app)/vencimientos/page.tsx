@@ -12,6 +12,7 @@ export default async function ExpiryPage({ searchParams }: PageProps<"/vencimien
   return (
     <section className="flex flex-col gap-4">
       <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Por vencer</h1>
+      <p className="-mt-2 text-sm text-muted">Lotes que vencen en los próximos 90 días o ya vencieron, del más urgente al menos.</p>
       <LocationFilter locations={locations} value={valid} />
       <ExpiryList lots={lots} />
     </section>

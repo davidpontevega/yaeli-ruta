@@ -149,6 +149,7 @@ export async function listExpiring(f: { locationId: string; withCost: boolean })
   return rows.map((r) => {
     const days = daysUntil(r.expiresOn!, today);
     return {
+      productId: r.productId,
       productName: r.productName,
       location: r.location,
       expiresOn: r.expiresOn!,
