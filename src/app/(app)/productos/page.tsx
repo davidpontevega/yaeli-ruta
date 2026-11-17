@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/server/auth";
 import { ProductFilters, ProductList, listCatalogOptions, listProducts, listPriceReview } from "@/modules/catalog";
+import { listStock } from "@/modules/inventory";
 
 export default async function ProductsPage({ searchParams }: PageProps<"/productos">) {
   const user = await requireUser();
@@ -12,11 +13,13 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
     supplierId: typeof sp.proveedor === "string" ? sp.proveedor : "",
     includeInactive: sp.inactivos === "1" && isOwner,
   };
-  const [products, { categories, suppliers }, review] = await Promise.all([
+  const [products, { categories, suppliers }, review, stock] = await Promise.all([
     listProducts(filters),
     listCatalogOptions(),
     isOwner ? listPriceReview() : [],
+    listStock({ ...filters, onlyMissing: false, withCost: false }),
   ]);
+  const stockById = Object.fromEntries(stock.map((s) => [s.id, { total: s.total, status: s.status }]));
 
   return (
     <section className="flex flex-col gap-4">
@@ -29,7 +32,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
         )}
       </div>
       <ProductFilters {...filters} categories={categories} suppliers={suppliers} canSeeInactive={isOwner} />
-      <ProductList products={products} canEdit={isOwner} priceReview={review.length} />
+      <ProductList products={products} canEdit={isOwner} priceReview={review.length} stock={stockById} />
     </section>
   );
 }
