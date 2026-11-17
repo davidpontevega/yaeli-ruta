@@ -28,7 +28,18 @@ const expiryTone = (days: number) =>
  * Summary strip, then products grouped by main supplier (alphabetical, "Sin proveedor" last), each with its status
  * against the minimum. Tapping a product shows its lots by floor and expiry.
  */
-export function StockList({ items, expiring, canBuy }: { items: StockItem[]; expiring: number; canBuy: boolean }) {
+export function StockList({
+  items,
+  expiring,
+  canBuy,
+  onlyMissing = false,
+}: {
+  items: StockItem[];
+  expiring: number;
+  canBuy: boolean;
+  /** "Stock bajo": most urgent first, a bar against the minimum, and one "Armar lista" per supplier. */
+  onlyMissing?: boolean;
+}) {
   const low = items.filter((p) => p.status === "low").length;
   const out = items.filter((p) => p.status === "out").length;
   const showValue = items.some((p) => p.value !== null);
@@ -37,7 +48,11 @@ export function StockList({ items, expiring, canBuy }: { items: StockItem[]; exp
   return (
     <>
       <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-        <Stat label="Productos" value={items.length} />
+        {onlyMissing ? (
+          <Stat label="Proveedores a pedir" value={new Set(items.map((p) => p.supplierName ?? NO_SUPPLIER)).size} />
+        ) : (
+          <Stat label="Productos" value={items.length} />
+        )}
         <Stat href="/stock?falta=1" label="Bajo el mínimo" value={low} tone={low ? "text-amber-700" : ""} />
         <Stat href="/stock?falta=1" label="Agotados" value={out} tone={out ? "text-red-700" : ""} />
         {showValue ? (
@@ -48,12 +63,18 @@ export function StockList({ items, expiring, canBuy }: { items: StockItem[]; exp
       </div>
 
       {!items.length ? (
-        <EmptyState text="No hay productos con ese filtro." />
+        onlyMissing ? (
+          <EmptyState text="Todo está sobre su mínimo. No hace falta pedir nada." tone="bg-emerald-50 text-emerald-600" />
+        ) : (
+          <EmptyState text="No hay productos con ese filtro." />
+        )
       ) : (
         <div className="flex flex-col gap-5">
           {[...Map.groupBy(items, (p) => p.supplierName ?? NO_SUPPLIER)]
             .sort(([a], [b]) => (a === NO_SUPPLIER ? 1 : b === NO_SUPPLIER ? -1 : a.localeCompare(b)))
-            .map(([supplier, list]) => {
+            .map(([supplier, all]) => {
+              // Stock bajo: agotados first, then the lowest against their minimum.
+              const list = onlyMissing ? all.toSorted((a, b) => a.total / (a.minStock || 1) - b.total / (b.minStock || 1)) : all;
               const gLow = list.filter((p) => p.status === "low").length;
               const gOut = list.filter((p) => p.status === "out").length;
               return (
@@ -79,8 +100,11 @@ export function StockList({ items, expiring, canBuy }: { items: StockItem[]; exp
                       </div>
                     </div>
                     {canBuy && (gLow > 0 || gOut > 0) && (
-                      <Link href="/compras/nueva" className="btn-suave h-9 shrink-0 px-3 text-sm">
-                        Armar compra
+                      <Link
+                        href={list[0].supplierId && supplier !== NO_SUPPLIER ? `/compras/nueva?proveedor=${list[0].supplierId}` : "/compras/nueva"}
+                        className={`${onlyMissing ? "btn-primario" : "btn-suave"} flex h-9 shrink-0 items-center px-3 text-sm`}
+                      >
+                        Armar lista
                       </Link>
                     )}
                   </header>
@@ -99,6 +123,17 @@ export function StockList({ items, expiring, canBuy }: { items: StockItem[]; exp
                                   <p className="truncate text-xs text-muted">
                                     {p.sku} · {p.category}
                                   </p>
+                                  {onlyMissing && p.minStock > 0 && (
+                                    <span className="mt-1.5 flex items-center gap-2">
+                                      <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                                        <span
+                                          className={`block h-full rounded-full ${STATUS[p.status].bar}`}
+                                          style={{ width: `${Math.min(100, (p.total / p.minStock) * 100)}%` }}
+                                        />
+                                      </span>
+                                      <span className="shrink-0 text-[11px] text-muted">mín. {formatQty(p.minStock, p.packagings)}</span>
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="flex shrink-0 flex-col items-end gap-1">
                                   <span className={`cifra text-[15px] ${p.total ? "" : "text-red-600"}`}>

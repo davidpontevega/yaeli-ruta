@@ -23,13 +23,18 @@ export default async function StockPage({ searchParams }: PageProps<"/stock">) {
   return (
     <section className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Stock</h1>
+        <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">{filters.onlyMissing ? "Stock bajo" : "Stock"}</h1>
       </div>
+      {filters.onlyMissing && (
+        <p className="-mt-2 text-sm text-muted">
+          Productos agotados o bajo su mínimo, por proveedor.{isOwner && " Toca «Armar lista» y el pedido sale con lo que falta."}
+        </p>
+      )}
       <ProductFilters {...filters} includeInactive={false} categories={categories} suppliers={suppliers} canSeeInactive={false} />
       <div className="flex flex-wrap gap-2">
         {[
           { href: "/stock", label: "Todo", on: !filters.onlyMissing },
-          { href: "/stock?falta=1", label: "Lo que falta", on: filters.onlyMissing },
+          { href: "/stock?falta=1", label: "Stock bajo", on: filters.onlyMissing },
           { href: "/vencimientos", label: `Por vencer · ${expiring}`, on: false },
         ].map((c) => (
           <Link
@@ -41,7 +46,7 @@ export default async function StockPage({ searchParams }: PageProps<"/stock">) {
           </Link>
         ))}
       </div>
-      <StockList items={items} expiring={expiring} canBuy={isOwner} />
+      <StockList items={items} expiring={expiring} canBuy={isOwner} onlyMissing={filters.onlyMissing} />
     </section>
   );
 }
