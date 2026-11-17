@@ -70,7 +70,7 @@ export default async function HomePage() {
                 <circle cx="5.5" cy="18.5" r="2" />
                 <circle cx="18.5" cy="18.5" r="2" />
               </svg>
-              <span className="text-[15px]">Nueva compra</span>
+              <span className="text-[15px]">Lista de pedido</span>
             </Link>
           </div>
         )}
@@ -85,7 +85,7 @@ export default async function HomePage() {
             {greeting}
             <div className="flex gap-2">
               <Link href="/compras/nueva" className="btn-secundario flex h-[42px] items-center text-sm">
-                Nueva compra
+                Lista de pedido
               </Link>
               <Link href="/pedidos/nuevo" className="btn-primario flex h-[42px] items-center text-sm">
                 Nuevo pedido

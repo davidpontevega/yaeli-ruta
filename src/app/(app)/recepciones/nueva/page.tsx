@@ -20,11 +20,11 @@ export default async function NewReceiptPage({ searchParams }: PageProps<"/recep
   ]);
   return (
     <section className="flex flex-col gap-4">
-      <BackLink href="/compras" label="Compras" />
-      <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Recibir mercadería{purchase && ` · compra #${purchase.number}`}</h1>
+      {purchase ? <BackLink href={`/compras/${purchase.id}`} label={`Lista #${purchase.number}`} /> : <BackLink href="/stock" label="Stock" />}
+      <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Ingreso de mercadería{purchase && ` · lista #${purchase.number}`}</h1>
       {purchase && purchase.status !== "BORRADOR" && (
         <p className="tarjeta text-sm text-amber-700">
-          Esta compra ya fue {purchase.status === "RECIBIDA" ? "recibida" : "anulada"}; no se puede recibir otra vez.
+          Esta lista ya fue {purchase.status === "RECIBIDA" ? "recibida" : "anulada"}; no se puede recibir otra vez.
         </p>
       )}
       <ReceiptForm

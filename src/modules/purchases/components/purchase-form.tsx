@@ -135,7 +135,7 @@ export function PurchaseForm({
         <div className="tarjeta sticky top-14 z-10 order-1 flex flex-col gap-1 text-sm md:top-4 lg:static print:static">
           <h2 className="titulo-tarjeta text-sm">
             <IconTile d={recojo ? ICONS.truck : ICONS.box} tone={recojo ? "bg-sky-50 text-sky-700" : "bg-teal-50 text-teal-700"} />
-            Resumen de la compra
+            Resumen de la lista
           </h2>
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-xl bg-slate-50 px-3 py-2">
@@ -193,14 +193,14 @@ export function PurchaseForm({
           )}
           {initial.id && editable && (
             <Link href={`/recepciones/nueva?compra=${initial.id}`} className="btn-primario flex h-12 items-center justify-center print:hidden">
-              Recibir esta compra
+              Registrar ingreso
             </Link>
           )}
           {initial.id && editable && (
-            <form action={cancelAction} onSubmit={(e) => !confirm("¿Anular esta compra?") && e.preventDefault()} className="print:hidden">
+            <form action={cancelAction} onSubmit={(e) => !confirm("¿Anular esta lista?") && e.preventDefault()} className="print:hidden">
               <input type="hidden" name="id" value={initial.id} />
               <button disabled={cancelling} className="h-12 w-full rounded-xl border border-red-300 text-red-600">
-                Anular compra
+                Anular lista
               </button>
               {cancelState?.error && <p className="text-sm text-red-600">{cancelState.error}</p>}
             </form>

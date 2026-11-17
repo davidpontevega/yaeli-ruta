@@ -17,7 +17,7 @@ export function HomeAlerts({
   const alerts: Alert[] = [
     { href: "/vencimientos", count: expired, title: "Lotes vencidos", detail: "Sácalos del almacén", tone: "bg-red-100 text-red-800" },
     { href: "/vencimientos", count: within30, title: "Vencen en 30 días", detail: "Véndelos primero", tone: "bg-amber-100 text-amber-800" },
-    { href: "/stock?falta=1", count: lowStock, title: "Stock bajo", detail: "Arma la compra", tone: "bg-orange-100 text-orange-800" },
+    { href: "/stock?falta=1", count: lowStock, title: "Stock bajo", detail: "Arma la lista de pedido", tone: "bg-orange-100 text-orange-800" },
   ];
   if (priceReview !== null)
     alerts.push({ href: "/precios", count: priceReview, title: "Precios por revisar", detail: "Subió el costo", tone: "bg-sky-100 text-sky-800" });

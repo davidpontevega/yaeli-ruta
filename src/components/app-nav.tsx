@@ -6,7 +6,8 @@ import { useState } from "react";
 import type { Role } from "@/server/db/schema";
 
 /** `also`: pages reached from inside this tab (buttons), so the tab stays highlighted there. */
-type Tab = { href: string; label: string; icon?: string; ownerOnly?: boolean; also?: string[] };
+/** `short`: label for the phone segmented tabs when the full one does not fit. */
+type Tab = { href: string; label: string; short?: string; icon?: string; ownerOnly?: boolean; also?: string[] };
 type Section = { label: string; icon: string; tabs: Tab[] };
 
 // 4 sections × 2–3 tabs. Less frequent screens live behind buttons inside their tab.
@@ -43,10 +44,19 @@ const SECTIONS: Section[] = [
       },
       {
         href: "/compras",
-        label: "Compras",
+        label: "Lista de pedido",
+        short: "Lista",
+        icon: "M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 12h6M9 16h6",
+        ownerOnly: true,
+        also: ["/proveedores"],
+      },
+      {
+        href: "/recepciones/nueva",
+        label: "Ingreso de mercadería",
+        short: "Ingreso",
         icon: "M1 3h15v13H1zM16 8h4l3 3v5h-7zM5.5 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18.5 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4z",
         ownerOnly: true,
-        also: ["/recepciones", "/proveedores"],
+        also: ["/recepciones"],
       },
     ],
   },
@@ -114,8 +124,8 @@ const PLUS = "M12 5v14M5 12h14";
 const QUICK = [
   { href: "/pedidos/nuevo", label: "Nuevo pedido", hint: "Un cliente llamó" },
   { href: "/deudores", label: "Registrar cobro", hint: "Pagó en la oficina" },
-  { href: "/compras/nueva", label: "Nueva compra", hint: "Lista para el proveedor" },
-  { href: "/recepciones/nueva", label: "Recibir mercadería", hint: "Llegó o leer factura" },
+  { href: "/compras/nueva", label: "Lista de pedido", hint: "Al proveedor o para ir a comprar" },
+  { href: "/recepciones/nueva", label: "Ingreso de mercadería", hint: "Llegó o leer factura" },
 ];
 
 /** Mobile only: floating bar at the bottom (with "+" for the owner). Desktop uses SideNav. */
@@ -202,7 +212,7 @@ export function SectionTabs({ role, badges = {} }: { role: Role; badges?: NavBad
             href={t.href}
             className={`flex h-9 items-center justify-center rounded-[9px] text-sm ${t === current.tab ? "bg-surface font-semibold shadow-sm" : "font-medium text-muted"}`}
           >
-            {t.label}
+            {t.short ?? t.label}
             {!!badges[t.href]?.n && (
               <span className={`cifra ml-1.5 min-w-5 rounded-full px-1.5 text-center text-[11px] leading-5 ${BADGE[badges[t.href]!.tone]}`}>
                 {badges[t.href]!.n > 99 ? "99+" : badges[t.href]!.n}

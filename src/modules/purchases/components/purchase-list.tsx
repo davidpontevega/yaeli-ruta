@@ -27,7 +27,7 @@ export function PurchaseList({ purchases }: { purchases: PurchaseRow[] }) {
       </div>
 
       {!purchases.length ? (
-        <EmptyState text="Aún no hay compras. Arma la primera lista con «+ Nueva compra»." />
+        <EmptyState text="Aún no hay listas de pedido. Arma la primera con «+ Nueva lista»." />
       ) : (
         SECTIONS.map((sec) => {
           const list = purchases.filter((p) => p.status === sec.status);

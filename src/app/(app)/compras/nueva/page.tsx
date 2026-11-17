@@ -15,8 +15,8 @@ export default async function NewPurchasePage() {
   ]);
   return (
     <section className="flex flex-col gap-4">
-      <BackLink href="/compras" label="Compras" />
-      <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Nueva compra</h1>
+      <BackLink href="/compras" label="Listas de pedido" />
+      <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Nueva lista de pedido</h1>
       <PurchaseForm
         products={products}
         suppliers={suppliers}
