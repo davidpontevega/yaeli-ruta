@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { requireUser } from "@/server/auth";
+import { NavTrail } from "@/components/ui/back-link";
 import { BRAND } from "@/lib/brand";
 import { signOut } from "@/modules/auth";
 import { AppHeader } from "@/components/app-header";
@@ -26,6 +28,9 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   };
   return (
     <div className="flex min-h-full flex-1">
+      <Suspense>
+        <NavTrail />
+      </Suspense>
       <SideNav
         role={user.role}
         brand={BRAND.name}
