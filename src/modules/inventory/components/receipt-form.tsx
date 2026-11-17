@@ -156,10 +156,7 @@ export function ReceiptForm({
   if (!locations.length) return <EmptyState text="Primero agrega un piso del almacén en Catálogo." />;
 
   return (
-    <form
-      action={action}
-      className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:grid-rows-[auto_1fr] lg:items-start lg:[grid-template-areas:'main_top'_'main_bottom']"
-    >
+    <form action={action} className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
       <input type="hidden" name="data" value={data} />
       <datalist id="suppliers">
         {supplierNames.map((n) => (
@@ -167,54 +164,87 @@ export function ReceiptForm({
         ))}
       </datalist>
 
-      <div className="tarjeta flex flex-col gap-3 lg:sticky lg:top-6 lg:[grid-area:top]">
-        <h2 className="titulo-tarjeta">¿Qué estás registrando?</h2>
-        <div className="grid grid-cols-2 gap-2">
-          {(
-            [
-              ["COMPRA", "Llegó mercadería", "una compra", ICONS.truck],
-              ["SALDO_INICIAL", "Ya lo tengo", "inventario inicial", ICONS.box],
-            ] as const
-          ).map(([value, label, hint, icon]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setType(value)}
-              aria-pressed={type === value}
-              className={`flex min-h-16 flex-col items-center justify-center gap-0.5 rounded-xl border px-2 text-sm font-semibold transition ${type === value ? "border-primary bg-primary text-primary-foreground shadow-[0_6px_16px_rgba(15,118,110,0.25)]" : "border-border bg-surface text-slate-700 hover:border-teal-300"}`}
-            >
-              <span className="flex items-center gap-1.5">
-                <Glyph d={icon} />
-                {label}
-              </span>
-              <span className={`text-xs font-normal ${type === value ? "text-teal-50" : "text-muted"}`}>{hint}</span>
-            </button>
-          ))}
+      {/* Desktop: the receipt card, total and save move together in one sticky right column. Phone: wrapper vanishes; order = card, lines, total. */}
+      <div className="contents lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1 lg:flex lg:flex-col lg:gap-3">
+        <div className="tarjeta order-1 flex flex-col gap-3">
+          <h2 className="titulo-tarjeta">¿Qué estás registrando?</h2>
+          <div className="grid grid-cols-2 gap-2">
+            {(
+              [
+                ["COMPRA", "Llegó mercadería", "una compra", ICONS.truck],
+                ["SALDO_INICIAL", "Ya lo tengo", "inventario inicial", ICONS.box],
+              ] as const
+            ).map(([value, label, hint, icon]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setType(value)}
+                aria-pressed={type === value}
+                className={`flex min-h-16 flex-col items-center justify-center gap-0.5 rounded-xl border px-2 text-sm font-semibold transition ${type === value ? "border-primary bg-primary text-primary-foreground shadow-[0_6px_16px_rgba(15,118,110,0.25)]" : "border-border bg-surface text-slate-700 hover:border-teal-300"}`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <Glyph d={icon} />
+                  {label}
+                </span>
+                <span className={`text-xs font-normal ${type === value ? "text-teal-50" : "text-muted"}`}>{hint}</span>
+              </button>
+            ))}
+          </div>
+          {type === "COMPRA" && (
+            <>
+              <ReadDocumentButton onRead={addRead} aiEnabled={aiEnabled} />
+              <div className="flex flex-col gap-3">
+                <label className="campo-etiqueta">
+                  Proveedor
+                  <input
+                    value={supplier}
+                    onChange={(e) => setSupplier(e.target.value)}
+                    maxLength={80}
+                    list="suppliers"
+                    placeholder="Escribe o elige (si es nuevo, se crea)"
+                  />
+                </label>
+                <label className="campo-etiqueta">
+                  N° guía / factura
+                  <input value={document} onChange={(e) => setDocument(e.target.value)} maxLength={80} placeholder="Opcional, ej. F001-123" />
+                </label>
+              </div>
+            </>
+          )}
         </div>
-        {type === "COMPRA" && (
-          <>
-            <ReadDocumentButton onRead={addRead} aiEnabled={aiEnabled} />
-            <div className="flex flex-col gap-3">
-              <label className="campo-etiqueta">
-                Proveedor
-                <input
-                  value={supplier}
-                  onChange={(e) => setSupplier(e.target.value)}
-                  maxLength={80}
-                  list="suppliers"
-                  placeholder="Escribe o elige (si es nuevo, se crea)"
-                />
-              </label>
-              <label className="campo-etiqueta">
-                N° guía / factura
-                <input value={document} onChange={(e) => setDocument(e.target.value)} maxLength={80} placeholder="Opcional, ej. F001-123" />
-              </label>
+        {/* Phone: total and save stick above the bottom bar; desktop: right column, under the receipt card. */}
+        <div className="sticky bottom-[calc(6rem+env(safe-area-inset-bottom))] z-10 order-3 flex flex-col gap-3 lg:static">
+          <div className="tarjeta flex flex-col gap-2">
+            <div className="flex items-baseline justify-between">
+              <span className="text-sm text-muted">
+                {lines.length} producto{lines.length === 1 ? "" : "s"}
+              </span>
+              <span className="cifra text-2xl text-primary">{formatSoles(total)}</span>
             </div>
-          </>
-        )}
+            {readTotal !== null && (
+              <p
+                className={`rounded-lg px-2.5 py-1.5 text-sm ${readTotal === total ? "bg-emerald-50 text-emerald-800" : "bg-red-50 font-medium text-red-700"}`}
+              >
+                Total en el documento {formatSoles(readTotal)}
+                {readTotal === total ? " · cuadra" : " · no cuadra, revisa"}
+              </p>
+            )}
+          </div>
+          <p role="alert" className="min-h-5 text-sm text-red-600">
+            {missing > 0 ? `Falta elegir el producto en ${missing} línea${missing > 1 ? "s" : ""}` : state?.error}
+          </p>
+          <div className="flex gap-2">
+            <Link href="/stock" className="btn-secundario flex h-12 flex-1 items-center justify-center">
+              Cancelar
+            </Link>
+            <button disabled={pending || !lines.length || missing > 0} className="btn-primario h-12 flex-1">
+              {pending ? "Guardando…" : "Guardar ingreso"}
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="flex min-w-0 flex-col gap-4 lg:[grid-area:main]">
+      <div className="order-2 flex min-w-0 flex-col gap-4 lg:col-start-1 lg:row-start-1">
         {/* Search first; a product added by hand appears right under it. */}
         <div className="tarjeta p-3">
           <ProductPicker
@@ -248,6 +278,17 @@ export function ReceiptForm({
               setCreating(null);
             }}
           />
+        )}
+        {!lines.length && creating === null && (
+          <div className="flex flex-col items-center gap-1.5 rounded-2xl border-2 border-dashed border-slate-200 px-4 py-10 text-center">
+            <p className="font-semibold">Aún no hay productos</p>
+            <p className="max-w-sm text-sm text-muted">Búscalos arriba o toca «Leer factura» para cargarlos desde la foto o el PDF.</p>
+          </div>
+        )}
+        {lines.length > 0 && (
+          <p className="rotulo px-1">
+            {lines.length} producto{lines.length === 1 ? "" : "s"} en este ingreso
+          </p>
         )}
         {lines.map((l) => {
           const p = l.product;
@@ -342,41 +383,14 @@ export function ReceiptForm({
                   </select>
                 </label>
               </div>
-              {p && <p className="text-right text-sm text-muted">Subtotal {formatSoles(subtotal(l))}</p>}
+              {p && (
+                <p className="flex items-baseline justify-end gap-2 border-t border-slate-100 pt-2 text-sm text-muted">
+                  Subtotal <span className="cifra text-base text-foreground">{formatSoles(subtotal(l))}</span>
+                </p>
+              )}
             </div>
           );
         })}
-      </div>
-
-      {/* Phone: total and save stick above the bottom bar; desktop: right column, under the receipt card. */}
-      <div className="sticky bottom-[calc(6rem+env(safe-area-inset-bottom))] z-10 flex flex-col gap-3 lg:static lg:[grid-area:bottom]">
-        <div className="tarjeta flex flex-col gap-2">
-          <div className="flex items-baseline justify-between">
-            <span className="text-sm text-muted">
-              {lines.length} producto{lines.length === 1 ? "" : "s"}
-            </span>
-            <span className="cifra text-2xl text-primary">{formatSoles(total)}</span>
-          </div>
-          {readTotal !== null && (
-            <p
-              className={`rounded-lg px-2.5 py-1.5 text-sm ${readTotal === total ? "bg-emerald-50 text-emerald-800" : "bg-red-50 font-medium text-red-700"}`}
-            >
-              Total en el documento {formatSoles(readTotal)}
-              {readTotal === total ? " · cuadra" : " · no cuadra, revisa"}
-            </p>
-          )}
-        </div>
-        <p role="alert" className="min-h-5 text-sm text-red-600">
-          {missing > 0 ? `Falta elegir el producto en ${missing} línea${missing > 1 ? "s" : ""}` : state?.error}
-        </p>
-        <div className="flex gap-2">
-          <Link href="/stock" className="btn-secundario flex h-12 flex-1 items-center justify-center">
-            Cancelar
-          </Link>
-          <button disabled={pending || !lines.length || missing > 0} className="btn-primario h-12 flex-1">
-            {pending ? "Guardando…" : "Guardar ingreso"}
-          </button>
-        </div>
       </div>
     </form>
   );
