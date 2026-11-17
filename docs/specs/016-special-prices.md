@@ -1,7 +1,7 @@
 ---
 id: 016
 title: Precios especiales por cliente
-status: approved
+status: done
 module: customers + orders
 ---
 
@@ -15,17 +15,17 @@ Incluye: la sección "Precios especiales" en `/clientes/{id}` (ver, agregar o ca
 No incluye: precios por ruta o por grupo de clientes; descuentos en %; recalcular los pedidos pendientes que ya existen; el chip en `OrderSummary` o en la entrega (la línea no guarda de dónde salió el precio, ver P3).
 
 ## Criterios de aceptación
-- [ ] AC1 — Solo el dueño ve y cambia los precios especiales: la página y las dos acciones usan `requireUser("DUENO")`.
-- [ ] AC2 — En `/clientes/{id}` se listan los precios especiales del cliente: producto · presentación · general (tachado) → especial · "Quitar". Si no hay, sale un estado vacío.
-- [ ] AC3 — Para agregar: buscar el producto (`ProductPicker`) → elegir la presentación → escribir el precio en soles → Guardar. Si esa presentación ya tenía precio especial, se reemplaza (una sola fila, por el `UNIQUE`).
-- [ ] AC4 — Un precio ≤ 0, inválido o mayor que `MAX_PRICE`, o un cliente o presentación que no existe: aviso de error, sin escribir nada.
-- [ ] AC5 — En `OrderForm`, la presentación con precio especial usa ese precio en la línea, en el selector, en el chip `c/caja` y en el total. Además muestra el chip "precio especial". Las otras usan el precio general.
-- [ ] AC6 — `saveOrder` toma el precio de cada línea con `priceFor` y datos de la BD (`sellablePackagings` + los precios especiales del cliente) dentro de la transacción. El formulario no manda precios, y si llega uno, Zod lo descarta. Al editar, el cliente sale del pedido en la BD (`orders.customerId`) y no del JSON.
-- [ ] AC7 — `pedido_items.precio` guarda el precio aplicado, igual que hoy. Quitar o cambiar un precio especial no toca los pedidos ya guardados. Un pedido pendiente toma el precio nuevo solo cuando se vuelve a guardar (eso ya pasa hoy con el precio general).
-- [ ] AC8 — Auditoría en la misma transacción, con `entity: "customer"` y `entityId` = cliente:
+- [x] AC1 — Solo el dueño ve y cambia los precios especiales: la página y las dos acciones usan `requireUser("DUENO")`.
+- [x] AC2 — En `/clientes/{id}` se listan los precios especiales del cliente: producto · presentación · general (tachado) → especial · "Quitar". Si no hay, sale un estado vacío.
+- [x] AC3 — Para agregar: buscar el producto (`ProductPicker`) → elegir la presentación → escribir el precio en soles → Guardar. Si esa presentación ya tenía precio especial, se reemplaza (una sola fila, por el `UNIQUE`).
+- [x] AC4 — Un precio ≤ 0, inválido o mayor que `MAX_PRICE`, o un cliente o presentación que no existe: aviso de error, sin escribir nada.
+- [x] AC5 — En `OrderForm`, la presentación con precio especial usa ese precio en la línea, en el selector, en el chip `c/caja` y en el total. Además muestra el chip "precio especial". Las otras usan el precio general.
+- [x] AC6 — `saveOrder` toma el precio de cada línea con `priceFor` y datos de la BD (`sellablePackagings` + los precios especiales del cliente) dentro de la transacción. El formulario no manda precios, y si llega uno, Zod lo descarta. Al editar, el cliente sale del pedido en la BD (`orders.customerId`) y no del JSON.
+- [x] AC7 — `pedido_items.precio` guarda el precio aplicado, igual que hoy. Quitar o cambiar un precio especial no toca los pedidos ya guardados. Un pedido pendiente toma el precio nuevo solo cuando se vuelve a guardar (eso ya pasa hoy con el precio general).
+- [x] AC8 — Auditoría en la misma transacción, con `entity: "customer"` y `entityId` = cliente:
   - `customer_price.set` con `{ packagingId, price, previous }` (`previous` es `null` si no había precio).
   - `customer_price.delete` con `{ packagingId, price }`.
-- [ ] AC9 — Repartidor: hoy no entra a `/pedidos` ni a `/clientes`, así que no cambia nada. Decisión: el precio especial es un precio de venta y no un costo. En la fase 4, el repartidor verá el precio de la línea (sea general o especial) porque cobra. Nunca verá costos ni márgenes.
+- [x] AC9 — Repartidor: hoy no entra a `/pedidos` ni a `/clientes`, así que no cambia nada. Decisión: el precio especial es un precio de venta y no un costo. En la fase 4, el repartidor verá el precio de la línea (sea general o especial) porque cobra. Nunca verá costos ni márgenes.
 
 ## Datos
 Migración aditiva (solo `CREATE TABLE`), con `npm run db:generate`:
@@ -64,27 +64,27 @@ Nuevo: la tabla, `priceFor`, las 2 queries, las 2 acciones y `SpecialPrices` (cl
 `MAX_PRICE = 100_000_000` (S/ 1 000 000) en `order-math.ts`: evita que la cantidad × precio pase de `MAX_TOTAL`.
 
 ## Tareas
-- [ ] T1 — Tabla `customerPrices` y migración `npm run db:generate` (revisar que solo tenga `CREATE TABLE` / `ADD CONSTRAINT`) · `src/server/db/schema.ts`, `drizzle/0011_*.sql`, `drizzle/meta/*`
-- [ ] T2 — `priceFor` + `MAX_PRICE` y su test:
+- [x] T1 — Tabla `customerPrices` y migración `npm run db:generate` (revisar que solo tenga `CREATE TABLE` / `ADD CONSTRAINT`) · `src/server/db/schema.ts`, `drizzle/0011_*.sql`, `drizzle/meta/*`
+- [x] T2 — `priceFor` + `MAX_PRICE` y su test:
   - Sin especial → general, `special: false`.
   - Con especial → ese precio, `special: true`.
   - Especial de otra presentación → general.
   - Especial mayor que el general → igual se aplica.
 
   Archivos: `src/modules/orders/order-math.ts`, `order-math.test.ts`
-- [ ] T3 — `listSpecialPrices`, `specialPriceMap`, `specialPriceSchema`, `saveSpecialPrice`, `deleteSpecialPrice`. Exportar las queries · `src/modules/customers/queries.ts`, `schemas.ts`, `actions.ts`, `index.ts`
-- [ ] T4 — `saveOrder`:
+- [x] T3 — `listSpecialPrices`, `specialPriceMap`, `specialPriceSchema`, `saveSpecialPrice`, `deleteSpecialPrice`. Exportar las queries · `src/modules/customers/queries.ts`, `schemas.ts`, `actions.ts`, `index.ts`
+- [x] T4 — `saveOrder`:
   - El cliente sale de `cur.customerId` al editar, o de `o.customerId` al crear.
   - Precio: `priceFor(pack, await specialPriceMap(tx, customerId))`.
 
   Archivos: `src/modules/orders/actions.ts`
-- [ ] T5 — `OrderForm`:
+- [x] T5 — `OrderForm`:
   - Recibe `specialPrices: Record<string, number>` y usa `priceFor` en `priced`, el selector, el subtotal y el chip `c/…`.
   - Chip `bg-violet-50 text-violet-800` "precio especial".
   - Las dos páginas pasan `specialPriceMap(db, customer.id)`.
 
   Archivos: `src/modules/orders/components/order-form.tsx`, `src/app/(app)/pedidos/nuevo/page.tsx`, `src/app/(app)/pedidos/[id]/page.tsx`
-- [ ] T6 — `SpecialPrices` (`"use client"`, dos `useActionState`):
+- [x] T6 — `SpecialPrices` (`"use client"`, dos `useActionState`):
   - La lista y el formulario para agregar (picker → `<select>` de presentación → precio).
   - Se exporta en el index.
   - `/clientes/[id]` lo compone debajo de `CustomerForm`, con `listSpecialPrices` y `listProducts`.

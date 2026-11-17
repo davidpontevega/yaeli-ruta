@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireUser } from "@/server/auth";
 import { BackLink } from "@/components/ui/back-link";
 import { listProducts } from "@/modules/catalog";
-import { getCustomer, listRoutes } from "@/modules/customers";
+import { getCustomer, specialPriceMap, listRoutes } from "@/modules/customers";
 import { todayInLima } from "@/modules/inventory";
 import { balancesByCustomer } from "@/modules/accounts";
 import { OrderForm, OrderSummary, availableByProduct, getOrder } from "@/modules/orders";
@@ -25,11 +25,12 @@ export default async function EditOrderPage({ params }: PageProps<"/pedidos/[id]
       </section>
     );
 
-  const [routes, products, available, balances] = await Promise.all([
+  const [routes, products, available, balances, specialPrices] = await Promise.all([
     listRoutes(),
     listProducts({ q: "", categoryId: "", includeInactive: false }),
     availableByProduct(order.id),
     balancesByCustomer([customer.id]),
+    specialPriceMap(customer.id),
   ]);
   return (
     <section className="flex flex-col gap-4">
@@ -43,6 +44,7 @@ export default async function EditOrderPage({ params }: PageProps<"/pedidos/[id]
         lastOrder={null}
         today={todayInLima()}
         account={{ balance: balances[customer.id] ?? 0, creditLimit: customer.creditLimit }}
+        specialPrices={specialPrices}
       />
     </section>
   );

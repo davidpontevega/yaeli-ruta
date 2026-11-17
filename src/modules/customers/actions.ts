@@ -5,10 +5,10 @@ import { redirect } from "next/navigation";
 import { and, eq, gt, max, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import { audit, db, isUniqueViolation, type Tx } from "@/server/db";
-import { customers, routes } from "@/server/db/schema";
+import { customerPrices, customers, packagings, routes } from "@/server/db/schema";
 import { requireUser } from "@/server/auth";
 import type { FormState } from "@/lib/form-state";
-import { customerSchema, routeSchema } from "./schemas";
+import { customerSchema, routeSchema, specialPriceSchema } from "./schemas";
 
 export async function saveRoute(_: FormState, form: FormData): Promise<FormState> {
   const me = await requireUser("DUENO");
@@ -134,4 +134,66 @@ export async function moveCustomer(form: FormData) {
     await audit(tx, { actorId: me.id, action: "customer.reorder", entity: "customer", entityId: id, details: { from: cur.order, to: target } });
   });
   revalidatePath("/clientes");
+}
+
+/** Sets (or replaces) the customer's price for a packaging. */
+export async function saveSpecialPrice(_: FormState, form: FormData): Promise<FormState> {
+  const me = await requireUser("DUENO");
+  const input = specialPriceSchema.safeParse({
+    customerId: form.get("customerId"),
+    packagingId: form.get("packagingId"),
+    price: form.get("price") ?? "",
+  });
+  if (!input.success) return { error: input.error.issues[0].message };
+  const { customerId, packagingId, price } = input.data;
+  const result = await db.transaction(async (tx) => {
+    const [c] = await tx.select({ id: customers.id }).from(customers).where(eq(customers.id, customerId));
+    const [p] = await tx.select({ id: packagings.id }).from(packagings).where(eq(packagings.id, packagingId));
+    if (!c || !p) return "missing";
+    const [prev] = await tx
+      .select({ price: customerPrices.price })
+      .from(customerPrices)
+      .where(and(eq(customerPrices.customerId, customerId), eq(customerPrices.packagingId, packagingId)))
+      .for("update");
+    await tx
+      .insert(customerPrices)
+      .values({ customerId, packagingId, price })
+      .onConflictDoUpdate({ target: [customerPrices.customerId, customerPrices.packagingId], set: { price } });
+    await audit(tx, {
+      actorId: me.id,
+      action: "customer_price.set",
+      entity: "customer",
+      entityId: customerId,
+      details: { packagingId, price, previous: prev?.price ?? null },
+    });
+    return "ok";
+  });
+  if (result === "missing") return { error: "El cliente o la presentación no existe" };
+  revalidatePath(`/clientes/${customerId}`);
+  return { ok: "Precio especial guardado" };
+}
+
+export async function deleteSpecialPrice(_: FormState, form: FormData): Promise<FormState> {
+  const me = await requireUser("DUENO");
+  const input = specialPriceSchema.pick({ customerId: true, packagingId: true }).safeParse(Object.fromEntries(form));
+  if (!input.success) return { error: input.error.issues[0].message };
+  const { customerId, packagingId } = input.data;
+  const deleted = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .delete(customerPrices)
+      .where(and(eq(customerPrices.customerId, customerId), eq(customerPrices.packagingId, packagingId)))
+      .returning({ price: customerPrices.price });
+    if (row)
+      await audit(tx, {
+        actorId: me.id,
+        action: "customer_price.delete",
+        entity: "customer",
+        entityId: customerId,
+        details: { packagingId, price: row.price },
+      });
+    return row;
+  });
+  if (!deleted) return { error: "Ese precio especial ya no existe" };
+  revalidatePath(`/clientes/${customerId}`);
+  return { ok: "Precio especial quitado" };
 }

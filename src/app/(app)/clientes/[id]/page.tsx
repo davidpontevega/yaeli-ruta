@@ -3,13 +3,19 @@ import { z } from "zod";
 import { requireUser } from "@/server/auth";
 import { BackLink } from "@/components/ui/back-link";
 import { toSolesInput } from "@/lib/money";
-import { CustomerForm, getCustomer, listRoutes } from "@/modules/customers";
+import { listProducts } from "@/modules/catalog";
+import { CustomerForm, SpecialPrices, getCustomer, listRoutes, listSpecialPrices } from "@/modules/customers";
 
 export default async function EditCustomerPage({ params }: PageProps<"/clientes/[id]">) {
   await requireUser("DUENO");
   const id = z.uuid().safeParse((await params).id);
   if (!id.success) notFound();
-  const [c, routes] = await Promise.all([getCustomer(id.data), listRoutes()]);
+  const [c, routes, prices, products] = await Promise.all([
+    getCustomer(id.data),
+    listRoutes(),
+    listSpecialPrices(id.data),
+    listProducts({ q: "", categoryId: "", includeInactive: false }),
+  ]);
   if (!c) notFound();
   return (
     <section className="flex flex-col gap-4">
@@ -28,6 +34,7 @@ export default async function EditCustomerPage({ params }: PageProps<"/clientes/
           active: c.active,
         }}
       />
+      <SpecialPrices customerId={c.id} prices={prices} products={products} />
     </section>
   );
 }

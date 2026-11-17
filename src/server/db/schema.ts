@@ -273,6 +273,22 @@ export const customers = pgTable(
   (t) => [index("clientes_ruta_orden_idx").on(t.routeId, t.routeOrder)],
 );
 
+// Price a customer pays for a packaging instead of its salePrice. The unique starts with cliente_id, so it also serves lookups.
+export const customerPrices = pgTable(
+  "precios_cliente",
+  {
+    id: id(),
+    customerId: uuid("cliente_id")
+      .notNull()
+      .references(() => customers.id),
+    packagingId: uuid("presentacion_id")
+      .notNull()
+      .references(() => packagings.id),
+    price: integer("precio").notNull(), // céntimos
+  },
+  (t) => [unique("precios_cliente_uq").on(t.customerId, t.packagingId), check("precio_cliente_positivo", sql`${t.price} > 0`)],
+);
+
 // ── Orders ──────────────────────────────────────────────────────────────────
 
 export const orderStatusEnum = pgEnum("estado_pedido", ["PENDIENTE", "ANULADO", "ENTREGADO"]);

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { available, defaultPackaging, mergeLine, orderTotal } from "./order-math";
+import { available, defaultPackaging, mergeLine, orderTotal, priceFor } from "./order-math";
 
 test("total", () => {
   assert.equal(orderTotal([]), 0);
@@ -32,4 +32,12 @@ test("default packaging: biggest with price", () => {
   assert.equal(defaultPackaging([und, fardo, caja]), caja);
   assert.equal(defaultPackaging([{ ...und, salePrice: 0 }, fardo]), fardo);
   assert.equal(defaultPackaging([]), undefined);
+});
+
+test("price: special overrides general, per packaging", () => {
+  const caja = { id: "caja", salePrice: 1000 };
+  assert.deepEqual(priceFor(caja, {}), { price: 1000, special: false });
+  assert.deepEqual(priceFor(caja, { caja: 850 }), { price: 850, special: true });
+  assert.deepEqual(priceFor(caja, { unidad: 90 }), { price: 1000, special: false });
+  assert.deepEqual(priceFor(caja, { caja: 1200 }), { price: 1200, special: true });
 });

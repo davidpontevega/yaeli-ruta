@@ -5,6 +5,12 @@ export type Line = { packagingId: string; quantity: number };
 
 export const orderTotal = (lines: { quantity: number; price: number }[]) => lines.reduce((s, l) => s + l.quantity * l.price, 0);
 
+/** Customer's special price for this packaging if it has one (even above the general), else the general price. */
+export function priceFor(p: { id: string; salePrice: number }, special: Record<string, number>): { price: number; special: boolean } {
+  const s = special[p.id];
+  return s === undefined ? { price: p.salePrice, special: false } : { price: s, special: true };
+}
+
 /** Adds a line; the same packaging adds to the existing quantity (capped). */
 export function mergeLine<L extends Line>(lines: L[], line: L): L[] {
   const i = lines.findIndex((l) => l.packagingId === line.packagingId);

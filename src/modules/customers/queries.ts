@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, count, eq, like, or, sql, type SQL } from "drizzle-orm";
-import { db } from "@/server/db";
-import { customers, routes } from "@/server/db/schema";
+import { db, type Tx } from "@/server/db";
+import { customerPrices, customers, packagings, products, routes } from "@/server/db/schema";
 
 /** Lowercase without accents, same as the SQL `translate` below. */
 const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -51,4 +51,29 @@ export type CustomerRow = Awaited<ReturnType<typeof listCustomers>>[number];
 export async function getCustomer(id: string) {
   const [c] = await db.select().from(customers).where(eq(customers.id, id)).limit(1);
   return c ?? null;
+}
+
+export async function listSpecialPrices(customerId: string) {
+  return db
+    .select({
+      packagingId: customerPrices.packagingId,
+      productName: products.name,
+      packagingName: packagings.name,
+      salePrice: packagings.salePrice,
+      price: customerPrices.price,
+    })
+    .from(customerPrices)
+    .innerJoin(packagings, eq(packagings.id, customerPrices.packagingId))
+    .innerJoin(products, eq(products.id, packagings.productId))
+    .where(eq(customerPrices.customerId, customerId))
+    .orderBy(asc(products.name), asc(packagings.factor));
+}
+
+/** packagingId → special price (céntimos). saveOrder passes its tx so it reads in the same transaction; pages use the default db. */
+export async function specialPriceMap(customerId: string, q: Tx | typeof db = db): Promise<Record<string, number>> {
+  const rows = await q
+    .select({ packagingId: customerPrices.packagingId, price: customerPrices.price })
+    .from(customerPrices)
+    .where(eq(customerPrices.customerId, customerId));
+  return Object.fromEntries(rows.map((r) => [r.packagingId, r.price]));
 }

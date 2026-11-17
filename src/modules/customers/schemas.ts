@@ -29,3 +29,13 @@ export const customerSchema = z.object({
   creditLimit: z.union([z.literal(""), solesSchema]).transform((v) => (v === "" ? null : v)),
   active: z.enum(["true", "false"]).transform((v) => v === "true"),
 });
+
+/** S/ 1 000 000 per packaging: keeps quantity × price of an order line far under the order total cap. */
+// Same ceiling as an order line; keep in sync with MAX_TOTAL in orders/actions.ts (not imported: orders already depends on customers).
+const MAX_PRICE = 100_000_000;
+
+export const specialPriceSchema = z.object({
+  customerId: z.uuid(),
+  packagingId: z.uuid("Elige la presentación"),
+  price: solesSchema.refine((v) => v > 0 && v <= MAX_PRICE, "El precio debe ser mayor que 0 y hasta S/ 1 000 000"),
+});

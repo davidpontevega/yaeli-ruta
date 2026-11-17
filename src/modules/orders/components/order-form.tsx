@@ -7,7 +7,7 @@ import { Avatar, Glyph } from "@/components/ui/avatar";
 import { formatSoles } from "@/lib/money";
 import { formatQty } from "@/lib/quantity";
 import { cancelOrder, saveOrder } from "../actions";
-import { MAX_QTY, defaultPackaging, mergeLine, orderTotal, type Line } from "../order-math";
+import { MAX_QTY, defaultPackaging, mergeLine, orderTotal, priceFor, type Line } from "../order-math";
 
 type Packaging = { id: string; name: string; factor: number; salePrice: number };
 type Product = { id: string; name: string; sku: string; packagings: Packaging[] };
@@ -20,6 +20,7 @@ export function OrderForm({
   lastOrder,
   today,
   account,
+  specialPrices,
 }: {
   products: Product[];
   available: Record<string, number>; // base units per product, other pending orders already subtracted
@@ -28,6 +29,7 @@ export function OrderForm({
   lastOrder: { lines: Line[]; omitted: number } | null;
   today: string;
   account: { balance: number; creditLimit: number | null }; // balance excludes this order (not delivered yet)
+  specialPrices: Record<string, number>; // packagingId → this customer's price (céntimos); display only, saveOrder recomputes
 }) {
   const [state, action, pending] = useActionState(saveOrder, undefined);
   const [cancelState, cancelAction, cancelling] = useActionState(cancelOrder, undefined);
@@ -38,7 +40,8 @@ export function OrderForm({
 
   const byPackaging = new Map(products.flatMap((p) => p.packagings.map((x) => [x.id, { product: p, packaging: x }] as const)));
   const known = lines.filter((l) => byPackaging.has(l.packagingId));
-  const priced = known.map((l) => ({ ...l, price: byPackaging.get(l.packagingId)!.packaging.salePrice }));
+  const price = (x: Packaging) => priceFor(x, specialPrices);
+  const priced = known.map((l) => ({ ...l, price: price(byPackaging.get(l.packagingId)!.packaging).price }));
   const usedBase = (productId: string) =>
     known
       .filter((l) => byPackaging.get(l.packagingId)!.product.id === productId)
@@ -158,6 +161,7 @@ export function OrderForm({
             const { product, packaging } = byPackaging.get(l.packagingId)!;
             const free = available[product.id] ?? 0;
             const short = usedBase(product.id) > free;
+            const unit = price(packaging);
             return (
               <div key={l.packagingId} className="tarjeta flex flex-col gap-2">
                 <div className="flex items-center gap-3">
@@ -209,11 +213,11 @@ export function OrderForm({
                   >
                     {product.packagings.map((x) => (
                       <option key={x.id} value={x.id}>
-                        {x.name} · {formatSoles(x.salePrice)}
+                        {x.name} · {formatSoles(price(x).price)}
                       </option>
                     ))}
                   </select>
-                  <p className="cifra ml-auto text-lg">{formatSoles(l.quantity * packaging.salePrice)}</p>
+                  <p className="cifra ml-auto text-lg">{formatSoles(l.quantity * unit.price)}</p>
                 </div>
                 <div className="flex flex-wrap gap-1">
                   <span
@@ -222,8 +226,9 @@ export function OrderForm({
                     {short && "Falta stock · "}Disp.: {free ? formatQty(free, product.packagings) : "sin stock"}
                   </span>
                   <span className="chip bg-slate-100 text-slate-600">
-                    {formatSoles(packaging.salePrice)} c/{packaging.name}
+                    {formatSoles(unit.price)} c/{packaging.name}
                   </span>
+                  {unit.special && <span className="chip bg-violet-50 text-violet-800">precio especial</span>}
                 </div>
               </div>
             );

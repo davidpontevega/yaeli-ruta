@@ -10,11 +10,12 @@ import { requireUser } from "@/server/auth";
 import type { FormState } from "@/lib/form-state";
 import { addDays, dispatchStock, todayInLima, toBaseUnits } from "@/modules/inventory";
 import { addCharge, addPayment, lockedBalance } from "@/modules/accounts";
+import { specialPriceMap } from "@/modules/customers";
 import { formatSoles } from "@/lib/money";
 import { formatQty } from "@/lib/quantity";
 import { deliverySchema, orderSchema } from "./schemas";
 import { sellablePackagings } from "./queries";
-import { orderTotal } from "./order-math";
+import { orderTotal, priceFor } from "./order-math";
 
 const MAX_DAYS_AHEAD = 365;
 const MAX_TOTAL = 2_000_000_000;
@@ -36,18 +37,22 @@ export async function saveOrder(_: FormState, form: FormData): Promise<FormState
 
   const result = await db.transaction(async (tx) => {
     // Lock order: order first, then products (same as deliverOrder), so the two never deadlock.
+    // Editing: the customer comes from the order in the DB, never from the JSON (or another customer's prices would apply).
+    let customerId = o.customerId;
     if (o.id) {
-      const [cur] = await tx.select({ status: orders.status }).from(orders).where(eq(orders.id, o.id)).for("update");
+      const [cur] = await tx.select({ status: orders.status, customerId: orders.customerId }).from(orders).where(eq(orders.id, o.id)).for("update");
       if (!cur) return "missing";
       if (cur.status !== "PENDIENTE") return "closed";
+      customerId = cur.customerId;
     }
     // Prices come from the DB, never from the form.
     const packs = await sellablePackagings(
       tx,
       o.lines.map((l) => l.packagingId),
     );
-    const priceOf = new Map(packs.map((p) => [p.id, p.price]));
-    if (priceOf.size !== o.lines.length) return "inactive";
+    if (packs.length !== o.lines.length) return "inactive";
+    const special = await specialPriceMap(customerId, tx);
+    const priceOf = new Map(packs.map((p) => [p.id, priceFor({ id: p.id, salePrice: p.price }, special).price]));
     const items = o.lines.map((l) => ({ ...l, price: priceOf.get(l.packagingId)! }));
     const total = orderTotal(items);
     if (total > MAX_TOTAL) return "total"; // pedidos.total is a 32-bit integer
@@ -56,12 +61,9 @@ export async function saveOrder(_: FormState, form: FormData): Promise<FormState
       await tx.update(orders).set({ deliveryOn: o.deliveryOn, total }).where(eq(orders.id, orderId));
       await tx.delete(orderItems).where(eq(orderItems.orderId, orderId));
     } else {
-      const [c] = await tx.select({ active: customers.active }).from(customers).where(eq(customers.id, o.customerId));
+      const [c] = await tx.select({ active: customers.active }).from(customers).where(eq(customers.id, customerId));
       if (!c?.active) return "customer";
-      [{ id: orderId }] = await tx
-        .insert(orders)
-        .values({ customerId: o.customerId, deliveryOn: o.deliveryOn, total, userId: me.id })
-        .returning({ id: orders.id });
+      [{ id: orderId }] = await tx.insert(orders).values({ customerId, deliveryOn: o.deliveryOn, total, userId: me.id }).returning({ id: orders.id });
     }
     await tx.insert(orderItems).values(items.map((i) => ({ ...i, orderId: orderId! })));
     await audit(tx, {
