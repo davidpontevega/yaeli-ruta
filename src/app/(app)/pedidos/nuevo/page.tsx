@@ -18,6 +18,7 @@ export default async function NewOrderPage({ searchParams }: PageProps<"/pedidos
       <section className="flex flex-col gap-4">
         <BackLink href="/pedidos" label="Pedidos" />
         <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Nuevo pedido</h1>
+        <p className="-mt-2 text-sm text-muted">¿Para quién es el pedido? Elige el cliente o búscalo.</p>
         <CustomerPicker customers={customers} />
       </section>
     );

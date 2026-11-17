@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { ProductPicker } from "@/components/ui/product-picker";
+import { Avatar, Glyph } from "@/components/ui/avatar";
 import { formatSoles } from "@/lib/money";
 import { formatQty } from "@/lib/quantity";
 import { cancelOrder, saveOrder } from "../actions";
@@ -86,35 +87,45 @@ export function OrderForm({
       <form action={action} className="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
         <input type="hidden" name="data" value={data} />
         <div className="flex flex-col gap-3 lg:sticky lg:top-6 lg:order-2">
-          <div className="tarjeta flex flex-col gap-2">
-            <p className="font-semibold leading-tight">
-              {customer.name} <span className="text-sm font-normal text-muted">· {customer.routeName}</span>
-            </p>
-            <p className="text-sm">
-              <span className={account.balance > 0 ? "font-semibold text-red-600" : "text-muted"}>
-                {account.balance > 0 ? `Debe ${formatSoles(account.balance)}` : "Al día"}
-              </span>
-              {account.creditLimit !== null && <span className="text-muted"> · Límite {formatSoles(account.creditLimit)}</span>}
-            </p>
+          <div className="tarjeta flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <Avatar name={customer.name} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-base font-bold leading-tight">{customer.name}</p>
+                <span className="chip mt-1 bg-teal-50 text-teal-800">{customer.routeName}</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className={`rounded-xl px-3 py-2 ${account.balance > 0 ? "bg-red-50" : "bg-emerald-50"}`}>
+                <span className={`block text-[11px] font-semibold ${account.balance > 0 ? "text-red-800" : "text-emerald-800"}`}>
+                  {account.balance > 0 ? "DEBE" : "CUENTA"}
+                </span>
+                <span className={`cifra text-lg ${account.balance > 0 ? "text-red-700" : "text-emerald-700"}`}>
+                  {account.balance > 0 ? formatSoles(account.balance) : "Al día"}
+                </span>
+                {account.creditLimit !== null && <span className="block text-[11px] text-muted">Límite {formatSoles(account.creditLimit)}</span>}
+              </div>
+              <label className="flex flex-col rounded-xl bg-teal-50 px-3 py-2">
+                <span className="text-[11px] font-semibold text-teal-800">ENTREGA</span>
+                <input
+                  type="date"
+                  required
+                  min={today}
+                  value={deliveryOn}
+                  onChange={(e) => setDeliveryOn(e.target.value)}
+                  className="h-8 min-w-0 border-0 bg-transparent p-0 text-sm font-semibold"
+                />
+              </label>
+            </div>
             {account.creditLimit !== null && account.balance + orderTotal(priced) > account.creditLimit && (
-              <p className="text-sm font-semibold text-amber-700">Con este pedido pasa su límite</p>
+              <p className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-sm font-semibold text-amber-800">Con este pedido pasa su límite</p>
             )}
-            <label className="flex items-center gap-2 text-sm font-medium">
-              Entrega
-              <input
-                type="date"
-                required
-                min={today}
-                value={deliveryOn}
-                onChange={(e) => setDeliveryOn(e.target.value)}
-                className="h-10 rounded-xl border border-border bg-surface px-3"
-              />
-            </label>
           </div>
 
           {lastOrder && lastOrder.lines.length > 0 && (
-            <button type="button" onClick={repeat} disabled={repeated} className="btn-secundario h-12 disabled:opacity-40">
-              Repetir último pedido
+            <button type="button" onClick={repeat} disabled={repeated} className="btn-suave h-12 justify-center disabled:opacity-40">
+              <Glyph d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5" />
+              {repeated ? "Último pedido agregado" : "Repetir último pedido"}
             </button>
           )}
           {notice && <p className="text-sm text-amber-700">{notice}</p>}
@@ -129,6 +140,19 @@ export function OrderForm({
           <div className="tarjeta p-3">
             <ProductPicker products={products} onPick={add} placeholder={known.length ? "+ Agregar otro producto" : "Busca el producto"} />
           </div>
+          {!known.length && (
+            <div className="flex flex-col items-center gap-1.5 rounded-2xl border-2 border-dashed border-slate-200 px-4 py-10 text-center">
+              <p className="font-semibold">Aún no hay productos</p>
+              <p className="max-w-sm text-sm text-muted">
+                Búscalos arriba{lastOrder && lastOrder.lines.length > 0 ? " o toca «Repetir último pedido»" : ""}.
+              </p>
+            </div>
+          )}
+          {known.length > 0 && (
+            <p className="rotulo px-1">
+              {known.length} producto{known.length === 1 ? "" : "s"} en el pedido
+            </p>
+          )}
           {/* Newest first, right under the search, so what you just added is in view. */}
           {[...known].reverse().map((l) => {
             const { product, packaging } = byPackaging.get(l.packagingId)!;
@@ -136,14 +160,16 @@ export function OrderForm({
             const short = usedBase(product.id) > free;
             return (
               <div key={l.packagingId} className="tarjeta flex flex-col gap-2">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="font-semibold leading-tight">{product.name}</p>
+                <div className="flex items-center gap-3">
+                  <Avatar name={product.name} size="sm" />
+                  <p className="min-w-0 flex-1 font-semibold leading-tight">{product.name}</p>
                   <button
                     type="button"
                     onClick={() => setLines((ls) => ls.filter((x) => x.packagingId !== l.packagingId))}
-                    className="text-sm text-red-600"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-red-50 hover:text-red-600"
+                    aria-label={`Quitar ${product.name}`}
                   >
-                    Quitar
+                    ✕
                   </button>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -187,11 +213,18 @@ export function OrderForm({
                       </option>
                     ))}
                   </select>
-                  <p className="cifra ml-auto text-[15px]">{formatSoles(l.quantity * packaging.salePrice)}</p>
+                  <p className="cifra ml-auto text-lg">{formatSoles(l.quantity * packaging.salePrice)}</p>
                 </div>
-                <p className={`text-xs ${short ? "font-semibold text-amber-700" : "text-muted"}`}>
-                  {short && "Falta stock · "}Disp.: {free ? formatQty(free, product.packagings) : "sin stock"}
-                </p>
+                <div className="flex flex-wrap gap-1">
+                  <span
+                    className={`chip ${short ? "bg-amber-100 text-amber-800" : free ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-700"}`}
+                  >
+                    {short && "Falta stock · "}Disp.: {free ? formatQty(free, product.packagings) : "sin stock"}
+                  </span>
+                  <span className="chip bg-slate-100 text-slate-600">
+                    {formatSoles(packaging.salePrice)} c/{packaging.name}
+                  </span>
+                </div>
               </div>
             );
           })}
