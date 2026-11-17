@@ -3,19 +3,20 @@ import { requireUser } from "@/server/auth";
 import { BackLink } from "@/components/ui/back-link";
 import { getPurchase, landedUnitCost } from "@/modules/purchases";
 import { isDocumentReaderEnabled } from "@/server/ai/document-reader";
-import { listProducts } from "@/modules/catalog";
+import { listCatalogOptions, listProducts, quickCreateProduct } from "@/modules/catalog";
 import { ReceiptForm, getLastCosts, listLocations, listReadAliases, listSupplierNames } from "@/modules/inventory";
 
 export default async function NewReceiptPage({ searchParams }: PageProps<"/recepciones/nueva">) {
   await requireUser("DUENO");
   const compra = z.uuid().safeParse((await searchParams).compra);
   const purchase = compra.success ? await getPurchase(compra.data) : null;
-  const [products, locations, lastCosts, aliases, supplierNames] = await Promise.all([
+  const [products, locations, lastCosts, aliases, supplierNames, { categories, suppliers }] = await Promise.all([
     listProducts({ q: "", categoryId: "", includeInactive: false }),
     listLocations(),
     getLastCosts(),
     listReadAliases(),
     listSupplierNames(),
+    listCatalogOptions(),
   ]);
   return (
     <section className="flex flex-col gap-4">
@@ -28,6 +29,9 @@ export default async function NewReceiptPage({ searchParams }: PageProps<"/recep
       )}
       <ReceiptForm
         products={products}
+        categories={categories}
+        quickCreateProduct={quickCreateProduct}
+        suppliersById={Object.fromEntries(suppliers.map((s) => [s.name.toLowerCase(), s.id]))}
         locations={locations}
         lastCosts={lastCosts}
         aliases={aliases}

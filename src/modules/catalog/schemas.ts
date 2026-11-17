@@ -52,3 +52,22 @@ export const catalogNameSchema = z.object({
   name: z.string().trim().min(2, "Nombre muy corto").max(40),
   locationType: z.enum(locationTypeEnum.enumValues).optional(),
 });
+
+/** Minimal product from the purchase or receipt screens. `cost` is the cost of what is bought (the box if there is one). */
+export const quickProductSchema = z.object({
+  name: z.string().trim().min(2, "Falta el nombre").max(120),
+  categoryId: z.uuid("Elige una categoría"),
+  unit: z.string().trim().min(1, "¿Cómo se vende?").max(40),
+  packName: z
+    .string()
+    .trim()
+    .max(40)
+    .transform((v) => v || null),
+  packFactor: z.coerce.number().int().min(0).max(100_000),
+  cost: z.string().transform((s, ctx) => {
+    const v = parseSoles(s);
+    if (!v) ctx.addIssue({ code: "custom", message: "Escribe el costo" });
+    return v ?? 0;
+  }),
+  supplierId: z.union([z.literal(""), z.uuid()]).transform((v) => v || null),
+});

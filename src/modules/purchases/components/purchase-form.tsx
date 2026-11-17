@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import { ProductPicker } from "@/components/ui/product-picker";
 import { SupplierQuickAdd } from "@/components/ui/supplier-quick-add";
+import { QuickProductPanel, type QuickProduct } from "@/components/ui/quick-product";
 import { formatSoles, parseSoles, toSolesInput } from "@/lib/money";
 import { formatKg } from "@/lib/weight";
 import { cancelPurchase, savePurchase } from "../actions";
@@ -26,8 +27,12 @@ const TYPES = [
   ["RECOJO", "Voy con mi camión"],
 ] as const;
 
+type QuickResult = { error?: string; product?: QuickProduct; cost?: number; packagingId?: string };
+
 export function PurchaseForm({
-  products,
+  products: initialProducts,
+  categories,
+  quickCreateProduct,
   suppliers: initialSuppliers,
   vehicles,
   createSupplier,
@@ -37,6 +42,9 @@ export function PurchaseForm({
   editable,
 }: {
   products: Product[];
+  /** For creating a missing product from here (with `quickCreateProduct`, a server action the page passes). */
+  categories: Option[];
+  quickCreateProduct: (state: QuickResult | undefined, form: FormData) => Promise<QuickResult>;
   suppliers: Option[];
   /** Server action to add a supplier from here (the page passes it). */
   createSupplier: SupplierAction;
@@ -71,6 +79,8 @@ export function PurchaseForm({
     })),
   );
 
+  const [products, setProducts] = useState(initialProducts);
+  const [creating, setCreating] = useState<string | null>(null);
   const byPackaging = new Map(products.flatMap((p) => p.packagings.map((x) => [x.id, { product: p, packaging: x }] as const)));
   const known = lines.filter((l) => byPackaging.has(l.packagingId));
   const recojo = type === "RECOJO";
@@ -155,9 +165,16 @@ export function PurchaseForm({
         )}
         {capacity && totals.weight > capacity && <p className="font-semibold text-red-600">Se pasa de la carga del vehículo</p>}
         {totals.noWeight > 0 && <p className="text-xs text-amber-700">{totals.noWeight} producto(s) sin peso: complétalo en Productos.</p>}
+        {/* Save lives in the summary, which stays in view: no scrolling to the end of a long list. */}
+        {editable && (
+          <button form="purchase-form" disabled={pending || !known.length} className="btn-primario mt-1 h-12 print:hidden">
+            {initial.id ? "Guardar cambios" : "Guardar lista"} · {known.length} producto{known.length === 1 ? "" : "s"}
+          </button>
+        )}
+        {state?.error && <p className="text-sm text-red-600 print:hidden">{state.error}</p>}
       </div>
 
-      <form action={action} className="flex min-w-0 flex-col gap-3 lg:[grid-area:form] print:hidden">
+      <form id="purchase-form" action={action} className="flex min-w-0 flex-col gap-3 lg:[grid-area:form] print:hidden">
         <input type="hidden" name="data" value={data} />
         <fieldset disabled={!editable} className="flex flex-col gap-3">
           <div className="tarjeta flex flex-col gap-3">
@@ -240,9 +257,24 @@ export function PurchaseForm({
               <ProductPicker
                 products={products.filter((p) => p.active)}
                 onPick={add}
+                onCreate={setCreating}
                 placeholder={known.length ? "+ Agregar otro producto" : "Busca el producto"}
               />
             </div>
+          )}
+          {editable && creating !== null && (
+            <QuickProductPanel
+              action={quickCreateProduct}
+              categories={categories}
+              supplierId={supplierId}
+              initialName={creating}
+              onClose={() => setCreating(null)}
+              onCreated={({ product, packagingId, cost }) => {
+                setProducts((l) => [...l, product]);
+                setLines((ls) => [...ls, { packagingId, quantity: "1", cost: toSolesInput(cost), freight: "" }]);
+                setCreating(null);
+              }}
+            />
           )}
           {editable && !known.length && (
             <div className="flex flex-col items-center gap-1.5 rounded-2xl border-2 border-dashed border-slate-200 px-4 py-8 text-center">
@@ -332,13 +364,6 @@ export function PurchaseForm({
             );
           })}
         </fieldset>
-
-        {editable && (
-          <button disabled={pending || !known.length} className="btn-primario h-12">
-            {initial.id ? "Guardar cambios" : "Guardar lista"}
-          </button>
-        )}
-        {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       </form>
 
       <div className="flex flex-col gap-3 lg:[grid-area:actions] print:hidden">

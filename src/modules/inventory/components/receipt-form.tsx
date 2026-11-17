@@ -8,6 +8,7 @@ import type { ReceiptType } from "@/server/db/schema";
 import { receiveGoods } from "../actions";
 import { costFromLine, matchLine, type LineMatch, type ReadDocument } from "../document-read";
 import { ProductPicker } from "@/components/ui/product-picker";
+import { QuickProductPanel, type QuickProduct } from "@/components/ui/quick-product";
 import { Avatar, Glyph, ICONS } from "@/components/ui/avatar";
 import { ReadDocumentButton } from "./read-document-button";
 
@@ -39,8 +40,13 @@ const STATUS: Record<LineMatch["status"], { label: string; className: string }> 
 let seq = 0;
 const largest = (p: ReceivableProduct) => p.packagings.reduce((a, b) => (b.factor > a.factor ? b : a));
 
+type QuickResult = { error?: string; product?: QuickProduct; cost?: number; packagingId?: string };
+
 export function ReceiptForm({
-  products,
+  products: initialProducts,
+  categories,
+  quickCreateProduct,
+  suppliersById,
   locations,
   lastCosts,
   aliases,
@@ -49,6 +55,11 @@ export function ReceiptForm({
   initial,
 }: {
   products: ReceivableProduct[];
+  /** For creating a missing product from here (server action passed by the page). */
+  categories: Option[];
+  quickCreateProduct: (state: QuickResult | undefined, form: FormData) => Promise<QuickResult>;
+  /** Supplier name → id, so a product created here takes the supplier typed in the receipt. */
+  suppliersById: Record<string, string>;
   locations: Option[];
   /** Last purchase cost (céntimos) per packaging id, to prefill. */
   lastCosts: Record<string, number>;
@@ -61,6 +72,8 @@ export function ReceiptForm({
   initial?: { purchaseId: string; supplier: string; lines: { packagingId: string; quantity: number; unitCost: number }[] };
 }) {
   const [state, action, pending] = useActionState(receiveGoods, undefined);
+  const [products, setProducts] = useState(initialProducts);
+  const [creating, setCreating] = useState<string | null>(null);
   const [type, setType] = useState<ReceiptType>("COMPRA");
   const [supplier, setSupplier] = useState(initial?.supplier ?? "");
   const [document, setDocument] = useState("");
@@ -204,8 +217,38 @@ export function ReceiptForm({
       <div className="flex min-w-0 flex-col gap-4 lg:[grid-area:main]">
         {/* Search first; a product added by hand appears right under it. */}
         <div className="tarjeta p-3">
-          <ProductPicker products={products} onPick={add} placeholder={lines.length ? "+ Agregar otro producto" : "Busca el producto que llegó"} />
+          <ProductPicker
+            products={products}
+            onPick={add}
+            onCreate={setCreating}
+            placeholder={lines.length ? "+ Agregar otro producto" : "Busca el producto que llegó"}
+          />
         </div>
+        {creating !== null && (
+          <QuickProductPanel
+            action={quickCreateProduct}
+            categories={categories}
+            supplierId={suppliersById[supplier.trim().toLowerCase()] ?? ""}
+            initialName={creating}
+            onClose={() => setCreating(null)}
+            onCreated={({ product, packagingId, cost }) => {
+              setProducts((l) => [...l, product]);
+              setLines((s) => [
+                {
+                  key: `l${seq++}`,
+                  product,
+                  packagingId,
+                  quantity: "1",
+                  unitCost: toSolesInput(cost),
+                  expiresOn: "",
+                  locationId: s[0]?.locationId ?? lastLocation(s),
+                },
+                ...s,
+              ]);
+              setCreating(null);
+            }}
+          />
+        )}
         {lines.map((l) => {
           const p = l.product;
           const pack = p?.packagings.find((x) => x.id === l.packagingId);
@@ -305,7 +348,8 @@ export function ReceiptForm({
         })}
       </div>
 
-      <div className="flex flex-col gap-3 lg:[grid-area:bottom]">
+      {/* Phone: total and save stick above the bottom bar; desktop: right column, under the receipt card. */}
+      <div className="sticky bottom-[calc(6rem+env(safe-area-inset-bottom))] z-10 flex flex-col gap-3 lg:static lg:[grid-area:bottom]">
         <div className="tarjeta flex flex-col gap-2">
           <div className="flex items-baseline justify-between">
             <span className="text-sm text-muted">

@@ -1,12 +1,12 @@
 import { requireUser } from "@/server/auth";
 import { createSupplier } from "@/modules/inventory";
 import { BackLink } from "@/components/ui/back-link";
-import { listCatalogOptions, listProducts } from "@/modules/catalog";
+import { listCatalogOptions, listProducts, quickCreateProduct } from "@/modules/catalog";
 import { PurchaseForm, defaultCosts, listMissingBySupplier, listVehicles } from "@/modules/purchases";
 
 export default async function NewPurchasePage() {
   await requireUser("DUENO");
-  const [products, { suppliers }, vehicles, costs, missing] = await Promise.all([
+  const [products, { suppliers, categories }, vehicles, costs, missing] = await Promise.all([
     listProducts({ q: "", categoryId: "", includeInactive: false }),
     listCatalogOptions(),
     listVehicles(),
@@ -21,6 +21,8 @@ export default async function NewPurchasePage() {
         products={products}
         suppliers={suppliers}
         createSupplier={createSupplier}
+        categories={categories}
+        quickCreateProduct={quickCreateProduct}
         vehicles={vehicles}
         costs={costs}
         missing={missing}

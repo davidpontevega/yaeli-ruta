@@ -4,15 +4,17 @@ import { useState } from "react";
 
 const MAX_RESULTS = 8;
 
-/** Search box over an in-memory product list; tapping a result calls `onPick`. */
+/** Search box over an in-memory product list; tapping a result calls `onPick`. `onCreate`: offer to create what was typed. */
 export function ProductPicker<P extends { id: string; name: string; sku: string }>({
   products,
   onPick,
   placeholder,
+  onCreate,
 }: {
   products: P[];
   onPick: (p: P) => void;
   placeholder: string;
+  onCreate?: (name: string) => void;
 }) {
   const [q, setQ] = useState("");
   const term = q.trim().toLowerCase();
@@ -41,7 +43,19 @@ export function ProductPicker<P extends { id: string; name: string; sku: string 
           {p.name} <span className="text-muted">· {p.sku}</span>
         </button>
       ))}
-      {term.length >= 2 && !results.length && <p className="text-sm text-muted">No se encontró. Créalo primero en Productos.</p>}
+      {term.length >= 2 && onCreate && (
+        <button
+          type="button"
+          onClick={() => {
+            onCreate(q.trim());
+            setQ("");
+          }}
+          className="btn-suave min-h-10 justify-start px-3 py-2 text-left text-sm"
+        >
+          + Crear «{q.trim()}»{results.length ? " (no está en la lista)" : ""}
+        </button>
+      )}
+      {term.length >= 2 && !results.length && !onCreate && <p className="text-sm text-muted">No se encontró. Créalo primero en Productos.</p>}
     </div>
   );
 }

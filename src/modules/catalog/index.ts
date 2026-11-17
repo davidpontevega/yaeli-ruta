@@ -5,3 +5,4 @@ export { ProductFilters } from "./components/product-filters";
 export { ProductForm, type ProductDraft } from "./components/product-form";
 export { CatalogSummary } from "./components/catalog-summary";
 export { PriceReview } from "./components/price-review";
+export { quickCreateProduct, type QuickProductResult } from "./actions";
