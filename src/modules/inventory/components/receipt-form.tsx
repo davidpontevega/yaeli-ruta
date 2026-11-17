@@ -212,9 +212,9 @@ export function ReceiptForm({
             </>
           )}
         </div>
-        {/* Phone: total and save stick above the bottom bar; desktop: right column, under the receipt card. */}
-        <div className="sticky bottom-[calc(6rem+env(safe-area-inset-bottom))] z-10 order-3 flex flex-col gap-3 lg:static">
-          <div className="tarjeta flex flex-col gap-2">
+        {/* Phone/tablet: one solid panel stuck to the bottom (above the bottom bar on phones). Desktop: right column, under the card. */}
+        <div className="sticky bottom-[calc(6rem+env(safe-area-inset-bottom))] z-10 order-3 flex flex-col gap-2 rounded-2xl border border-border bg-surface p-3 shadow-[0_-8px_24px_rgba(15,23,42,0.12)] md:bottom-4 lg:static lg:gap-3 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
+          <div className="flex flex-col gap-2 lg:rounded-2xl lg:border lg:border-border lg:bg-surface lg:p-4">
             <div className="flex items-baseline justify-between">
               <span className="text-sm text-muted">
                 {lines.length} producto{lines.length === 1 ? "" : "s"}
@@ -230,9 +230,11 @@ export function ReceiptForm({
               </p>
             )}
           </div>
-          <p role="alert" className="min-h-5 text-sm text-red-600">
-            {missing > 0 ? `Falta elegir el producto en ${missing} línea${missing > 1 ? "s" : ""}` : state?.error}
-          </p>
+          {(missing > 0 || state?.error) && (
+            <p role="alert" className="text-sm text-red-600">
+              {missing > 0 ? `Falta elegir el producto en ${missing} línea${missing > 1 ? "s" : ""}` : state?.error}
+            </p>
+          )}
           <div className="flex gap-2">
             <Link href="/stock" className="btn-secundario flex h-12 flex-1 items-center justify-center">
               Cancelar

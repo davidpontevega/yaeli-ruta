@@ -197,7 +197,7 @@ export function OrderForm({
           })}
 
           {/* Phone: total and save stick above the bottom bar. Desktop: they live in the right column. */}
-          {totalBox("sticky bottom-[calc(6rem+env(safe-area-inset-bottom))] z-10 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] lg:hidden")}
+          {totalBox("sticky bottom-[calc(6rem+env(safe-area-inset-bottom))] z-10 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] md:bottom-4 lg:hidden")}
         </div>
       </form>
 
