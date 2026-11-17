@@ -65,12 +65,12 @@ export async function getPurchase(id: string) {
 }
 export type PurchaseDetail = NonNullable<Awaited<ReturnType<typeof getPurchase>>>;
 
-/** Low or out-of-stock products with a supplier: what to order, in the biggest packaging, to reach the minimum. */
+/** Low, out-of-stock or low-coverage products with a supplier: what to order, in the biggest packaging, to reach the minimum or 14 days of sales. */
 export async function listMissingBySupplier() {
-  const stock = await listStock({ q: "", categoryId: "", supplierId: "", onlyMissing: true, withCost: false });
+  const stock = await listStock({ q: "", categoryId: "", supplierId: "", onlyMissing: true, withCost: false, withSales: true });
   return stock.flatMap((p) => {
     const big = biggestPackaging(p.packagings);
-    const quantity = big ? missingToOrder(p.total, p.minStock, big.factor) : 0;
+    const quantity = big ? missingToOrder(p.total, Math.max(p.minStock, p.target), big.factor) : 0;
     return p.supplierId && big && quantity ? [{ supplierId: p.supplierId, packagingId: big.id, quantity }] : [];
   });
 }

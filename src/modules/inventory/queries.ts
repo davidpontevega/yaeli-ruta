@@ -18,6 +18,7 @@ import {
 import { listProducts } from "@/modules/catalog";
 import { stockStatus } from "@/lib/quantity";
 import { addDays, daysUntil, expiryBucket, todayInLima, type ExpiryBucket } from "./expiry";
+import { SALES_WINDOW_DAYS, coverageDays, isLowCoverage, targetStock, weeklySales } from "./coverage";
 
 /** Warehouse floors where goods can be received (vehicles get stock by transfer, later). */
 export function listLocations() {
@@ -41,17 +42,39 @@ export async function getLastCosts(): Promise<Record<string, number>> {
   return Object.fromEntries(rows.map((r) => [r.packagingId, r.cost]));
 }
 
+/** Base units sold (VENTA movements) per product in the last SALES_WINDOW_DAYS. Products without sales are absent. */
+export async function recentSales(): Promise<Record<string, number>> {
+  const rows = await db
+    .select({ productId: lots.productId, sold: sql`-sum(${stockMovements.quantity})`.mapWith(Number) })
+    .from(stockMovements)
+    .innerJoin(lots, eq(lots.id, stockMovements.lotId))
+    .where(and(eq(stockMovements.type, "VENTA"), gte(stockMovements.createdAt, sql`now() - make_interval(days => ${SALES_WINDOW_DAYS})`)))
+    .groupBy(lots.productId);
+  return Object.fromEntries(rows.map((r) => [r.productId, r.sold]));
+}
+
 /**
  * Active products with stock per lot and location, and their status against the minimum. `value` (céntimos) only when `withCost`.
- * `onlyMissing`: only low or out-of-stock products.
+ * `withSales` (owner only): weekly sales, days of coverage, 14-day target and low coverage.
+ * `onlyMissing`: only low or out-of-stock products, or with low coverage.
  */
-export async function listStock(f: { q: string; categoryId: string; supplierId: string; onlyMissing: boolean; withCost: boolean }) {
-  const items = await listProducts({
-    q: f.q,
-    categoryId: f.categoryId,
-    supplierId: f.supplierId,
-    includeInactive: false,
-  });
+export async function listStock(f: {
+  q: string;
+  categoryId: string;
+  supplierId: string;
+  onlyMissing: boolean;
+  withCost: boolean;
+  withSales?: boolean;
+}) {
+  const [items, sales] = await Promise.all([
+    listProducts({
+      q: f.q,
+      categoryId: f.categoryId,
+      supplierId: f.supplierId,
+      includeInactive: false,
+    }),
+    f.withSales ? recentSales() : ({} as Record<string, number>),
+  ]);
   const rows = items.length
     ? await db
         .select({
@@ -80,6 +103,7 @@ export async function listStock(f: { q: string; categoryId: string; supplierId: 
   const list = items.map((p) => {
     const mine = rows.filter((r) => r.productId === p.id);
     const total = mine.reduce((s, r) => s + r.quantity, 0);
+    const sold = sales[p.id] ?? 0;
     return {
       id: p.id,
       sku: p.sku,
@@ -92,6 +116,10 @@ export async function listStock(f: { q: string; categoryId: string; supplierId: 
       packagings: p.packagings.map((x) => ({ id: x.id, name: x.name, factor: x.factor })),
       total,
       value: f.withCost ? total * (mine[0]?.averageCost ?? 0) : null,
+      weeklySales: weeklySales(sold),
+      coverageDays: coverageDays(total, sold),
+      target: targetStock(sold),
+      lowCoverage: isLowCoverage(total, sold),
       lots: mine.map(({ location, expiresOn, quantity }) => ({
         location,
         expiresOn,
@@ -99,7 +127,7 @@ export async function listStock(f: { q: string; categoryId: string; supplierId: 
       })),
     };
   });
-  return f.onlyMissing ? list.filter((p) => p.status !== "ok") : list;
+  return f.onlyMissing ? list.filter((p) => p.status !== "ok" || p.lowCoverage) : list;
 }
 
 export type StockItem = Awaited<ReturnType<typeof listStock>>[number];

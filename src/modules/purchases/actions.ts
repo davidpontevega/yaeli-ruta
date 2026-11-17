@@ -7,6 +7,7 @@ import { z } from "zod";
 import { audit, db, isForeignKeyViolation } from "@/server/db";
 import { locations, lots, packagings, products, purchaseItems, purchases, stockLevels, suppliers } from "@/server/db/schema";
 import { requireUser } from "@/server/auth";
+import { recentSales, targetStock } from "@/modules/inventory";
 import type { FormState } from "@/lib/form-state";
 import { STALE_LIST_ERROR, purchaseSchema } from "./schemas";
 import { biggestPackaging, listVersion, missingToOrder } from "./purchase-math";
@@ -103,12 +104,13 @@ export async function cancelPurchase(_: FormState, form: FormData): Promise<Form
 export type AddToListState =
   { ok: true; purchaseId: string; number: number; supplierName: string; already: boolean } | { ok: false; error: string } | undefined;
 
-/** One tap from a low product: its biggest packaging, enough to reach the minimum, into its supplier's newest draft (created if none). */
+/** One tap from a low product: its biggest packaging, enough to reach the minimum or 14 days of sales, into its supplier's newest draft (created if none). */
 export async function addToPurchaseList(_: AddToListState, form: FormData): Promise<AddToListState> {
   const me = await requireUser("DUENO");
   const productId = z.uuid().safeParse(form.get("productId"));
   if (!productId.success) return { ok: false, error: "Producto inválido" };
-  const costs = await defaultCosts();
+  const [costs, sales] = await Promise.all([defaultCosts(), recentSales()]);
+  const target = targetStock(sales[productId.data] ?? 0);
   let result: AddToListState;
   try {
     result = await db.transaction(async (tx) => {
@@ -173,7 +175,7 @@ export async function addToPurchaseList(_: AddToListState, form: FormData): Prom
         .from(stockLevels)
         .innerJoin(lots, eq(lots.id, stockLevels.lotId))
         .where(and(eq(lots.productId, productId.data), gt(stockLevels.quantity, 0)));
-      const quantity = Math.max(1, missingToOrder(total, product.minStock, big.factor));
+      const quantity = Math.max(1, missingToOrder(total, Math.max(product.minStock, target), big.factor));
       const added = await tx
         .insert(purchaseItems)
         .values({ purchaseId: draft.id, packagingId: big.id, quantity, cost: costs[big.id] ?? 0, freight: 0 })

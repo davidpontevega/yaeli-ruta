@@ -15,6 +15,9 @@ const STATUS = {
   ok: { label: "OK", className: "bg-emerald-100 text-emerald-800", bar: "bg-emerald-600" },
 } as const;
 
+/** Stock bajo order: agotados, then below the minimum, then low coverage. */
+const urgency = (p: StockItem) => (p.status === "out" ? 0 : p.status === "low" ? 1 : 2);
+
 /** Expiry chip color by how close the date is. */
 const expiryTone = (days: number) =>
   days < 0
@@ -41,7 +44,7 @@ export function StockList({
   canBuy: boolean;
   /** "Stock bajo": most urgent first, a bar against the minimum, and one "Armar lista" per supplier. */
   onlyMissing?: boolean;
-  /** Owner only: the page's "Agregar a la lista", shown in the detail of low or out products. */
+  /** Owner only: the page's "Agregar a la lista", shown in the detail of low, out or low-coverage products. */
   buyButton?: (p: { id: string; supplierId: string | null }) => ReactNode;
 }) {
   const low = items.filter((p) => p.status === "low").length;
@@ -77,8 +80,10 @@ export function StockList({
           {[...Map.groupBy(items, (p) => p.supplierName ?? NO_SUPPLIER)]
             .sort(([a], [b]) => (a === NO_SUPPLIER ? 1 : b === NO_SUPPLIER ? -1 : a.localeCompare(b)))
             .map(([supplier, all]) => {
-              // Stock bajo: agotados first, then the lowest against their minimum.
-              const list = onlyMissing ? all.toSorted((a, b) => a.total / (a.minStock || 1) - b.total / (b.minStock || 1)) : all;
+              // Stock bajo: agotados first, then the lowest against their minimum, then low coverage.
+              const list = onlyMissing
+                ? all.toSorted((a, b) => urgency(a) - urgency(b) || a.total / (a.minStock || 1) - b.total / (b.minStock || 1))
+                : all;
               const gLow = list.filter((p) => p.status === "low").length;
               const gOut = list.filter((p) => p.status === "out").length;
               return (
@@ -103,7 +108,7 @@ export function StockList({
                         )}
                       </div>
                     </div>
-                    {canBuy && (gLow > 0 || gOut > 0) && (
+                    {canBuy && (gLow > 0 || gOut > 0 || list.some((p) => p.lowCoverage)) && (
                       <Link
                         href={list[0].supplierId && supplier !== NO_SUPPLIER ? `/compras/nueva?proveedor=${list[0].supplierId}` : "/compras/nueva"}
                         className={`${onlyMissing ? "btn-primario" : "btn-suave"} flex h-9 shrink-0 items-center px-3 text-sm`}
@@ -149,6 +154,16 @@ export function StockList({
                                     )}
                                     <span className={`chip ${STATUS[p.status].className}`}>{STATUS[p.status].label}</span>
                                   </span>
+                                  {p.weeklySales !== null && (
+                                    <span className="flex flex-wrap justify-end gap-1">
+                                      <span className="chip bg-slate-100 text-slate-700">
+                                        venta/sem {formatQty(p.weeklySales, p.packagings) || "0"}
+                                      </span>
+                                      <span className={`chip ${p.lowCoverage ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-700"}`}>
+                                        alcanza {p.coverageDays} día{p.coverageDays === 1 ? "" : "s"}
+                                      </span>
+                                    </span>
+                                  )}
                                 </div>
                                 <svg
                                   width="16"
@@ -180,7 +195,7 @@ export function StockList({
                                 ) : (
                                   <p className="text-sm text-muted">Sin lotes en almacén.</p>
                                 )}
-                                {buyButton && p.status !== "ok" && buyButton(p)}
+                                {buyButton && (p.status !== "ok" || p.lowCoverage) && buyButton(p)}
                                 <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                                   {p.value !== null && p.total > 0 && (
                                     <span className="text-xs text-muted">Valor a costo {formatSoles(p.value)}</span>

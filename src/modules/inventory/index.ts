@@ -1,6 +1,7 @@
 // Public API for pages (server). Client components inside the module import each other by relative path.
 export {
   listStock,
+  recentSales,
   listLocations,
   getLastCosts,
   listReadAliases,
@@ -14,6 +15,7 @@ export {
 export { parseReadResponse, fileType } from "./document-read";
 export { todayInLima, addDays, daysUntil } from "./expiry";
 export { dispatchStock } from "./dispatch";
+export { LOW_COVERAGE_DAYS, targetStock } from "./coverage";
 export { toBaseUnits } from "./stock-math";
 export { reserveReadSlot, recordReadResult } from "./read-limit";
 export { StockList } from "./components/stock-list";

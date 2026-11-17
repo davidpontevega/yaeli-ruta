@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/server/auth";
 import { ProductFilters, listCatalogOptions } from "@/modules/catalog";
-import { StockList, getAlertCounts, listStock } from "@/modules/inventory";
+import { LOW_COVERAGE_DAYS, StockList, getAlertCounts, listStock } from "@/modules/inventory";
 import { AddToListButton } from "@/modules/purchases";
 
 export default async function StockPage({ searchParams }: PageProps<"/stock">) {
@@ -15,7 +15,7 @@ export default async function StockPage({ searchParams }: PageProps<"/stock">) {
     onlyMissing: sp.falta === "1",
   };
   const [items, { categories, suppliers }, alerts] = await Promise.all([
-    listStock({ ...filters, withCost: isOwner }),
+    listStock({ ...filters, withCost: isOwner, withSales: isOwner }),
     listCatalogOptions(),
     getAlertCounts(),
   ]);
@@ -28,7 +28,8 @@ export default async function StockPage({ searchParams }: PageProps<"/stock">) {
       </div>
       {filters.onlyMissing && (
         <p className="-mt-2 text-sm text-muted">
-          Productos agotados o bajo su mínimo, por proveedor.{isOwner && " Toca «Armar lista» y el pedido sale con lo que falta."}
+          Productos agotados o bajo su mínimo{isOwner && `, o que alcanzan menos de ${LOW_COVERAGE_DAYS} días`}, por proveedor.
+          {isOwner && " Toca «Armar lista» y el pedido sale con lo que falta."}
         </p>
       )}
       <ProductFilters {...filters} includeInactive={false} categories={categories} suppliers={suppliers} canSeeInactive={false} />
