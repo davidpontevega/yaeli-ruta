@@ -9,6 +9,7 @@ import { formatSoles, parseSoles, toSolesInput } from "@/lib/money";
 import { formatKg } from "@/lib/weight";
 import { cancelPurchase, savePurchase } from "../actions";
 import { lineWeight, purchaseTotals } from "../purchase-math";
+import { STALE_LIST_ERROR } from "../schemas";
 import { ICONS, IconTile } from "@/components/ui/avatar";
 import type { PurchaseType } from "@/server/db/schema";
 
@@ -56,6 +57,8 @@ export function PurchaseForm({
   initial: {
     id?: string;
     number?: number;
+    /** listVersion of the loaded lines: the server refuses the save if the list changed since. */
+    version?: string;
     type: PurchaseType;
     supplierId: string;
     vehicleId: string;
@@ -107,6 +110,7 @@ export function PurchaseForm({
 
   const data = JSON.stringify({
     id: initial.id,
+    version: initial.version,
     type,
     supplierId: supplierId || null,
     vehicleId: recojo ? vehicleId || null : null,
@@ -174,6 +178,11 @@ export function PurchaseForm({
             </button>
           )}
           {state?.error && <p className="text-sm text-red-600 print:hidden">{state.error}</p>}
+          {state?.error === STALE_LIST_ERROR && (
+            <button type="button" onClick={() => location.reload()} className="btn-secundario h-12 print:hidden">
+              Recargar
+            </button>
+          )}
         </div>
         <div className="order-3 flex flex-col gap-3 print:hidden">
           {initial.id && known.length > 0 && (

@@ -3,7 +3,7 @@ import { asc, count, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/server/db";
 import { locations, packagings, products, purchaseItems, purchases, suppliers } from "@/server/db/schema";
 import { getLastCosts, listStock } from "@/modules/inventory";
-import { missingToOrder } from "./purchase-math";
+import { biggestPackaging, listVersion, missingToOrder } from "./purchase-math";
 
 /** Newest first, with goods + freight total and the known weight (grams). */
 export function listPurchases() {
@@ -48,6 +48,7 @@ export async function getPurchase(id: string) {
   if (!p) return null;
   const items = await db
     .select({
+      id: purchaseItems.id,
       packagingId: purchaseItems.packagingId,
       quantity: purchaseItems.quantity,
       cost: purchaseItems.cost,
@@ -60,7 +61,7 @@ export async function getPurchase(id: string) {
     .innerJoin(products, eq(products.id, packagings.productId))
     .where(eq(purchaseItems.purchaseId, id))
     .orderBy(asc(purchaseItems.id));
-  return { ...p, items };
+  return { ...p, items, version: listVersion(items.map((i) => i.id)) };
 }
 export type PurchaseDetail = NonNullable<Awaited<ReturnType<typeof getPurchase>>>;
 
@@ -68,7 +69,7 @@ export type PurchaseDetail = NonNullable<Awaited<ReturnType<typeof getPurchase>>
 export async function listMissingBySupplier() {
   const stock = await listStock({ q: "", categoryId: "", supplierId: "", onlyMissing: true, withCost: false });
   return stock.flatMap((p) => {
-    const big = p.packagings.reduce((a, b) => (b.factor > a.factor ? b : a), p.packagings[0]);
+    const big = biggestPackaging(p.packagings);
     const quantity = big ? missingToOrder(p.total, p.minStock, big.factor) : 0;
     return p.supplierId && big && quantity ? [{ supplierId: p.supplierId, packagingId: big.id, quantity }] : [];
   });

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/server/auth";
 import { ProductFilters, listCatalogOptions } from "@/modules/catalog";
 import { StockList, getAlertCounts, listStock } from "@/modules/inventory";
+import { AddToListButton } from "@/modules/purchases";
 
 export default async function StockPage({ searchParams }: PageProps<"/stock">) {
   const user = await requireUser();
@@ -46,7 +47,13 @@ export default async function StockPage({ searchParams }: PageProps<"/stock">) {
           </Link>
         ))}
       </div>
-      <StockList items={items} expiring={expiring} canBuy={isOwner} onlyMissing={filters.onlyMissing} />
+      <StockList
+        items={items}
+        expiring={expiring}
+        canBuy={isOwner}
+        onlyMissing={filters.onlyMissing}
+        buyButton={isOwner ? (p) => <AddToListButton productId={p.id} hasSupplier={!!p.supplierId} /> : undefined}
+      />
     </section>
   );
 }

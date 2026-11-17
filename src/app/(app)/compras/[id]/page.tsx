@@ -42,6 +42,7 @@ export default async function PurchasePage({ params }: PageProps<"/compras/[id]"
         initial={{
           id: purchase.id,
           number: purchase.number,
+          version: purchase.version,
           type: purchase.type,
           supplierId: purchase.supplierId ?? "",
           vehicleId: purchase.vehicleId ?? "",

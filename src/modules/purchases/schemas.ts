@@ -2,10 +2,15 @@ import { z } from "zod";
 
 const MAX_MONEY = 100_000_000; // S/ 1 millón per line
 
+/** savePurchase's answer when the list changed since the form loaded it; the form compares it to offer "Recargar". */
+export const STALE_LIST_ERROR = "Esta lista cambió en otra pestaña o con «Agregar a la lista». Recarga para ver los cambios.";
+
 /** Costs come from the owner (it's his purchase), already in céntimos. */
 export const purchaseSchema = z
   .object({
     id: z.uuid().optional(),
+    /** listVersion of the lines the form loaded (edits only). */
+    version: z.string().max(10_000).optional(),
     type: z.enum(["ENVIA_PROVEEDOR", "RECOJO"]),
     supplierId: z.uuid().nullable(),
     vehicleId: z.uuid().nullable(),

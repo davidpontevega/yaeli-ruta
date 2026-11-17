@@ -29,3 +29,10 @@ export function missingToOrder(total: number, minStock: number, factor: number):
   if (total < minStock) return Math.ceil((minStock - total) / factor);
   return total <= 0 ? 1 : 0;
 }
+
+/** The packaging with the biggest factor (the first one on a tie); undefined when there are none. */
+export const biggestPackaging = <T extends { factor: number }>(packs: T[]): T | undefined =>
+  packs.reduce<T | undefined>((a, b) => (!a || b.factor > a.factor ? b : a), undefined);
+
+/** Version of a list from its line ids: any line change gives another one. Order-independent; no node:crypto (the form imports this). */
+export const listVersion = (ids: string[]) => [...ids].sort().join(",");

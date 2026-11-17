@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { Stat } from "@/components/ui/stat";
 import { formatSoles } from "@/lib/money";
 import { Avatar, Glyph, ICONS, IconTile } from "@/components/ui/avatar";
@@ -32,11 +33,14 @@ export function ProductList({
   canEdit,
   priceReview,
   stock,
+  buyButton,
 }: {
   products: ProductListItem[];
   canEdit: boolean;
   priceReview: number;
   stock: Record<string, { total: number; status: keyof typeof STOCK }>;
+  /** Owner only: the page's "Agregar a la lista", shown on low or out products. */
+  buyButton?: (p: { id: string; supplierId: string | null }) => ReactNode;
 }) {
   const noSupplier = products.filter((p) => !p.supplierName).length;
   const missingWeight = products.filter(noWeight).length;
@@ -119,6 +123,7 @@ export function ProductList({
                           <Glyph d={G.kardex} />
                           Kardex
                         </Link>
+                        {buyButton && stock[p.id] && stock[p.id].status !== "ok" && buyButton(p)}
                         <form action={setProductActive} className="ml-auto">
                           <input type="hidden" name="id" value={p.id} />
                           <input type="hidden" name="active" value={String(!p.active)} />

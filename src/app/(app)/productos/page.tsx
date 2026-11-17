@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/server/auth";
 import { ProductFilters, ProductList, listCatalogOptions, listProducts, listPriceReview } from "@/modules/catalog";
 import { listStock } from "@/modules/inventory";
+import { AddToListButton } from "@/modules/purchases";
 
 export default async function ProductsPage({ searchParams }: PageProps<"/productos">) {
   const user = await requireUser();
@@ -32,7 +33,13 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
         )}
       </div>
       <ProductFilters {...filters} categories={categories} suppliers={suppliers} canSeeInactive={isOwner} />
-      <ProductList products={products} canEdit={isOwner} priceReview={review.length} stock={stockById} />
+      <ProductList
+        products={products}
+        canEdit={isOwner}
+        priceReview={review.length}
+        stock={stockById}
+        buyButton={isOwner ? (p) => <AddToListButton productId={p.id} hasSupplier={!!p.supplierId} /> : undefined}
+      />
     </section>
   );
 }

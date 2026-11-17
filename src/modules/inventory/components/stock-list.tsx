@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { Stat } from "@/components/ui/stat";
 import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -33,12 +34,15 @@ export function StockList({
   expiring,
   canBuy,
   onlyMissing = false,
+  buyButton,
 }: {
   items: StockItem[];
   expiring: number;
   canBuy: boolean;
   /** "Stock bajo": most urgent first, a bar against the minimum, and one "Armar lista" per supplier. */
   onlyMissing?: boolean;
+  /** Owner only: the page's "Agregar a la lista", shown in the detail of low or out products. */
+  buyButton?: (p: { id: string; supplierId: string | null }) => ReactNode;
 }) {
   const low = items.filter((p) => p.status === "low").length;
   const out = items.filter((p) => p.status === "out").length;
@@ -176,6 +180,7 @@ export function StockList({
                                 ) : (
                                   <p className="text-sm text-muted">Sin lotes en almacén.</p>
                                 )}
+                                {buyButton && p.status !== "ok" && buyButton(p)}
                                 <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                                   {p.value !== null && p.total > 0 && (
                                     <span className="text-xs text-muted">Valor a costo {formatSoles(p.value)}</span>

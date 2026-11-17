@@ -2,13 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { audit, db, isForeignKeyViolation } from "@/server/db";
-import { locations, packagings, products, purchaseItems, purchases } from "@/server/db/schema";
+import { locations, lots, packagings, products, purchaseItems, purchases, stockLevels, suppliers } from "@/server/db/schema";
 import { requireUser } from "@/server/auth";
 import type { FormState } from "@/lib/form-state";
-import { purchaseSchema } from "./schemas";
+import { STALE_LIST_ERROR, purchaseSchema } from "./schemas";
+import { biggestPackaging, listVersion, missingToOrder } from "./purchase-math";
+import { defaultCosts } from "./queries";
 
 class PurchaseError extends Error {}
 
@@ -31,6 +33,8 @@ export async function savePurchase(_: FormState, form: FormData): Promise<FormSt
         const [cur] = await tx.select({ status: purchases.status }).from(purchases).where(eq(purchases.id, p.id)).for("update");
         if (!cur) throw new PurchaseError("La compra no existe");
         if (cur.status !== "BORRADOR") throw new PurchaseError("La compra ya fue recibida o anulada");
+        const ids = await tx.select({ id: purchaseItems.id }).from(purchaseItems).where(eq(purchaseItems.purchaseId, p.id));
+        if (listVersion(ids.map((i) => i.id)) !== p.version) throw new PurchaseError(STALE_LIST_ERROR);
       }
       const ok = await tx
         .select({ id: packagings.id })
@@ -94,4 +98,103 @@ export async function cancelPurchase(_: FormState, form: FormData): Promise<Form
   if (!done) return { error: "La compra ya fue recibida o anulada" };
   revalidatePath("/compras");
   redirect("/compras");
+}
+
+export type AddToListState =
+  { ok: true; purchaseId: string; number: number; supplierName: string; already: boolean } | { ok: false; error: string } | undefined;
+
+/** One tap from a low product: its biggest packaging, enough to reach the minimum, into its supplier's newest draft (created if none). */
+export async function addToPurchaseList(_: AddToListState, form: FormData): Promise<AddToListState> {
+  const me = await requireUser("DUENO");
+  const productId = z.uuid().safeParse(form.get("productId"));
+  if (!productId.success) return { ok: false, error: "Producto inválido" };
+  const costs = await defaultCosts();
+  let result: AddToListState;
+  try {
+    result = await db.transaction(async (tx) => {
+      const [product] = await tx
+        .select({ supplierId: products.supplierId, minStock: products.minStock })
+        .from(products)
+        .where(and(eq(products.id, productId.data), eq(products.active, true)));
+      if (!product) throw new PurchaseError("El producto no existe o está inactivo");
+      const packs = await tx
+        .select({ id: packagings.id, factor: packagings.factor })
+        .from(packagings)
+        .where(eq(packagings.productId, productId.data))
+        .orderBy(packagings.factor, packagings.id);
+      const big = biggestPackaging(packs);
+      if (!big) throw new PurchaseError("El producto no tiene presentaciones");
+      if (!product.supplierId) throw new PurchaseError("Asigna un proveedor al producto");
+
+      // Queues every add for this supplier: no two drafts, no two lines.
+      const [supplier] = await tx.select({ name: suppliers.name }).from(suppliers).where(eq(suppliers.id, product.supplierId)).for("no key update"); // serializes adds; does not block the KEY SHARE a purchase save takes on its supplier
+      if (!supplier) throw new PurchaseError("El proveedor no existe");
+
+      let [draft] = await tx
+        .select({ id: purchases.id, number: purchases.number })
+        .from(purchases)
+        .where(and(eq(purchases.supplierId, product.supplierId), eq(purchases.status, "BORRADOR")))
+        .orderBy(desc(purchases.createdAt))
+        .limit(1)
+        .for("update");
+      if (!draft) {
+        [draft] = await tx
+          .insert(purchases)
+          .values({ type: "ENVIA_PROVEEDOR", supplierId: product.supplierId, vehicleId: null, userId: me.id })
+          .returning({ id: purchases.id, number: purchases.number });
+        await audit(tx, {
+          actorId: me.id,
+          action: "purchase.create",
+          entity: "purchase",
+          entityId: draft.id,
+          details: { type: "ENVIA_PROVEEDOR", lines: 0 },
+        });
+      }
+      const base = { ok: true as const, purchaseId: draft.id, number: draft.number, supplierName: supplier.name };
+
+      const [dup] = await tx
+        .select({ id: purchaseItems.id })
+        .from(purchaseItems)
+        .where(
+          and(
+            eq(purchaseItems.purchaseId, draft.id),
+            inArray(
+              purchaseItems.packagingId,
+              packs.map((x) => x.id),
+            ),
+          ),
+        )
+        .limit(1);
+      if (dup) return { ...base, already: true };
+
+      // Same total as listStock: every location, only positive balances.
+      const [{ total }] = await tx
+        .select({ total: sql`coalesce(sum(${stockLevels.quantity}), 0)`.mapWith(Number) })
+        .from(stockLevels)
+        .innerJoin(lots, eq(lots.id, stockLevels.lotId))
+        .where(and(eq(lots.productId, productId.data), gt(stockLevels.quantity, 0)));
+      const quantity = Math.max(1, missingToOrder(total, product.minStock, big.factor));
+      const added = await tx
+        .insert(purchaseItems)
+        .values({ purchaseId: draft.id, packagingId: big.id, quantity, cost: costs[big.id] ?? 0, freight: 0 })
+        .onConflictDoNothing()
+        .returning({ id: purchaseItems.id });
+      if (!added.length) return { ...base, already: true };
+      await audit(tx, {
+        actorId: me.id,
+        action: "purchase.add_item",
+        entity: "purchase",
+        entityId: draft.id,
+        details: { productId: productId.data, packagingId: big.id, quantity },
+      });
+      return { ...base, already: false };
+    });
+  } catch (e) {
+    if (e instanceof PurchaseError) return { ok: false, error: e.message };
+    throw e;
+  }
+  revalidatePath("/compras");
+  revalidatePath("/productos");
+  revalidatePath("/stock");
+  return result;
 }

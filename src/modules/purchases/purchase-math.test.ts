@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { landedUnitCost, lineWeight, missingToOrder, purchaseTotals } from "./purchase-math";
+import { biggestPackaging, landedUnitCost, lineWeight, listVersion, missingToOrder, purchaseTotals } from "./purchase-math";
 
 test("line weight", () => {
   assert.equal(lineWeight({ quantity: 6, weightGrams: 12500 }), 75000);
@@ -26,4 +26,16 @@ test("missing to order", () => {
   assert.equal(missingToOrder(0, 30, 12), 3); // 30 → 2.5 → 3
   assert.equal(missingToOrder(0, 0, 12), 1); // out, no minimum
   assert.equal(missingToOrder(40, 30, 12), 0);
+});
+
+test("biggest packaging", () => {
+  assert.equal(biggestPackaging([]), undefined);
+  const a = { id: "a", factor: 12 };
+  assert.equal(biggestPackaging([{ id: "u", factor: 1 }, a, { id: "b", factor: 12 }]), a);
+});
+
+test("list version", () => {
+  assert.equal(listVersion(["b", "a"]), listVersion(["a", "b"]));
+  assert.notEqual(listVersion(["a", "b"]), listVersion(["a", "b", "c"]));
+  assert.equal(listVersion([]), "");
 });
