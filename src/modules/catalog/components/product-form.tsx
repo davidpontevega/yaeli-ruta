@@ -210,8 +210,8 @@ export function ProductForm({
           const price = parseSoles(x.price);
           const factor = Number(x.factor);
           return (
-            <div key={x.key} className="flex flex-col gap-1">
-              <div className="flex flex-wrap items-center gap-2 text-sm">
+            <div key={x.key} className="flex flex-col gap-2 rounded-xl border border-border p-3">
+              <div className="flex items-center gap-2 text-sm">
                 <input
                   list="packs"
                   value={x.name}
@@ -219,7 +219,7 @@ export function ProductForm({
                   required
                   placeholder="caja"
                   aria-label="Empaque"
-                  className="h-11 w-24 rounded-xl border border-border bg-surface px-2"
+                  className="h-11 w-28 rounded-xl border border-border bg-surface px-3 font-semibold"
                 />
                 <span>de</span>
                 <input
@@ -230,51 +230,47 @@ export function ProductForm({
                   onChange={(e) => setPack(i, "factor", e.target.value)}
                   required
                   aria-label={`Cuántas ${unit} trae`}
-                  className="h-11 w-16 rounded-xl border border-border bg-surface px-2"
+                  className="h-11 w-20 rounded-xl border border-border bg-surface px-3"
                 />
-                <span className="truncate">{unit}</span>
-                <span>costo S/</span>
-                <input
-                  inputMode="decimal"
-                  value={x.cost}
-                  onChange={(e) => setCost(i, e.target.value)}
-                  aria-label="Costo"
-                  className="h-11 w-20 min-w-0 rounded-xl border border-border bg-surface px-2"
-                />
-                <span>precio S/</span>
-                <input
-                  inputMode="decimal"
-                  value={x.price}
-                  onChange={(e) => setPack(i, "price", e.target.value)}
-                  required
-                  aria-label="Precio"
-                  className="h-11 w-20 min-w-0 rounded-xl border border-border bg-surface px-2"
-                />
-                <input
-                  inputMode="decimal"
-                  value={x.weightKg}
-                  onChange={(e) => setPack(i, "weightKg", e.target.value)}
-                  placeholder="kg"
-                  aria-label="Peso kg"
-                  className="h-11 w-16 min-w-0 rounded-xl border border-border bg-surface px-2"
-                />
-                <button type="button" onClick={() => setPacks((s) => s.filter((_, j) => j !== i))} className="ml-auto text-muted" aria-label="Quitar">
+                <span className="min-w-0 flex-1 truncate">{unit}</span>
+                <button
+                  type="button"
+                  onClick={() => setPacks((s) => s.filter((_, j) => j !== i))}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-red-50 hover:text-red-600"
+                  aria-label="Quitar presentación"
+                >
                   ✕
                 </button>
               </div>
-              {price !== null && factor > 1 && (
-                <p className="text-xs text-muted">
-                  Sale a {formatSoles(Math.round(price / factor))} por {unit}
-                </p>
-              )}
-              <MarginNote cost={x.cost} price={x.price} target={p.marginPct} />
+              <div className="grid grid-cols-3 gap-2">
+                <label className="campo">
+                  Costo S/
+                  <input inputMode="decimal" value={x.cost} onChange={(e) => setCost(i, e.target.value)} placeholder="Opcional" />
+                </label>
+                <label className="campo">
+                  Precio S/
+                  <input inputMode="decimal" value={x.price} onChange={(e) => setPack(i, "price", e.target.value)} required />
+                </label>
+                <label className="campo">
+                  Peso kg
+                  <input inputMode="decimal" value={x.weightKg} onChange={(e) => setPack(i, "weightKg", e.target.value)} placeholder="Opcional" />
+                </label>
+              </div>
+              <div className="flex flex-wrap gap-x-3">
+                {price !== null && factor > 1 && (
+                  <p className="text-xs text-muted">
+                    Sale a {formatSoles(Math.round(price / factor))} por {unit}
+                  </p>
+                )}
+                <MarginNote cost={x.cost} price={x.price} target={p.marginPct} />
+              </div>
             </div>
           );
         })}
         <button
           type="button"
           onClick={() => setPacks((s) => [...s, { key: newKey(), name: "caja", factor: "", cost: "", price: "", barcode: "", weightKg: "" }])}
-          className="btn-secundario h-10 text-sm"
+          className="btn-suave h-10 text-sm"
         >
           + Agregar caja / display
         </button>

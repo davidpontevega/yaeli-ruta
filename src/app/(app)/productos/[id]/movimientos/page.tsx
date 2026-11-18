@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Glyph, ICONS } from "@/components/ui/avatar";
 import { z } from "zod";
 import { requireUser } from "@/server/auth";
 import { BackLink } from "@/components/ui/back-link";
@@ -15,11 +17,17 @@ export default async function MovementsPage({ params }: PageProps<"/productos/[i
   return (
     <section className="flex flex-col gap-4">
       <BackLink href="/productos" label="Productos" />
-      <div>
-        <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Movimientos</h1>
-        <p className="text-muted">
-          {product.name} · {product.sku}
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Movimientos</h1>
+          <p className="text-muted">
+            {product.name} · {product.sku}
+          </p>
+        </div>
+        <Link href={`/productos/${product.id}`} className="btn-suave flex h-10 items-center gap-1.5 px-3.5 text-sm">
+          <Glyph d={ICONS.pencil} />
+          Editar producto
+        </Link>
       </div>
       <MovementList movements={movements} packagings={product.packagings} />
     </section>

@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/server/auth";
 import { BackLink } from "@/components/ui/back-link";
+import { Avatar } from "@/components/ui/avatar";
 import { getCustomer } from "@/modules/customers";
 import { warehouseStockByProduct } from "@/modules/inventory";
 import { balancesByCustomer } from "@/modules/accounts";
@@ -22,9 +23,13 @@ export default async function DeliverOrderPage({ params }: PageProps<"/pedidos/[
   return (
     <section className="flex flex-col gap-4">
       <BackLink href={`/pedidos/${order.id}`} label="pedido" />
-      <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">
-        Entregar pedido #{order.number} <span className="block text-base font-normal text-muted">{customer?.name}</span>
-      </h1>
+      <div className="flex items-center gap-3">
+        <Avatar name={customer?.name ?? "?"} />
+        <div className="min-w-0">
+          <h1 className="text-[22px] font-bold leading-tight tracking-tight md:text-[26px]">Entregar pedido #{order.number}</h1>
+          <p className="truncate text-muted">{customer?.name}</p>
+        </div>
+      </div>
       <DeliveryForm
         orderId={order.id}
         balance={balances[order.customerId] ?? 0}

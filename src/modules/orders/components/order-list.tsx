@@ -3,6 +3,7 @@ import Link from "next/link";
 import { formatSoles } from "@/lib/money";
 import { Avatar, ICONS, IconTile } from "@/components/ui/avatar";
 import { Stat } from "@/components/ui/stat";
+import { formatDate } from "@/lib/date";
 import type { OrderDetail, OrderRow } from "../queries";
 
 const STATUS = {
@@ -72,31 +73,45 @@ export function OrderList({ orders }: { orders: OrderRow[] }) {
 /** Read-only view of a closed order (cancelled or delivered). Delivered orders show what was delivered. */
 export function OrderSummary({ order, customerName }: { order: OrderDetail; customerName: string }) {
   const delivered = order.status === "ENTREGADO";
+  const qty = (i: OrderDetail["items"][number]) => (delivered ? (i.delivered ?? 0) : i.quantity);
   return (
-    <div className="tarjeta flex flex-col gap-2">
-      <p className="font-semibold">
-        {customerName}{" "}
-        {delivered ? (
-          <span className="text-sm font-normal text-emerald-700">· Entregado</span>
-        ) : (
-          <span className="text-sm font-normal text-red-600">· anulado</span>
-        )}
-      </p>
-      <ul className="flex flex-col gap-1 text-sm">
-        {order.items.map((i) => (
-          <li key={i.packagingId} className="flex justify-between gap-2">
-            <span>
-              {delivered ? i.delivered : i.quantity} {i.packagingName} · {i.productName}
-              {delivered && i.delivered !== i.quantity && <span className="text-amber-700"> (pidió {i.quantity})</span>}
-            </span>
-            <span>{formatSoles((delivered ? (i.delivered ?? 0) : i.quantity) * i.price)}</span>
-          </li>
-        ))}
-      </ul>
-      <p className="flex justify-between font-bold">
-        <span>Total</span>
-        <span>{formatSoles(order.total)}</span>
-      </p>
+    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="tarjeta flex items-center gap-3 lg:col-start-2 lg:row-start-1">
+        <Avatar name={customerName} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-bold leading-tight">{customerName}</p>
+          <div className="mt-1 flex flex-wrap gap-1">
+            <span className={`chip ${STATUS[order.status].className}`}>{STATUS[order.status].label}</span>
+            <span className="chip bg-slate-100 text-slate-600">entrega {formatDate(order.deliveryOn)}</span>
+          </div>
+        </div>
+        <Link href={`/clientes/${order.customerId}/cuenta`} className="btn-suave flex h-10 shrink-0 items-center px-3 text-sm">
+          Cuenta
+        </Link>
+      </div>
+      <section className={`lista lg:row-span-2 ${delivered ? "" : "opacity-60"}`}>
+        <ul className="divide-y divide-slate-100">
+          {order.items.map((i) => (
+            <li key={i.packagingId} className="flex items-center gap-3 px-4 py-3">
+              <Avatar name={i.productName} size="sm" />
+              <div className="min-w-0 flex-1">
+                <p className={`font-semibold leading-tight ${delivered ? "" : "line-through"}`}>{i.productName}</p>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  <span className="chip bg-slate-100 text-slate-600">
+                    {qty(i)} {i.packagingName} · {formatSoles(i.price)} c/u
+                  </span>
+                  {delivered && i.delivered !== i.quantity && <span className="chip bg-amber-100 text-amber-800">pidió {i.quantity}</span>}
+                </div>
+              </div>
+              <span className="cifra shrink-0">{formatSoles(qty(i) * i.price)}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <div className="tarjeta flex items-baseline justify-between lg:col-start-2">
+        <span className="font-bold">{delivered ? "Total entregado" : "Total (anulado)"}</span>
+        <span className={`cifra text-2xl ${delivered ? "text-primary" : "text-slate-500 line-through"}`}>{formatSoles(order.total)}</span>
+      </div>
     </div>
   );
 }

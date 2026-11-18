@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/server/auth";
@@ -22,7 +23,17 @@ export default async function EditProductPage({ params }: PageProps<"/productos/
   return (
     <section className="flex flex-col gap-4">
       <BackLink href="/productos" label="Productos" />
-      <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Editar producto</h1>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Editar producto</h1>
+          <p className="truncate text-muted">
+            {p.name} · {p.sku}
+          </p>
+        </div>
+        <Link href={`/productos/${p.id}/movimientos`} className="btn-suave flex h-10 items-center px-3.5 text-sm">
+          Ver movimientos
+        </Link>
+      </div>
       <ProductForm
         categories={categories}
         brands={brands}

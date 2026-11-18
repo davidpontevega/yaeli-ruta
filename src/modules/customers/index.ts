@@ -6,3 +6,4 @@ export { RouteForm } from "./components/route-form";
 export { CustomerList, CustomerFilters } from "./components/customer-list";
 export { CustomerForm } from "./components/customer-form";
 export { SpecialPrices } from "./components/special-prices";
+export { CustomerHeader } from "./components/customer-header";
