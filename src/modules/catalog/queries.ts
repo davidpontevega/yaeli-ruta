@@ -2,7 +2,7 @@ import "server-only";
 import { and, asc, count, eq, ilike, inArray, isNull, or, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/server/db";
-import { brands, categories, locations, packagings, products, suppliers } from "@/server/db/schema";
+import { brands, categories, locations, packagings, productPhotos, products, suppliers } from "@/server/db/schema";
 import { needsReview, priceUnitCost, realMarginPct, suggestedPrice } from "./pricing";
 
 export const PRODUCT_LIST_LIMIT = 200;
@@ -31,11 +31,14 @@ export async function listProducts(f: { q: string; categoryId: string; includeIn
       brand: brands.name,
       supplierId: products.supplierId,
       supplierName: suppliers.name,
+      showInCatalog: products.showInCatalog,
+      photoAt: productPhotos.updatedAt,
     })
     .from(products)
     .innerJoin(categories, eq(categories.id, products.categoryId))
     .leftJoin(brands, eq(brands.id, products.brandId))
     .leftJoin(suppliers, eq(suppliers.id, products.supplierId))
+    .leftJoin(productPhotos, eq(productPhotos.productId, products.id))
     .where(and(...where))
     .orderBy(asc(categories.name), asc(products.name))
     .limit(PRODUCT_LIST_LIMIT);
@@ -52,18 +55,56 @@ export async function listProducts(f: { q: string; categoryId: string; includeIn
         )
         .orderBy(asc(packagings.factor))
     : [];
-  return rows.map((r) => ({ ...r, packagings: packs.filter((x) => x.productId === r.id) }));
+  return rows.map(({ photoAt, ...r }) => ({ ...r, photoVersion: photoVersion(photoAt), packagings: packs.filter((x) => x.productId === r.id) }));
 }
 
 export type ProductListItem = Awaited<ReturnType<typeof listProducts>>[number];
 
 export async function getProductWithPackagings(id: string) {
-  const [[product], packs] = await Promise.all([
-    db.select().from(products).where(eq(products.id, id)).limit(1),
+  const [[row], packs] = await Promise.all([
+    db
+      .select({ product: products, photoAt: productPhotos.updatedAt })
+      .from(products)
+      .leftJoin(productPhotos, eq(productPhotos.productId, products.id))
+      .where(eq(products.id, id))
+      .limit(1),
     db.select().from(packagings).where(eq(packagings.productId, id)).orderBy(asc(packagings.factor)),
   ]);
-  return product ? { ...product, packagings: packs } : null;
+  return row ? { ...row.product, photoVersion: photoVersion(row.photoAt), packagings: packs } : null;
 }
+
+/** Photo version for `?v=` in its URL (changes when the photo is replaced); null without photo. */
+const photoVersion = (at: Date | null) => at?.getTime() ?? null;
+
+/** The stored photo of a product, or null. Only the photo route reads the bytes. */
+export async function getProductPhoto(productId: string) {
+  const [row] = await db.select().from(productPhotos).where(eq(productPhotos.productId, productId)).limit(1);
+  return row ?? null;
+}
+
+/** Active products marked for the catalog, grouped by category (both by name); `photoVersion` null = no photo yet. */
+export async function getCatalogSheet() {
+  const rows = await db
+    .select({
+      categoryId: categories.id,
+      category: categories.name,
+      id: products.id,
+      name: products.name,
+      photoAt: productPhotos.updatedAt,
+    })
+    .from(products)
+    .innerJoin(categories, eq(categories.id, products.categoryId))
+    .leftJoin(productPhotos, eq(productPhotos.productId, products.id))
+    .where(and(eq(products.active, true), eq(products.showInCatalog, true)))
+    .orderBy(asc(categories.name), asc(products.name));
+  return [...Map.groupBy(rows, (r) => r.categoryId).values()].map((list) => ({
+    categoryId: list[0].categoryId,
+    category: list[0].category,
+    products: list.map((r) => ({ id: r.id, name: r.name, photoVersion: photoVersion(r.photoAt) })),
+  }));
+}
+
+export type CatalogSheet = Awaited<ReturnType<typeof getCatalogSheet>>;
 
 export type CatalogOption = { id: string; name: string };
 

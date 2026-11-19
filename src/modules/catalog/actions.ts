@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { and, asc, eq, like, notInArray } from "drizzle-orm";
 import { z } from "zod";
 import { audit, db, isForeignKeyViolation, isUniqueViolation, type Tx } from "@/server/db";
-import { brands, categories, locations, packagings, products } from "@/server/db/schema";
+import { brands, categories, locations, packagings, productPhotos, products } from "@/server/db/schema";
 import { requireUser } from "@/server/auth";
 import type { FormState } from "@/lib/form-state";
 import { catalogNameSchema, productSchema, quickProductSchema } from "./schemas";
@@ -13,6 +13,9 @@ import { listPriceReview } from "./queries";
 import { nextSku, skuPrefix } from "./sku";
 import { baseUnitCost, priceFromCost } from "./pricing";
 import { toSolesInput } from "@/lib/money";
+import { PHOTO_MAX_BYTES, imageMime } from "./photo";
+import { parseImageUrl } from "./image-url";
+import { downloadImage } from "./fetch-image";
 
 type ProductInput = z.infer<typeof productSchema>;
 
@@ -27,6 +30,7 @@ async function persistProduct(tx: Tx, actorId: string, p: ProductInput) {
     baseUnit: p.packagings[0].name,
     minStock: p.minStock,
     marginPct: p.marginPct,
+    showInCatalog: p.showInCatalog,
   };
   // Typed cost becomes the product's last cost (what /precios prices from); without a cost it stays as is.
   const lastCost = baseUnitCost(p.packagings);
@@ -129,6 +133,7 @@ export async function quickCreateProduct(_: QuickProductResult | undefined, form
     supplierId,
     minStock: 0,
     marginPct: MARGIN,
+    showInCatalog: true,
     packagings: [
       { name: unit, factor: "1", cost: toSolesInput(unitCost), price: toSolesInput(priceFromCost(unitCost, MARGIN)), barcode: "", weightKg: "" },
       ...(hasPack
@@ -246,4 +251,66 @@ export async function applyPrices(form: FormData) {
   revalidatePath("/precios");
   revalidatePath("/productos");
   revalidatePath("/");
+}
+
+const photoFormSchema = z.object({ productId: z.uuid(), source: z.enum(["file", "paste", "url"]) });
+
+/** Stores (or replaces) the product photo. The browser already reduced it; here only size and real type are checked. */
+export async function saveProductPhoto(_: FormState, form: FormData): Promise<FormState> {
+  const me = await requireUser("DUENO");
+  const input = photoFormSchema.safeParse({ productId: form.get("productId"), source: form.get("source") });
+  const file = form.get("file");
+  if (!input.success || !(file instanceof File)) return { error: "Datos inválidos" };
+  if (file.size > PHOTO_MAX_BYTES) return { error: "La foto es muy pesada" };
+  const bytes = Buffer.from(await file.arrayBuffer());
+  const mime = imageMime(bytes);
+  if (!mime) return { error: "Formato no soportado: usa PNG, JPG o WEBP" };
+  const { productId, source } = input.data;
+  try {
+    await db.transaction(async (tx) => {
+      const updatedAt = new Date();
+      await tx
+        .insert(productPhotos)
+        .values({ productId, mime, bytes, updatedAt })
+        .onConflictDoUpdate({ target: productPhotos.productId, set: { mime, bytes, updatedAt } });
+      await audit(tx, {
+        actorId: me.id,
+        action: "product.photo_set",
+        entity: "product",
+        entityId: productId,
+        details: { mime, size: bytes.length, source },
+      });
+    });
+  } catch (e) {
+    if (isForeignKeyViolation(e)) return { error: "El producto no existe" };
+    throw e;
+  }
+  revalidatePath("/productos");
+  revalidatePath(`/productos/${productId}`);
+  return { ok: "Foto guardada" };
+}
+
+export async function deleteProductPhoto(form: FormData) {
+  const me = await requireUser("DUENO");
+  const input = z.object({ productId: z.uuid() }).safeParse({ productId: form.get("productId") });
+  if (!input.success) return; // only a tampered form gets here
+  const { productId } = input.data;
+  await db.transaction(async (tx) => {
+    const gone = await tx.delete(productPhotos).where(eq(productPhotos.productId, productId)).returning({ id: productPhotos.productId });
+    if (gone.length) await audit(tx, { actorId: me.id, action: "product.photo_delete", entity: "product", entityId: productId });
+  });
+  revalidatePath("/productos");
+  revalidatePath(`/productos/${productId}`);
+}
+
+/** Downloads an image from a pasted link for the browser to reduce it (nothing is stored here). */
+export async function fetchImageFromUrl(raw: { url: string }): Promise<{ ok: true; mime: string; base64: string } | { ok: false; error: string }> {
+  await requireUser("DUENO");
+  const input = z.object({ url: z.string().max(2000) }).safeParse(raw);
+  if (!input.success) return { ok: false, error: "El enlace es muy largo" };
+  const parsed = parseImageUrl(input.data.url);
+  if (!parsed.ok) return parsed;
+  const img = await downloadImage(parsed.url);
+  if ("error" in img) return { ok: false, error: img.error };
+  return { ok: true, mime: img.mime, base64: Buffer.from(img.bytes).toString("base64") };
 }

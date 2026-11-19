@@ -14,6 +14,7 @@ export const productSchema = z
     supplierId: z.uuid().nullable(),
     minStock: z.coerce.number().int().min(0),
     marginPct: z.coerce.number().int().min(0).max(300),
+    showInCatalog: z.boolean(),
     packagings: z
       .array(
         z.object({

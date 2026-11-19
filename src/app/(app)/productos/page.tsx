@@ -27,9 +27,17 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Productos</h1>
         {isOwner && (
-          <Link href="/productos/nuevo" className="btn-primario flex h-10 items-center text-sm">
-            + Nuevo
-          </Link>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Link href="/productos/fotos" className="btn-suave flex h-10 items-center px-3 text-sm">
+              Completar fotos
+            </Link>
+            <Link href="/productos/catalogo" className="btn-suave flex h-10 items-center px-3 text-sm">
+              Catálogo para clientes
+            </Link>
+            <Link href="/productos/nuevo" className="btn-primario flex h-10 items-center text-sm">
+              + Nuevo
+            </Link>
+          </div>
         )}
       </div>
       <ProductFilters {...filters} categories={categories} suppliers={suppliers} canSeeInactive={isOwner} />

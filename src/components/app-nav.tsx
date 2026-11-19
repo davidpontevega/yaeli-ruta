@@ -126,6 +126,7 @@ const QUICK = [
   { href: "/deudores", label: "Registrar cobro", hint: "Pagó en la oficina" },
   { href: "/compras/nueva", label: "Lista de pedido", hint: "Al proveedor o para ir a comprar" },
   { href: "/recepciones/nueva", label: "Ingreso de mercadería", hint: "Llegó o leer factura" },
+  { href: "/productos/catalogo", label: "Catálogo para clientes", hint: "Imágenes para WhatsApp" },
 ];
 
 /** Mobile only: floating bar at the bottom (with "+" for the owner). Desktop uses SideNav. */

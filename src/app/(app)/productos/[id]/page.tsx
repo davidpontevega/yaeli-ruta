@@ -5,7 +5,7 @@ import { requireUser } from "@/server/auth";
 import { BackLink } from "@/components/ui/back-link";
 import { toSolesInput } from "@/lib/money";
 import { toKgInput } from "@/lib/weight";
-import { ProductForm, getProductWithPackagings, listCatalogOptions } from "@/modules/catalog";
+import { ProductForm, ProductPhoto, getProductWithPackagings, listCatalogOptions } from "@/modules/catalog";
 import { getLastCosts, createSupplier } from "@/modules/inventory";
 
 export default async function EditProductPage({ params }: PageProps<"/productos/[id]">) {
@@ -34,6 +34,7 @@ export default async function EditProductPage({ params }: PageProps<"/productos/
           Ver movimientos
         </Link>
       </div>
+      <ProductPhoto productId={p.id} name={p.name} photoVersion={p.photoVersion} />
       <ProductForm
         categories={categories}
         brands={brands}
@@ -48,6 +49,7 @@ export default async function EditProductPage({ params }: PageProps<"/productos/
           supplierId: p.supplierId ?? "",
           minStock: p.minStock,
           marginPct: p.marginPct,
+          showInCatalog: p.showInCatalog,
           packagings: p.packagings.map((x) => ({
             id: x.id,
             name: x.name,

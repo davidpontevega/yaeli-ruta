@@ -3,6 +3,7 @@ import {
   type AnyPgColumn,
   boolean,
   check,
+  customType,
   date,
   index,
   integer,
@@ -110,10 +111,24 @@ export const products = pgTable(
     marginPct: integer("margen_pct").notNull().default(15),
     active: boolean("activo").notNull().default(true),
     supplierId: uuid("proveedor_id").references((): AnyPgColumn => suppliers.id), // main supplier; filled by the first purchase
+    showInCatalog: boolean("en_catalogo").notNull().default(true),
     createdAt: createdAt(),
   },
   (t) => [index("productos_categoria_idx").on(t.categoryId)],
 );
+
+// drizzle 0.45 has no bytea column.
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => "bytea" });
+
+// One photo per product (≤ 200 KB, reduced in the browser). Never selected in lists: only the photo route reads `bytes`.
+export const productPhotos = pgTable("fotos_producto", {
+  productId: uuid("producto_id")
+    .primaryKey()
+    .references(() => products.id),
+  mime: text("mime").notNull(),
+  bytes: bytea("bytes").notNull(),
+  updatedAt: timestamp("actualizado_en", { withTimezone: true }).notNull().defaultNow(),
+});
 
 // Every sale/purchase is by packaging. The one with factor 1 is the base unit and always exists.
 export const packagings = pgTable(

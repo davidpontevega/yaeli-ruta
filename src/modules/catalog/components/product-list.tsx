@@ -2,11 +2,12 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Stat } from "@/components/ui/stat";
 import { formatSoles } from "@/lib/money";
-import { Avatar, Glyph, ICONS, IconTile } from "@/components/ui/avatar";
+import { Glyph, ICONS, IconTile } from "@/components/ui/avatar";
 import { formatQty } from "@/lib/quantity";
 import { EmptyState } from "@/components/ui/empty-state";
 import { setProductActive } from "../actions";
 import { PRODUCT_LIST_LIMIT, type ProductListItem } from "../queries";
+import { photoUrl } from "../photo";
 
 const G = {
   kardex: "M3 3v18h18M7 15l4-4 3 3 5-6",
@@ -76,7 +77,17 @@ export function ProductList({
                 {list.map((p) => (
                   <li key={p.id} className={`tarjeta flex flex-col gap-3 ${p.active ? "" : "opacity-60"}`}>
                     <div className="flex items-start gap-3">
-                      <Avatar name={p.name} />
+                      {p.photoVersion ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- private API image; next/image would not send the session
+                        <img
+                          src={photoUrl(p.id, p.photoVersion)}
+                          alt=""
+                          loading="lazy"
+                          className="h-10 w-10 shrink-0 rounded-xl border border-border bg-white object-contain"
+                        />
+                      ) : (
+                        <IconTile d={ICONS.box} tone="bg-slate-100 text-slate-400" />
+                      )}
                       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                         <div className="flex items-start justify-between gap-2">
                           <p className="font-semibold leading-tight">{p.name}</p>

@@ -30,6 +30,8 @@ export type ProductDraft = {
   supplierId: string;
   minStock: number;
   marginPct: number;
+  /** Default true (new products show in the customer catalog). */
+  showInCatalog?: boolean;
   packagings: Omit<PackagingDraft, "key">[];
 };
 
@@ -95,6 +97,7 @@ export function ProductForm({
     id: p.id || undefined,
     brandId: p.brandId || null,
     supplierId: p.supplierId || null,
+    showInCatalog: p.showInCatalog ?? true,
     packagings: packs.map((x, i) => ({
       id: x.id,
       name: x.name,
@@ -297,6 +300,10 @@ export function ProductForm({
           <label className="campo">
             Avisar si quedan menos de ({unit})
             <input type="number" min={0} inputMode="numeric" value={p.minStock} onChange={(e) => set("minStock", Number(e.target.value))} />
+          </label>
+          <label className="col-span-2 flex min-h-11 items-center gap-2 text-sm font-medium">
+            <input type="checkbox" checked={p.showInCatalog ?? true} onChange={(e) => set("showInCatalog", e.target.checked)} className="h-5 w-5" />
+            Mostrar en catálogo
           </label>
         </div>
       </details>
