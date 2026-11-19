@@ -6,13 +6,14 @@ import { redirect } from "next/navigation";
 import { and, eq, gt } from "drizzle-orm";
 import { db } from "./db";
 import { sessions, users, type Role } from "./db/schema";
-import { SESSION_COOKIE } from "./auth-cookie";
+import { PATH_HEADER, SESSION_COOKIE } from "./auth-cookie";
+import { canSee, firstAllowed } from "@/lib/menus";
 
 const SESSION_MS = 30 * 24 * 60 * 60 * 1000;
 
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 
-export type CurrentUser = { id: string; name: string; role: Role };
+export type CurrentUser = { id: string; name: string; role: Role; isAdmin: boolean; hiddenMenus: string[] };
 
 export async function createSession(userId: string) {
   const token = randomBytes(32).toString("base64url");
@@ -40,7 +41,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
   const [row] = await db
-    .select({ id: users.id, name: users.name, role: users.role })
+    .select({ id: users.id, name: users.name, role: users.role, isAdmin: users.isAdmin, hiddenMenus: users.hiddenMenus })
     .from(sessions)
     .innerJoin(users, eq(users.id, sessions.userId))
     .where(and(eq(sessions.tokenHash, sha256(token)), gt(sessions.expiresAt, new Date()), eq(users.active, true)))
@@ -48,10 +49,26 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   return row ?? null;
 });
 
-/** For pages and server actions: redirects to login without a session, or home without the role. */
+/**
+ * For pages and server actions: redirects to login without a session, home without the role,
+ * and to the first visible screen when the requested one is hidden for this user (spec 020).
+ */
 export async function requireUser(...roles: Role[]): Promise<CurrentUser> {
   const u = await getCurrentUser();
   if (!u) redirect("/login");
   if (roles.length && !roles.includes(u.role)) redirect("/");
+  const path = (await headers()).get(PATH_HEADER);
+  if (path && !canSee(path, u.role, u.hiddenMenus)) {
+    const to = firstAllowed(u.role, u.hiddenMenus);
+    // Nothing visible (only after a role change): "/login" would bounce back to "/", so let the page through.
+    if (to !== "/login") redirect(to);
+  }
+  return u;
+}
+
+/** Admin-only screens (/menus): anyone else goes home. */
+export async function requireAdmin(): Promise<CurrentUser> {
+  const u = await requireUser("DUENO");
+  if (!u.isAdmin) redirect("/");
   return u;
 }

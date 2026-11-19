@@ -11,6 +11,8 @@ export const listUsersWithSessions = (now: Date) =>
       name: users.name,
       role: users.role,
       active: users.active,
+      isAdmin: users.isAdmin,
+      hiddenMenus: users.hiddenMenus,
       lockedUntil: users.lockedUntil,
       sessions: count(sessions.id),
     })

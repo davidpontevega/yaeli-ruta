@@ -5,6 +5,7 @@ import { AddNameForm } from "./add-name-form";
 import { setLocationCapacity } from "../actions";
 
 const TAG = "M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8zM7 7h.01";
+const MENU = "M4 6h16M4 12h16M4 18h10";
 const KEY = "M15 7a2 2 0 0 1 2 2m4 0a6 6 0 0 1-7.7 5.7L11 17H9v2H7v2H4a1 1 0 0 1-1-1v-2.6a1 1 0 0 1 .3-.7l6-6A6 6 0 1 1 21 9z";
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
@@ -41,28 +42,34 @@ function Card({ icon, title, count, children }: { icon: string; title: string; c
   );
 }
 
-/** Settings home: links to users and suppliers, then categories, brands and locations with their quick-add forms. */
-export function CatalogSummary({ summary }: { summary: Summary }) {
+/**
+ * Settings home: links to users and suppliers (only the ones this user sees, `can`), "Menús" for the admin,
+ * then categories, brands and locations with their quick-add forms.
+ */
+export function CatalogSummary({ summary, can, isAdmin }: { summary: Summary; can: (href: string) => boolean; isAdmin: boolean }) {
   const links = [
     { href: "/usuarios", icon: KEY, title: "Usuarios y PIN", hint: "Quién entra al sistema y con qué rol" },
     { href: "/proveedores", icon: ICONS.truck, title: "Proveedores", hint: "Teléfonos, compras y listas de pedido" },
-  ];
+    ...(isAdmin ? [{ href: "/menus", icon: MENU, title: "Menús", hint: "Qué pantallas ve cada usuario" }] : []),
+  ].filter((l) => can(l.href));
   return (
     <>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {links.map((l) => (
-          <Link key={l.href} href={l.href} className="tarjeta group flex items-center gap-3 transition hover:border-teal-300">
-            <IconTile d={l.icon} />
-            <span className="min-w-0 flex-1">
-              <span className="block font-bold">{l.title}</span>
-              <span className="block truncate text-sm text-muted">{l.hint}</span>
-            </span>
-            <span aria-hidden className="text-lg text-muted transition group-hover:translate-x-0.5 group-hover:text-primary">
-              →
-            </span>
-          </Link>
-        ))}
-      </div>
+      {links.length > 0 && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {links.map((l) => (
+            <Link key={l.href} href={l.href} className="tarjeta group flex items-center gap-3 transition hover:border-teal-300">
+              <IconTile d={l.icon} />
+              <span className="min-w-0 flex-1">
+                <span className="block font-bold">{l.title}</span>
+                <span className="block truncate text-sm text-muted">{l.hint}</span>
+              </span>
+              <span aria-hidden className="text-lg text-muted transition group-hover:translate-x-0.5 group-hover:text-primary">
+                →
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <Card icon={ICONS.box} title="Categorías" count={plural(summary.categories.length, "categoría", "categorías")}>

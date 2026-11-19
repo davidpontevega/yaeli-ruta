@@ -11,7 +11,7 @@ export function AppHeader({ user, badges }: { user: CurrentUser; badges?: NavBad
         <Link href="/" className="text-lg font-bold text-primary">
           {BRAND.name}
         </Link>
-        <SectionNav role={user.role} badges={badges} />
+        <SectionNav role={user.role} hidden={user.hiddenMenus} badges={badges} />
         <form action={signOut} className="flex items-center gap-3 text-sm">
           <span className="text-muted">{user.name}</span>
           <button className="btn-secundario h-9 text-sm">Salir</button>

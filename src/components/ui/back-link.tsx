@@ -22,6 +22,7 @@ const NAMES: Record<string, string> = {
   precios: "Precios",
   catalogo: "Ajustes",
   usuarios: "Usuarios",
+  menus: "Menús",
 };
 
 const read = (): string[] => {

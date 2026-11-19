@@ -18,6 +18,7 @@ export function UserList({ users, currentUserId, now }: { users: UserRow[]; curr
                 <span className={`chip ml-1 ${u.role === "DUENO" ? "bg-teal-50 text-teal-800" : "bg-sky-50 text-sky-800"}`}>
                   {ROLE_LABEL[u.role]}
                 </span>
+                {u.isAdmin && <span className="chip ml-1 bg-violet-50 text-violet-800">Admin</span>}
               </p>
               <p className="text-sm text-muted">
                 {u.sessions} {u.sessions === 1 ? "celular conectado" : "celulares conectados"}

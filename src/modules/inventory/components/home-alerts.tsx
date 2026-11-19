@@ -8,11 +8,13 @@ export function HomeAlerts({
   within30,
   lowStock,
   priceReview,
+  can,
 }: {
   expired: number;
   within30: number;
   lowStock: number;
   priceReview: number | null; // null = not the owner: prices are owner-only
+  can: (href: string) => boolean; // whether this user sees the screen (hidden menus)
 }) {
   const alerts: Alert[] = [
     { href: "/vencimientos", count: expired, title: "Lotes vencidos", detail: "Sácalos del almacén", tone: "bg-red-100 text-red-800" },
@@ -21,10 +23,12 @@ export function HomeAlerts({
   ];
   if (priceReview !== null)
     alerts.push({ href: "/precios", count: priceReview, title: "Precios por revisar", detail: "Subió el costo", tone: "bg-sky-100 text-sky-800" });
+  const shown = alerts.filter((a) => can(a.href));
+  if (!shown.length) return null;
   return (
     <section className="flex flex-col gap-2">
       <h2 className="rotulo px-1 pt-1">Necesita atención</h2>
-      {alerts.map((a) => (
+      {shown.map((a) => (
         <Link key={a.title} href={a.href} className="tarjeta flex min-h-14 items-center gap-3 px-3.5 py-3">
           <span
             className={`cifra flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[17px] ${a.count ? a.tone : "bg-slate-100 text-muted"}`}

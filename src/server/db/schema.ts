@@ -36,6 +36,13 @@ export const users = pgTable("usuarios", {
   failedAttempts: integer("intentos_fallidos").notNull().default(0),
   lockedUntil: timestamp("bloqueado_hasta", { withTimezone: true }),
   active: boolean("activo").notNull().default(true),
+  // Admin: decides which menus each user sees (/menus). Set by hand in SQL, not from the app.
+  isAdmin: boolean("es_admin").notNull().default(false),
+  // Menu keys (src/lib/menus.ts) this user does not see. A deny list, so new screens show up for everyone.
+  hiddenMenus: text("menus_ocultos")
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
   createdAt: createdAt(),
 });
 

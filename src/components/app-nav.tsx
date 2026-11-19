@@ -4,10 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import type { Role } from "@/server/db/schema";
+import { canSee } from "@/lib/menus";
 
 /** `also`: pages reached from inside this tab (buttons), so the tab stays highlighted there. */
 /** `short`: label for the phone segmented tabs when the full one does not fit. */
-type Tab = { href: string; label: string; short?: string; icon?: string; ownerOnly?: boolean; also?: string[] };
+/** Who sees a tab (role + hidden menus) comes from src/lib/menus.ts by its href. */
+type Tab = { href: string; label: string; short?: string; icon?: string; also?: string[] };
 type Section = { label: string; icon: string; tabs: Tab[] };
 
 // 4 sections × 2–3 tabs. Less frequent screens live behind buttons inside their tab.
@@ -21,13 +23,11 @@ const SECTIONS: Section[] = [
         href: "/pedidos",
         label: "Pedidos",
         icon: "M3 3h2l2.5 12h11L21 7H6.2M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm9 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2z",
-        ownerOnly: true,
       },
       {
         href: "/clientes",
         label: "Clientes",
         icon: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75",
-        ownerOnly: true,
         also: ["/deudores", "/rutas"],
       },
     ],
@@ -47,7 +47,6 @@ const SECTIONS: Section[] = [
         label: "Lista de pedido",
         short: "Lista",
         icon: "M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 12h6M9 16h6",
-        ownerOnly: true,
         also: ["/proveedores"],
       },
       {
@@ -55,7 +54,6 @@ const SECTIONS: Section[] = [
         label: "Ingreso de mercadería",
         short: "Ingreso",
         icon: "M1 3h15v13H1zM16 8h4l3 3v5h-7zM5.5 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18.5 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4z",
-        ownerOnly: true,
         also: ["/recepciones"],
       },
     ],
@@ -71,25 +69,30 @@ const SECTIONS: Section[] = [
         also: ["/precios"],
       },
       {
+        href: "/productos/catalogo",
+        label: "Catálogo",
+        icon: "M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM21 15l-5-5L5 21",
+        also: ["/productos/fotos"],
+      },
+      {
         href: "/catalogo",
         label: "Ajustes",
         icon: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z",
-        ownerOnly: true,
         also: ["/usuarios"],
       },
     ],
   },
 ];
 
-const visible = (role: Role) =>
-  SECTIONS.map((s) => ({ ...s, tabs: s.tabs.filter((t) => !t.ownerOnly || role === "DUENO") })).filter((s) => s.tabs.length);
+const visible = (role: Role, hidden: string[]) =>
+  SECTIONS.map((s) => ({ ...s, tabs: s.tabs.filter((t) => canSee(t.href, role, hidden)) })).filter((s) => s.tabs.length);
 
 const isUnder = (path: string, href: string) => (href === "/" ? path === "/" : path === href || path.startsWith(`${href}/`));
 
 /** The tab (and its section) whose href or `also` is the longest prefix of the URL. */
-function useCurrent(role: Role) {
+function useCurrent(role: Role, hidden: string[]) {
   const path = usePathname();
-  const sections = visible(role);
+  const sections = visible(role, hidden);
   let current: { section: Section; tab: Tab } | undefined;
   let best = -1;
   for (const section of sections)
@@ -120,7 +123,7 @@ function Icon({ d, small }: { d: string; small?: boolean }) {
 }
 
 const PLUS = "M12 5v14M5 12h14";
-/** Quick actions behind the central "+" (owner only): the daily tasks, one tap from anywhere. */
+/** Quick actions behind the central "+": the daily tasks, one tap from anywhere. Each shows if its screen does. */
 const QUICK = [
   { href: "/pedidos/nuevo", label: "Nuevo pedido", hint: "Un cliente llamó" },
   { href: "/deudores", label: "Registrar cobro", hint: "Pagó en la oficina" },
@@ -129,11 +132,12 @@ const QUICK = [
   { href: "/productos/catalogo", label: "Catálogo para clientes", hint: "Imágenes para WhatsApp" },
 ];
 
-/** Mobile only: floating bar at the bottom (with "+" for the owner). Desktop uses SideNav. */
-export function SectionNav({ role, badges = {} }: { role: Role; badges?: NavBadges }) {
-  const { sections, current } = useCurrent(role);
+/** Mobile only: floating bar at the bottom (with "+" when some quick action is visible). Desktop uses SideNav. */
+export function SectionNav({ role, hidden = [], badges = {} }: { role: Role; hidden?: string[]; badges?: NavBadges }) {
+  const { sections, current } = useCurrent(role, hidden);
   const [open, setOpen] = useState(false);
-  const owner = role === "DUENO";
+  const quick = QUICK.filter((q) => canSee(q.href, role, hidden));
+  const plus = quick.length > 0;
   const item = (s: Section) => (
     <Link
       key={s.label}
@@ -160,7 +164,7 @@ export function SectionNav({ role, badges = {} }: { role: Role; badges?: NavBadg
           <button type="button" aria-label="Cerrar" onClick={() => setOpen(false)} className="flex-1" />
           <div className="flex flex-col gap-2 rounded-t-3xl bg-surface px-4 pt-3 pb-[calc(1.75rem+env(safe-area-inset-bottom))]">
             <div className="mb-2 h-1 w-10 self-center rounded-full bg-slate-300" aria-hidden />
-            {QUICK.map((q, i) => (
+            {quick.map((q, i) => (
               <Link
                 key={q.href}
                 href={q.href}
@@ -180,10 +184,10 @@ export function SectionNav({ role, badges = {} }: { role: Role; badges?: NavBadg
       >
         <div
           className="mx-auto grid h-[68px] max-w-3xl items-center"
-          style={{ gridTemplateColumns: `repeat(${sections.length + (owner ? 1 : 0)}, minmax(0, 1fr))` }}
+          style={{ gridTemplateColumns: `repeat(${sections.length + (plus ? 1 : 0)}, minmax(0, 1fr))` }}
         >
-          {owner ? sections.slice(0, half).map(item) : sections.map(item)}
-          {owner && (
+          {plus ? sections.slice(0, half).map(item) : sections.map(item)}
+          {plus && (
             <button
               type="button"
               onClick={() => setOpen(true)}
@@ -193,7 +197,7 @@ export function SectionNav({ role, badges = {} }: { role: Role; badges?: NavBadg
               <Icon d={PLUS} />
             </button>
           )}
-          {owner && sections.slice(half).map(item)}
+          {plus && sections.slice(half).map(item)}
         </div>
       </nav>
     </>
@@ -201,8 +205,8 @@ export function SectionNav({ role, badges = {} }: { role: Role; badges?: NavBadg
 }
 
 /** Tabs of the current section as a segmented switch (hidden when the section has only one page). */
-export function SectionTabs({ role, badges = {} }: { role: Role; badges?: NavBadges }) {
-  const { current } = useCurrent(role);
+export function SectionTabs({ role, hidden = [], badges = {} }: { role: Role; hidden?: string[]; badges?: NavBadges }) {
+  const { current } = useCurrent(role, hidden);
   if (!current || current.section.tabs.length < 2) return null;
   return (
     <nav className="mx-auto w-full max-w-3xl px-4 pt-3 md:hidden print:hidden">
@@ -233,8 +237,20 @@ export function SectionTabs({ role, badges = {} }: { role: Role; badges?: NavBad
 export type NavBadges = Partial<Record<string, { n: number; tone: "alert" | "warn" | "info" }>>;
 const BADGE = { alert: "bg-red-700 text-white", warn: "bg-amber-600 text-white", info: "bg-teal-700 text-white" } as const;
 
-export function SideNav({ role, brand, footer, badges = {} }: { role: Role; brand: string; footer: React.ReactNode; badges?: NavBadges }) {
-  const { sections, current } = useCurrent(role);
+export function SideNav({
+  role,
+  hidden = [],
+  brand,
+  footer,
+  badges = {},
+}: {
+  role: Role;
+  hidden?: string[];
+  brand: string;
+  footer: React.ReactNode;
+  badges?: NavBadges;
+}) {
+  const { sections, current } = useCurrent(role, hidden);
   return (
     <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col gap-5 overflow-y-auto border-r border-border bg-surface px-3.5 py-5 md:flex print:hidden">
       <Link href="/" className="px-3 text-lg font-bold tracking-tight">

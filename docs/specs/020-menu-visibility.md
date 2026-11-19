@@ -1,7 +1,7 @@
 ---
 id: 020
 title: Menús visibles por usuario
-status: draft
+status: done
 module: users + auth + nav
 ---
 
@@ -68,13 +68,13 @@ Verificado con Grep/Glob:
 Nuevo: `src/lib/menus.ts` (lo usan el cliente, el servidor y 3 módulos: va en `lib/`), `MenuVisibilityForm`, `/menus`.
 
 ## Tareas
-- [ ] T1 — Columnas + migración aditiva (revisar SQL: solo `ADD COLUMN`) · `src/server/db/schema.ts`, `drizzle/0013_*.sql`, `drizzle/meta/*`
-- [ ] T2 — `menus.ts` + test: `menuKeyFor` (`/`, `/productos/catalogo`, `/productos/9/movimientos`, `/precios`, `/deudores/inicial`, `/catalogo`, `/menus`, `/api/x`, `/productosx`), `canSee` (rol, oculto, null), `firstAllowed` (inicio oculto → siguiente; repartidor; todo oculto → `/login`), `sanitizeHidden` (desconocida, dup, admin+`ajustes`, todo oculto) · `src/lib/menus.ts`, `src/lib/menus.test.ts`
-- [ ] T3 — `proxy.ts` pone `x-yr-path`; `getCurrentUser` selecciona las 2 columnas; chequeo en `requireUser`; `requireAdmin` · `src/proxy.ts`, `src/server/auth.ts`
-- [ ] T4 — Navs con `hidden`: `visible(role, hidden)`, `QUICK` filtrado, "+" solo si queda alguna; pestaña "Catálogo" (`/productos/catalogo`) en "Más" (P1); layout y header pasan `user.hiddenMenus` · `src/components/app-nav.tsx`, `src/components/app-header.tsx`, `src/app/(app)/layout.tsx`
-- [ ] T5 — Inicio (AC3): `can = (href) => canSee(href, role, hidden)`; no consultar datos de bloques ocultos; `HomeAlerts` recibe `can` y filtra · `src/app/(app)/page.tsx`, `src/modules/inventory/components/home-alerts.tsx`
-- [ ] T6 — Usuarios: query, `saveHiddenMenus`, chip "Admin", `MenuVisibilityForm` (`"use client"`, `useActionState`, `ajustes` deshabilitado si el usuario es admin), export · `src/modules/users/queries.ts`, `actions.ts`, `components/user-list.tsx`, `components/menu-visibility-form.tsx`, `index.ts`
-- [ ] T7 — Página `/menus` y Ajustes (tarjeta "Menús" si admin; links filtrados con `canSee`) · `src/app/(app)/menus/page.tsx`, `src/app/(app)/catalogo/page.tsx`, `src/modules/catalog/components/catalog-summary.tsx`
+- [x] T1 — Columnas + migración aditiva (revisar SQL: solo `ADD COLUMN`) · `src/server/db/schema.ts`, `drizzle/0013_*.sql`, `drizzle/meta/*`
+- [x] T2 — `menus.ts` + test: `menuKeyFor` (`/`, `/productos/catalogo`, `/productos/9/movimientos`, `/precios`, `/deudores/inicial`, `/catalogo`, `/menus`, `/api/x`, `/productosx`), `canSee` (rol, oculto, null), `firstAllowed` (inicio oculto → siguiente; repartidor; todo oculto → `/login`), `sanitizeHidden` (desconocida, dup, admin+`ajustes`, todo oculto) · `src/lib/menus.ts`, `src/lib/menus.test.ts`
+- [x] T3 — `proxy.ts` pone `x-yr-path`; `getCurrentUser` selecciona las 2 columnas; chequeo en `requireUser`; `requireAdmin` · `src/proxy.ts`, `src/server/auth.ts`
+- [x] T4 — Navs con `hidden`: `visible(role, hidden)`, `QUICK` filtrado, "+" solo si queda alguna; pestaña "Catálogo" (`/productos/catalogo`) en "Más" (P1); layout y header pasan `user.hiddenMenus` · `src/components/app-nav.tsx`, `src/components/app-header.tsx`, `src/app/(app)/layout.tsx`
+- [x] T5 — Inicio (AC3): `can = (href) => canSee(href, role, hidden)`; no consultar datos de bloques ocultos; `HomeAlerts` recibe `can` y filtra · `src/app/(app)/page.tsx`, `src/modules/inventory/components/home-alerts.tsx`
+- [x] T6 — Usuarios: query, `saveHiddenMenus`, chip "Admin", `MenuVisibilityForm` (`"use client"`, `useActionState`, `ajustes` deshabilitado si el usuario es admin), export · `src/modules/users/queries.ts`, `actions.ts`, `components/user-list.tsx`, `components/menu-visibility-form.tsx`, `index.ts`
+- [x] T7 — Página `/menus` y Ajustes (tarjeta "Menús" si admin; links filtrados con `canSee`) · `src/app/(app)/menus/page.tsx`, `src/app/(app)/catalogo/page.tsx`, `src/modules/catalog/components/catalog-summary.tsx`
 
 ## Paralelismo
 Secuencial: T1 → T2 → T3. Paralelo: [T4] [T5] [T6]. Luego T7 (usa el export de T6).
@@ -88,3 +88,8 @@ Secuencial: T1 → T2 → T3. Paralelo: [T4] [T5] [T6]. Luego T7 (usa el export 
 - P1 — Sin "Productos", el Catálogo en escritorio solo se alcanza desde Productos (el "+" es solo del celular). Recomendado: agregar la pestaña "Catálogo" en "Más" para todos los dueños. Alternativa: mostrar el "+" también en `SideNav`.
 - P2 — ¿Dar/quitar admin desde `/usuarios`? Recomendado: no; un segundo admin se pone con el mismo `UPDATE` manual. Así siempre queda ≥ 1 admin sin lógica extra.
 - P3 — ¿Rol del usuario del cliente? Recomendado: DUENO con menús ocultos (puede ver Catálogo, que es solo dueño), sabiendo la nota ponytail. Alternativa: REPARTIDOR (más seguro, pero no ve Catálogo).
+
+## Decisiones del humano (19-nov-2026)
+- P1: sí — pestaña "Catálogo" (catálogo para clientes) en la sección "Más" para todos los dueños.
+- P2: no — es_admin no se cambia desde la app; solo por UPDATE manual.
+- P3: el cliente (usuario JOAQUIN) es DUENO sin es_admin: no ve "Menús" ni puede ocultar/mostrar menús. DAVID es el único admin (superadmin) con control total.
