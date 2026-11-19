@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Logo } from "@/components/ui/logo";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import type { Role } from "@/server/db/schema";
@@ -253,8 +254,8 @@ export function SideNav({
   const { sections, current } = useCurrent(role, hidden);
   return (
     <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col gap-5 overflow-y-auto border-r border-border bg-surface px-3.5 py-5 md:flex print:hidden">
-      <Link href="/" className="px-3 text-lg font-bold tracking-tight">
-        {brand}
+      <Link href="/" aria-label={`${brand} · Inicio`} className="px-2">
+        <Logo size={40} />
       </Link>
       {/* Section titles are small grey labels; the screens under them are items with an icon (like NicFarma). */}
       <nav aria-label="Secciones" className="flex flex-col gap-5">

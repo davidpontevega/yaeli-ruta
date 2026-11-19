@@ -1,5 +1,6 @@
 // Browser-only drawing of the customer catalog pages (1080×1920 JPEG). Imported only by the catalog builder (client).
 import { BRAND } from "@/lib/brand";
+import { LOGO } from "@/components/ui/logo";
 import type { CatalogPage } from "./catalog-pages";
 
 export type Design = "clasico" | "color" | "cuadricula";
@@ -189,6 +190,33 @@ export function drawPage(page: CatalogPage, images: Map<string, HTMLImageElement
   return toJpeg(canvas);
 }
 
+/** The company mark (white circle, teal truck) centered at (cx, cy). */
+function mark(ctx: Ctx, cx: number, cy: number, size: number) {
+  ctx.save();
+  ctx.translate(cx - size / 2, cy - size / 2);
+  ctx.scale(size / 120, size / 120);
+  ctx.fillStyle = "#FFFFFF";
+  ctx.beginPath();
+  ctx.arc(60, 60, 58, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = LOGO.teal;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.lineWidth = 5.3;
+  ctx.stroke(new Path2D(LOGO.truck));
+  for (const [x, y] of LOGO.wheels) {
+    ctx.beginPath();
+    ctx.arc(x, y, 6.2, 0, Math.PI * 2);
+    ctx.fillStyle = LOGO.gold;
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.stroke();
+  }
+  ctx.lineWidth = 6;
+  ctx.stroke(new Path2D(LOGO.y));
+  ctx.restore();
+}
+
 /** Cover: company, month, the categories with the page where each starts, and the order phone. */
 export function drawCover(index: { title: string; page: number; count: number }[], info: PageInfo) {
   const { canvas, ctx } = newCanvas();
@@ -197,13 +225,14 @@ export function drawCover(index: { title: string; page: number; count: number }[
   g.addColorStop(1, "#134E4A");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
+  mark(ctx, W / 2, 150, 170);
   ctx.font = `bold 100px ${SERIF}`;
-  wrap(ctx, BRAND.company, W - 160, 2).forEach((t, k) => text(ctx, t, W / 2, 260 + k * 110, `bold 100px ${SERIF}`, "#FFFFFF", "center"));
-  text(ctx, "Catálogo de productos", W / 2, 520, `600 54px ${SANS}`, "#CCFBF1", "center");
+  wrap(ctx, BRAND.company, W - 160, 2).forEach((t, k) => text(ctx, t, W / 2, 320 + k * 110, `bold 100px ${SERIF}`, "#FFFFFF", "center"));
+  text(ctx, "Catálogo de productos", W / 2, 560, `600 54px ${SANS}`, "#CCFBF1", "center");
   const month = new Date().toLocaleDateString("es-PE", { timeZone: "America/Lima", month: "long", year: "numeric" });
-  text(ctx, month.charAt(0).toUpperCase() + month.slice(1), W / 2, 600, `40px ${SANS}`, "rgba(255,255,255,0.7)", "center");
+  text(ctx, month.charAt(0).toUpperCase() + month.slice(1), W / 2, 630, `40px ${SANS}`, "rgba(255,255,255,0.7)", "center");
 
-  const top = 700;
+  const top = 710;
   const bottom = info.phone ? H - 330 : H - 140;
   box(ctx, 60, top, W - 120, bottom - top, 40, "#FFFFFF");
   text(ctx, "Contenido", 120, top + 80, `bold 48px ${SERIF}`, INK);

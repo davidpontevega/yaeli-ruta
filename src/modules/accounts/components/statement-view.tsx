@@ -1,4 +1,5 @@
 import { BRAND } from "@/lib/brand";
+import { Logo } from "@/components/ui/logo";
 import { formatDate } from "@/lib/date";
 import { formatSoles } from "@/lib/money";
 import { paymentLabel } from "@/lib/payment";
@@ -52,8 +53,8 @@ export function StatementView({
 
       <div className="tarjeta flex flex-col gap-3 print:border-0 print:p-0 print:shadow-none">
         <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <p className="text-lg font-bold">{BRAND.company}</p>
+          <div className="flex flex-col gap-2">
+            <Logo size={44} />
             <p className="text-sm text-muted">Estado de cuenta · {period}</p>
           </div>
           <div className="text-right text-sm">
