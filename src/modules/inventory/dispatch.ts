@@ -2,7 +2,7 @@ import "server-only";
 import { and, eq, gt, sql } from "drizzle-orm";
 import type { Tx } from "@/server/db";
 import { locations, lots, products, stockLevels, stockMovements } from "@/server/db/schema";
-import { fefoPick } from "./fefo";
+import { fefoPick } from "@/lib/fefo";
 
 /**
  * Takes `baseQty` of a product out of the warehouse floors (FEFO) inside the caller's transaction, recording VENTA movements.

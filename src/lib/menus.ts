@@ -4,7 +4,7 @@ import type { Role } from "@/server/db/schema";
 // Order = order of "first allowed screen". `owner` = DUENO only.
 export const MENUS = [
   { key: "inicio", label: "Inicio", group: "Inicio", href: "/", prefixes: ["/"] },
-  { key: "pedidos", label: "Pedidos", group: "Ventas", owner: true, href: "/pedidos", prefixes: ["/pedidos"] },
+  { key: "pedidos", label: "Pedidos", group: "Ventas", owner: true, href: "/pedidos", prefixes: ["/pedidos", "/reparto"] },
   {
     key: "clientes",
     label: "Clientes, cobros y rutas",

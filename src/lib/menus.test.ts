@@ -13,6 +13,7 @@ test("menuKeyFor", () => {
   assert.equal(menuKeyFor("/api/x"), null);
   assert.equal(menuKeyFor("/productosx"), null);
   assert.equal(menuKeyFor("/stock?falta=1"), "stock");
+  assert.equal(menuKeyFor("/reparto/9"), "pedidos");
 });
 
 test("canSee", () => {

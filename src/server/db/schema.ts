@@ -315,6 +315,29 @@ export const customerPrices = pgTable(
 
 export const orderStatusEnum = pgEnum("estado_pedido", ["PENDIENTE", "ANULADO", "ENTREGADO"]);
 export type OrderStatus = (typeof orderStatusEnum.enumValues)[number];
+export const sheetStatusEnum = pgEnum("estado_hoja_ruta", ["PREPARANDO", "EN_RUTA", "LIQUIDADA"]);
+
+// Delivery sheet: one route + date + vehicle. Its orders point to it (pedidos.hoja_ruta_id); an order is in one sheet at most.
+export const deliverySheets = pgTable(
+  "hojas_ruta",
+  {
+    id: id(),
+    number: serial("numero").notNull().unique(),
+    date: date("fecha").notNull(),
+    routeId: uuid("ruta_id")
+      .notNull()
+      .references(() => routes.id),
+    vehicleId: uuid("vehiculo_id")
+      .notNull()
+      .references(() => locations.id),
+    userId: uuid("usuario_id")
+      .notNull()
+      .references(() => users.id),
+    status: sheetStatusEnum("estado").notNull().default("PREPARANDO"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("hojas_ruta_fecha_idx").on(t.date)],
+);
 
 export const orders = pgTable(
   "pedidos",
@@ -331,9 +354,10 @@ export const orders = pgTable(
       .notNull()
       .references(() => users.id),
     deliveredAt: timestamp("entregado_en", { withTimezone: true }),
+    sheetId: uuid("hoja_ruta_id").references(() => deliverySheets.id),
     createdAt: createdAt(),
   },
-  (t) => [index("pedidos_entrega_estado_idx").on(t.deliveryOn, t.status)],
+  (t) => [index("pedidos_entrega_estado_idx").on(t.deliveryOn, t.status), index("pedidos_hoja_ruta_idx").on(t.sheetId)],
 );
 
 export const orderItems = pgTable(

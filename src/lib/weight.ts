@@ -13,5 +13,8 @@ export function parseKg(text: string): number | null | undefined {
 /** 12500 → "12.5 kg" */
 export const formatKg = (grams: number) => `${(grams / 1000).toLocaleString("es-PE", { maximumFractionDigits: 3 })} kg`;
 
+/** Weight of a line (quantity × packaging grams), or null when the packaging has no weight. */
+export const lineWeight = (l: { quantity: number; weightGrams: number | null }) => (l.weightGrams === null ? null : l.quantity * l.weightGrams);
+
 /** 12500 → "12.5" for inputs. */
 export const toKgInput = (grams: number | null) => (grams === null ? "" : String(grams / 1000));

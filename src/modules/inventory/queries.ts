@@ -18,6 +18,7 @@ import {
 import { listProducts } from "@/modules/catalog";
 import { stockStatus } from "@/lib/quantity";
 import { addDays, daysUntil, expiryBucket, todayInLima, type ExpiryBucket } from "./expiry";
+import type { StockLot } from "@/lib/fefo";
 import { SALES_WINDOW_DAYS, coverageDays, isLowCoverage, targetStock, weeklySales } from "./coverage";
 
 /** Warehouse floors where goods can be received (vehicles get stock by transfer, later). */
@@ -289,4 +290,22 @@ export async function warehouseStockByProduct(): Promise<Record<string, number>>
     .where(eq(locations.type, "ALMACEN"))
     .groupBy(lots.productId);
   return Object.fromEntries(rows.map((r) => [r.productId, r.qty]));
+}
+
+/** Lots with stock on warehouse floors (not vehicles) for these products, ready for `fefoPick`. */
+export function warehouseLots(productIds: string[]): Promise<(StockLot & { productId: string })[]> {
+  if (!productIds.length) return Promise.resolve([]);
+  return db
+    .select({
+      productId: lots.productId,
+      lotId: lots.id,
+      locationId: locations.id,
+      locationName: locations.name,
+      expiresOn: lots.expiresOn,
+      quantity: stockLevels.quantity,
+    })
+    .from(stockLevels)
+    .innerJoin(lots, eq(lots.id, stockLevels.lotId))
+    .innerJoin(locations, eq(locations.id, stockLevels.locationId))
+    .where(and(eq(locations.type, "ALMACEN"), gt(stockLevels.quantity, 0), inArray(lots.productId, productIds)));
 }

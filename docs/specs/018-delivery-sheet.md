@@ -1,7 +1,7 @@
 ---
 id: 018
 title: Hoja de ruta y picking
-status: draft
+status: done
 module: delivery (nuevo) + orders
 ---
 
@@ -62,14 +62,14 @@ Verificado con Grep:
 Nuevo: módulo `src/modules/delivery` (fase 4: hoja, entregas en ruta, liquidación). No existe nada de hojas.
 
 ## Tareas
-- [ ] T1 — `sheetStatusEnum`, `deliverySheets`, `orders.sheetId` + índices; `npm run db:generate` y revisar el SQL (solo aditivo) · `src/server/db/schema.ts`, `drizzle/0012_*.sql`, `drizzle/meta/*`
-- [ ] T2 — Subir `lineWeight` a `lib/weight.ts` (+ casos en el test) y `StatementShare` → `ShareButtons`; actualizar imports y borrar el archivo viejo · `src/lib/weight.ts`, `src/lib/weight.test.ts`, `src/modules/purchases/purchase-math.ts`, `src/modules/purchases/components/purchase-form.tsx`, `src/components/ui/share-buttons.tsx`, `src/modules/accounts/components/statement-share.tsx`, `src/modules/accounts/components/statement-view.tsx`
-- [ ] T3 — `warehouseLots`; exportar `fefoPick`, `StockLot`, `warehouseLots` · `src/modules/inventory/queries.ts`, `src/modules/inventory/index.ts`
-- [ ] T4 — `buildPicking` + test: mismo producto en varios pedidos y presentaciones se suma; parte en 2 lotes por vencimiento; sin fecha al final; empate por nombre de piso; stock corto → parcial + `missing`; sin stock → todo falta; peso con `noWeight`; sin líneas · `src/modules/delivery/picking.ts`, `picking.test.ts`
-- [ ] T5 — Schemas + 4 acciones; `saveOrder` pone `sheetId: null` si cambia `deliveryOn` · `src/modules/delivery/schemas.ts`, `actions.ts`, `src/modules/orders/actions.ts`
-- [ ] T6 — `listSheets`, `getSheet`, `getPicking`; index con queries · `src/modules/delivery/queries.ts`, `index.ts`
-- [ ] T7 — `SheetList` (+ filtro GET de fecha), `SheetForm` (cliente), `SheetOrders` (cliente: quitar/agregar/eliminar), `PickingList` (servidor, `print:table`, `ShareButtons`, peso/capacidad); exports · `src/modules/delivery/components/sheet-list.tsx`, `sheet-form.tsx`, `sheet-orders.tsx`, `picking-list.tsx`, `src/modules/delivery/index.ts`
-- [ ] T8 — Páginas y pestaña "Reparto" (ownerOnly, ícono camión) en Ventas · `src/app/(app)/reparto/page.tsx`, `src/app/(app)/reparto/[id]/page.tsx`, `src/components/app-nav.tsx`
+- [x] T1 — `sheetStatusEnum`, `deliverySheets`, `orders.sheetId` + índices; `npm run db:generate` y revisar el SQL (solo aditivo) · `src/server/db/schema.ts`, `drizzle/0012_*.sql`, `drizzle/meta/*`
+- [x] T2 — Subir `lineWeight` a `lib/weight.ts` (+ casos en el test) y `StatementShare` → `ShareButtons`; actualizar imports y borrar el archivo viejo · `src/lib/weight.ts`, `src/lib/weight.test.ts`, `src/modules/purchases/purchase-math.ts`, `src/modules/purchases/components/purchase-form.tsx`, `src/components/ui/share-buttons.tsx`, `src/modules/accounts/components/statement-share.tsx`, `src/modules/accounts/components/statement-view.tsx`
+- [x] T3 — `warehouseLots`; exportar `fefoPick`, `StockLot`, `warehouseLots` · `src/modules/inventory/queries.ts`, `src/modules/inventory/index.ts`
+- [x] T4 — `buildPicking` + test: mismo producto en varios pedidos y presentaciones se suma; parte en 2 lotes por vencimiento; sin fecha al final; empate por nombre de piso; stock corto → parcial + `missing`; sin stock → todo falta; peso con `noWeight`; sin líneas · `src/modules/delivery/picking.ts`, `picking.test.ts`
+- [x] T5 — Schemas + 4 acciones; `saveOrder` pone `sheetId: null` si cambia `deliveryOn` · `src/modules/delivery/schemas.ts`, `actions.ts`, `src/modules/orders/actions.ts`
+- [x] T6 — `listSheets`, `getSheet`, `getPicking`; index con queries · `src/modules/delivery/queries.ts`, `index.ts`
+- [x] T7 — `SheetList` (+ filtro GET de fecha), `SheetForm` (cliente), `SheetOrders` (cliente: quitar/agregar/eliminar), `PickingList` (servidor, `print:table`, `ShareButtons`, peso/capacidad); exports · `src/modules/delivery/components/sheet-list.tsx`, `sheet-form.tsx`, `sheet-orders.tsx`, `picking-list.tsx`, `src/modules/delivery/index.ts`
+- [x] T8 — Páginas y pestaña "Reparto" (ownerOnly, ícono camión) en Ventas · `src/app/(app)/reparto/page.tsx`, `src/app/(app)/reparto/[id]/page.tsx`, `src/components/app-nav.tsx`
 
 ## Paralelismo
 Paralelo: [T1] [T2] [T3]. Luego [T4] (usa T2, T3) y [T5] (usa T1). Luego T6 → T7 → T8 (T7 toca `delivery/index.ts` después de T6).
@@ -90,3 +90,5 @@ Paralelo: [T1] [T2] [T3]. Luego [T4] (usa T2, T3) y [T5] (usa T1). Luego T6 → 
 1. Cancelar hoja: ¿borrarla (recomendado: en `PREPARANDO` no movió nada) o un estado `ANULADA` para el historial?
 2. Cambiar la fecha de un pedido con hoja: ¿lo saca de la hoja (recomendado) o bloquea el cambio?
 3. ¿Agregar acceso "Armar hoja de ruta" al "+" rápido? Recomendado: no por ahora; basta la pestaña.
+
+**Decisiones (aprobadas 19-nov-2026):** 1 = borrar la hoja; 2 = cambiar la fecha la saca de la hoja; 3 = no va en el "+".

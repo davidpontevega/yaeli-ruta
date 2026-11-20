@@ -1,9 +1,7 @@
 // Purchase list math. Pure, shared by the form (client) and the server. Money in céntimos, weight in grams.
+import { lineWeight } from "@/lib/weight";
 
 export type PurchaseLine = { quantity: number; cost: number; freight: number; weightGrams: number | null };
-
-/** Weight of a line, or null when the packaging has no weight. */
-export const lineWeight = (l: { quantity: number; weightGrams: number | null }) => (l.weightGrams === null ? null : l.quantity * l.weightGrams);
 
 /** Goods (cost × qty), freight, total, known weight and how many lines have no weight. */
 export function purchaseTotals(lines: PurchaseLine[]) {

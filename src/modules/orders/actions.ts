@@ -39,11 +39,17 @@ export async function saveOrder(_: FormState, form: FormData): Promise<FormState
     // Lock order: order first, then products (same as deliverOrder), so the two never deadlock.
     // Editing: the customer comes from the order in the DB, never from the JSON (or another customer's prices would apply).
     let customerId = o.customerId;
+    let movesDate = false;
     if (o.id) {
-      const [cur] = await tx.select({ status: orders.status, customerId: orders.customerId }).from(orders).where(eq(orders.id, o.id)).for("update");
+      const [cur] = await tx
+        .select({ status: orders.status, customerId: orders.customerId, deliveryOn: orders.deliveryOn })
+        .from(orders)
+        .where(eq(orders.id, o.id))
+        .for("update");
       if (!cur) return "missing";
       if (cur.status !== "PENDIENTE") return "closed";
       customerId = cur.customerId;
+      movesDate = cur.deliveryOn !== o.deliveryOn;
     }
     // Prices come from the DB, never from the form.
     const packs = await sellablePackagings(
@@ -58,7 +64,11 @@ export async function saveOrder(_: FormState, form: FormData): Promise<FormState
     if (total > MAX_TOTAL) return "total"; // pedidos.total is a 32-bit integer
     let orderId = o.id;
     if (orderId) {
-      await tx.update(orders).set({ deliveryOn: o.deliveryOn, total }).where(eq(orders.id, orderId));
+      // Another date leaves its delivery sheet (the sheet is for one date).
+      await tx
+        .update(orders)
+        .set({ deliveryOn: o.deliveryOn, total, ...(movesDate && { sheetId: null }) })
+        .where(eq(orders.id, orderId));
       await tx.delete(orderItems).where(eq(orderItems.orderId, orderId));
     } else {
       const [c] = await tx.select({ active: customers.active }).from(customers).where(eq(customers.id, customerId));

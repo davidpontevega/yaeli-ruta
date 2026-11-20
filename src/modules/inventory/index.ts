@@ -11,6 +11,7 @@ export {
   listSupplierStats,
   listMovements,
   warehouseStockByProduct,
+  warehouseLots,
 } from "./queries";
 export { parseReadResponse, fileType } from "./document-read";
 export { todayInLima, addDays, daysUntil } from "./expiry";

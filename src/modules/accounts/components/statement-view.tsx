@@ -6,7 +6,7 @@ import { paymentLabel } from "@/lib/payment";
 import { waNumber } from "@/lib/phone";
 import type { Statement } from "../queries";
 import { MOVEMENT_LABEL } from "./account-view";
-import { StatementShare } from "./statement-share";
+import { ShareButtons } from "@/components/ui/share-buttons";
 
 const signed = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${formatSoles(Math.abs(n))}`;
 
@@ -49,7 +49,7 @@ export function StatementView({
         <input type="date" name="hasta" defaultValue={to} max={today} aria-label="Hasta" className="filtro" />
         <button className="btn-primario h-11 px-5">Ver</button>
       </form>
-      <StatementShare waHref={waHref} />
+      <ShareButtons waHref={waHref} />
 
       <div className="tarjeta flex flex-col gap-3 print:border-0 print:p-0 print:shadow-none">
         <div className="flex flex-wrap items-start justify-between gap-2">

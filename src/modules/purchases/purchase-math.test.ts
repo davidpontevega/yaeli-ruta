@@ -1,11 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { biggestPackaging, landedUnitCost, lineWeight, listVersion, missingToOrder, purchaseTotals } from "./purchase-math";
-
-test("line weight", () => {
-  assert.equal(lineWeight({ quantity: 6, weightGrams: 12500 }), 75000);
-  assert.equal(lineWeight({ quantity: 6, weightGrams: null }), null);
-});
+import { biggestPackaging, landedUnitCost, listVersion, missingToOrder, purchaseTotals } from "./purchase-math";
 
 test("totals", () => {
   const t = purchaseTotals([

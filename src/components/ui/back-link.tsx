@@ -10,6 +10,7 @@ const FORM = /\/(nuevo|nueva|editar|entregar|inicial)$/;
 const NAMES: Record<string, string> = {
   "": "Inicio",
   pedidos: "Pedidos",
+  reparto: "Reparto",
   clientes: "Clientes",
   deudores: "Deudores",
   rutas: "Rutas",
@@ -42,6 +43,7 @@ function nameOf(url: string): string | null {
   if (parts[0] === "productos" && parts[2] === "movimientos") return "Movimientos";
   if (parts[0] === "compras" && parts[1]) return "la lista";
   if (parts[0] === "pedidos" && parts[1]) return "el pedido";
+  if (parts[0] === "reparto" && parts[1]) return "la hoja";
   return NAMES[parts[0] ?? ""] ?? null;
 }
 

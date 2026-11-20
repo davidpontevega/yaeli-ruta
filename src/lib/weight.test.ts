@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { formatKg, parseKg, toKgInput } from "./weight";
+import { formatKg, lineWeight, parseKg, toKgInput } from "./weight";
 
 test("parseKg", () => {
   assert.equal(parseKg("12.5"), 12500);
@@ -19,4 +19,9 @@ test("formatKg and input", () => {
   assert.equal(formatKg(250), "0.25 kg");
   assert.equal(toKgInput(12500), "12.5");
   assert.equal(toKgInput(null), "");
+});
+
+test("line weight", () => {
+  assert.equal(lineWeight({ quantity: 6, weightGrams: 12500 }), 75000);
+  assert.equal(lineWeight({ quantity: 6, weightGrams: null }), null);
 });
