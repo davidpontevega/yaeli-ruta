@@ -1,9 +1,9 @@
-// Picking list of a delivery sheet: what to take from each warehouse floor (FEFO). Pure.
+// Picking list of a delivery sheet: what to take from each floor (FEFO), or what the vehicle carries. Pure.
 import { fefoPick, type StockLot } from "@/lib/fefo";
 import { lineWeight } from "@/lib/weight";
 
 export type PickingLine = { productId: string; productName: string; quantity: number; factor: number; weightGrams: number | null };
-export type PickingItem = { productId: string; productName: string; expiresOn: string | null; baseQty: number };
+export type PickingItem = { productId: string; productName: string; lotId: string; expiresOn: string | null; baseQty: number };
 export type Picking = {
   floors: { locationId: string; locationName: string; items: PickingItem[] }[];
   short: { productId: string; productName: string; missing: number }[];
@@ -33,7 +33,7 @@ export function buildPicking(lines: PickingLine[], lots: (StockLot & { productId
     for (const take of fefoPick(mine, Math.min(have, p.qty)) ?? []) {
       const lot = mine.find((l) => l.lotId === take.lotId && l.locationId === take.locationId)!;
       const floor = floors.get(lot.locationId) ?? { locationId: lot.locationId, locationName: lot.locationName, items: [] };
-      floor.items.push({ productId, productName: p.name, expiresOn: lot.expiresOn, baseQty: take.quantity });
+      floor.items.push({ productId, productName: p.name, lotId: lot.lotId, expiresOn: lot.expiresOn, baseQty: take.quantity });
       floors.set(lot.locationId, floor);
     }
   }

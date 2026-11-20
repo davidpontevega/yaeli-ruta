@@ -2,10 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { and, asc, eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { z } from "zod";
-import { audit, db } from "@/server/db";
-import { customers, orderItems, orders, packagings, products } from "@/server/db/schema";
+import { audit, db, type Tx } from "@/server/db";
+import { customers, deliverySheets, orderItems, orders, packagings, products } from "@/server/db/schema";
 import { requireUser } from "@/server/auth";
 import type { FormState } from "@/lib/form-state";
 import { addDays, dispatchStock, todayInLima, toBaseUnits } from "@/modules/inventory";
@@ -18,6 +18,17 @@ import { sellablePackagings } from "./queries";
 import { orderTotal, priceFor } from "./order-math";
 
 const MAX_DAYS_AHEAD = 365;
+
+/** Delivery sheet of the order (read without locking it; the caller already locked the order). */
+async function sheetOf(tx: Tx, sheetId: string | null) {
+  if (!sheetId) return undefined;
+  const [s] = await tx
+    .select({ number: deliverySheets.number, status: deliverySheets.status, vehicleId: deliverySheets.vehicleId })
+    .from(deliverySheets)
+    .where(eq(deliverySheets.id, sheetId));
+  return s;
+}
+const inRoute = (n: number) => `El pedido está en ruta (hoja #${n})`;
 const MAX_TOTAL = 2_000_000_000;
 
 export async function saveOrder(_: FormState, form: FormData): Promise<FormState> {
@@ -42,12 +53,14 @@ export async function saveOrder(_: FormState, form: FormData): Promise<FormState
     let movesDate = false;
     if (o.id) {
       const [cur] = await tx
-        .select({ status: orders.status, customerId: orders.customerId, deliveryOn: orders.deliveryOn })
+        .select({ status: orders.status, customerId: orders.customerId, deliveryOn: orders.deliveryOn, sheetId: orders.sheetId })
         .from(orders)
         .where(eq(orders.id, o.id))
         .for("update");
       if (!cur) return "missing";
       if (cur.status !== "PENDIENTE") return "closed";
+      const sheet = await sheetOf(tx, cur.sheetId);
+      if (sheet?.status === "EN_RUTA") return { route: sheet.number };
       customerId = cur.customerId;
       movesDate = cur.deliveryOn !== o.deliveryOn;
     }
@@ -85,6 +98,7 @@ export async function saveOrder(_: FormState, form: FormData): Promise<FormState
     });
     return "ok";
   });
+  if (typeof result === "object") return { error: inRoute(result.route) };
   if (result === "inactive") return { error: "Hay productos inactivos o eliminados; quítalos del pedido" };
   if (result === "total") return { error: "El total del pedido es demasiado alto" };
   if (result === "missing") return { error: "El pedido no existe" };
@@ -100,14 +114,19 @@ export async function cancelOrder(_: FormState, form: FormData): Promise<FormSta
   if (!id.success) return { error: "Pedido inválido" };
   const done = await db.transaction(async (tx) => {
     const [o] = await tx
-      .update(orders)
-      .set({ status: "ANULADO" })
-      .where(and(eq(orders.id, id.data), eq(orders.status, "PENDIENTE")))
-      .returning({ deliveryOn: orders.deliveryOn });
-    if (o) await audit(tx, { actorId: me.id, action: "order.cancel", entity: "order", entityId: id.data });
+      .select({ status: orders.status, deliveryOn: orders.deliveryOn, sheetId: orders.sheetId })
+      .from(orders)
+      .where(eq(orders.id, id.data))
+      .for("update");
+    if (o?.status !== "PENDIENTE") return "closed";
+    const sheet = await sheetOf(tx, o.sheetId);
+    if (sheet?.status === "EN_RUTA") return inRoute(sheet.number);
+    await tx.update(orders).set({ status: "ANULADO" }).where(eq(orders.id, id.data));
+    await audit(tx, { actorId: me.id, action: "order.cancel", entity: "order", entityId: id.data });
     return o;
   });
-  if (!done) return { error: "El pedido ya no está pendiente" };
+  if (done === "closed") return { error: "El pedido ya no está pendiente" };
+  if (typeof done === "string") return { error: done };
   revalidatePath("/pedidos");
   redirect(`/pedidos?fecha=${done.deliveryOn}`);
 }
@@ -129,12 +148,15 @@ export async function deliverOrder(_: FormState, form: FormData): Promise<FormSt
   try {
     await db.transaction(async (tx) => {
       const [o] = await tx
-        .select({ status: orders.status, customerId: orders.customerId, number: orders.number })
+        .select({ status: orders.status, customerId: orders.customerId, number: orders.number, sheetId: orders.sheetId })
         .from(orders)
         .where(eq(orders.id, orderId))
         .for("update");
       if (!o) throw new DeliveryError("El pedido no existe");
       if (o.status !== "PENDIENTE") throw new DeliveryError("El pedido ya no está pendiente");
+      // In a sheet EN_RUTA the goods are on the vehicle: dispatch from it. Otherwise from the warehouse floors.
+      const sheet = await sheetOf(tx, o.sheetId);
+      const fromId = sheet?.status === "EN_RUTA" ? sheet.vehicleId : undefined;
       const items = await tx
         .select({
           id: orderItems.id,
@@ -166,14 +188,16 @@ export async function deliverOrder(_: FormState, form: FormData): Promise<FormSt
       }
       for (const [productId, p] of [...perProduct].sort(([a], [b]) => a.localeCompare(b))) {
         if (!p.qty) continue;
-        const r = await dispatchStock(tx, { productId, baseQty: p.qty, orderId, userId: me.id });
+        const r = await dispatchStock(tx, { productId, baseQty: p.qty, orderId, userId: me.id, fromId });
         if (!r.ok) {
           const packs = await tx
             .select({ name: packagings.name, factor: packagings.factor })
             .from(packagings)
             .where(eq(packagings.productId, productId))
             .orderBy(asc(packagings.factor));
-          throw new DeliveryError(`Falta stock de ${p.name}: hay ${r.available ? formatQty(r.available, packs) : "0"}`);
+          throw new DeliveryError(
+            `Falta stock de ${p.name}${fromId ? " en el vehículo" : ""}: hay ${r.available ? formatQty(r.available, packs) : "0"}`,
+          );
         }
       }
 

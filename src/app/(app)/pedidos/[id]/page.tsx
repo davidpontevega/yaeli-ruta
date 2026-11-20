@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/server/auth";
@@ -16,12 +17,19 @@ export default async function EditOrderPage({ params }: PageProps<"/pedidos/[id]
   if (!order) notFound();
   const customer = (await getCustomer(order.customerId))!;
 
-  if (order.status !== "PENDIENTE")
+  // Closed, or loaded on a vehicle (sheet EN_RUTA): summary only; an order in route can still be delivered.
+  const inRoute = order.status === "PENDIENTE" && order.sheet?.status === "EN_RUTA";
+  if (order.status !== "PENDIENTE" || inRoute)
     return (
       <section className="flex flex-col gap-4">
         <BackLink href="/pedidos" label="Pedidos" />
         <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Pedido #{order.number}</h1>
         <OrderSummary order={order} customerName={customer.name} />
+        {inRoute && (
+          <Link href={`/pedidos/${order.id}/entregar`} className="btn-primario flex h-12 items-center justify-center">
+            Entregar
+          </Link>
+        )}
       </section>
     );
 

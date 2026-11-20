@@ -160,7 +160,7 @@ export const packagings = pgTable(
 
 // ── Inventory ───────────────────────────────────────────────────────────────
 
-export const movementTypeEnum = pgEnum("tipo_movimiento", ["INGRESO", "SALDO_INICIAL", "VENTA"]);
+export const movementTypeEnum = pgEnum("tipo_movimiento", ["INGRESO", "SALDO_INICIAL", "VENTA", "TRASLADO"]);
 export const receiptTypeEnum = pgEnum("tipo_recepcion", ["COMPRA", "SALDO_INICIAL"]);
 export type ReceiptType = (typeof receiptTypeEnum.enumValues)[number];
 

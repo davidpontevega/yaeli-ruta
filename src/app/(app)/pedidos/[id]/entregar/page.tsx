@@ -4,7 +4,7 @@ import { requireUser } from "@/server/auth";
 import { BackLink } from "@/components/ui/back-link";
 import { Avatar } from "@/components/ui/avatar";
 import { getCustomer } from "@/modules/customers";
-import { warehouseStockByProduct } from "@/modules/inventory";
+import { stockByProduct } from "@/modules/inventory";
 import { balancesByCustomer } from "@/modules/accounts";
 import { DeliveryForm, getOrder } from "@/modules/orders";
 
@@ -17,7 +17,8 @@ export default async function DeliverOrderPage({ params }: PageProps<"/pedidos/[
   if (order.status !== "PENDIENTE") redirect(`/pedidos/${order.id}`);
   const [customer, stock, balances] = await Promise.all([
     getCustomer(order.customerId),
-    warehouseStockByProduct(),
+    // In a sheet EN_RUTA the order is delivered from the vehicle's stock.
+    stockByProduct(order.sheet?.status === "EN_RUTA" ? order.sheet.vehicleId : undefined),
     balancesByCustomer([order.customerId]),
   ]);
   return (

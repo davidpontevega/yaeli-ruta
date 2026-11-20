@@ -1,8 +1,9 @@
 import "server-only";
 import { and, asc, desc, eq, gt, gte, inArray, isNotNull, lt, lte, sql } from "drizzle-orm";
-import { db } from "@/server/db";
+import { db, type Tx } from "@/server/db";
 import {
   customers,
+  deliverySheets,
   orders,
   locations,
   lots,
@@ -261,9 +262,9 @@ export function listMovements(productId: string) {
       unitCost: stockMovements.unitCost,
       location: locations.name,
       expiresOn: lots.expiresOn,
-      // Fields named for purchases; on a sale `supplier` holds the customer and `document` the order number.
+      // Fields named for purchases; on a sale `supplier` holds the customer and `document` the order (or, on a transfer, sheet) number.
       supplier: sql<string | null>`coalesce(${receipts.supplier}, ${customers.name})`,
-      document: sql<string | null>`coalesce(${receipts.document}, 'Pedido #' || ${orders.number})`,
+      document: sql<string | null>`coalesce(${receipts.document}, 'Pedido #' || ${orders.number}, 'Hoja #' || ${deliverySheets.number})`,
       // Window over ALL the product's movements (computed before LIMIT), so the balance is exact.
       balance: sql<number>`(sum(${stockMovements.quantity}) over (order by ${stockMovements.createdAt}, ${stockMovements.id}))::int`,
     })
@@ -273,6 +274,7 @@ export function listMovements(productId: string) {
     .leftJoin(receipts, eq(receipts.id, stockMovements.documentId))
     .leftJoin(orders, eq(orders.id, stockMovements.documentId))
     .leftJoin(customers, eq(customers.id, orders.customerId))
+    .leftJoin(deliverySheets, eq(deliverySheets.id, stockMovements.documentId))
     .where(eq(lots.productId, productId))
     .orderBy(desc(stockMovements.createdAt), desc(stockMovements.id))
     .limit(MOVEMENT_LIMIT);
@@ -280,32 +282,44 @@ export function listMovements(productId: string) {
 
 export type Movement = Awaited<ReturnType<typeof listMovements>>[number];
 
-/** Base units on warehouse floors (not vehicles), per product. Products without stock are absent. */
-export async function warehouseStockByProduct(): Promise<Record<string, number>> {
+/** Base units per product on `locationId`, or on the warehouse floors (not vehicles) when omitted. Products without stock are absent. */
+export async function stockByProduct(locationId?: string): Promise<Record<string, number>> {
   const rows = await db
     .select({ productId: lots.productId, qty: sql`sum(${stockLevels.quantity})`.mapWith(Number) })
     .from(stockLevels)
     .innerJoin(lots, eq(lots.id, stockLevels.lotId))
     .innerJoin(locations, eq(locations.id, stockLevels.locationId))
-    .where(eq(locations.type, "ALMACEN"))
+    .where(locationId ? eq(stockLevels.locationId, locationId) : eq(locations.type, "ALMACEN"))
     .groupBy(lots.productId);
   return Object.fromEntries(rows.map((r) => [r.productId, r.qty]));
 }
 
-/** Lots with stock on warehouse floors (not vehicles) for these products, ready for `fefoPick`. */
-export function warehouseLots(productIds: string[]): Promise<(StockLot & { productId: string })[]> {
+const lotColumns = {
+  productId: lots.productId,
+  lotId: lots.id,
+  locationId: locations.id,
+  locationName: locations.name,
+  expiresOn: lots.expiresOn,
+  quantity: stockLevels.quantity,
+};
+
+/** Lots with stock on warehouse floors (not vehicles) for these products, ready for `fefoPick`. `q` = a transaction to read inside it. */
+export function warehouseLots(productIds: string[], q: Tx | typeof db = db): Promise<(StockLot & { productId: string })[]> {
   if (!productIds.length) return Promise.resolve([]);
-  return db
-    .select({
-      productId: lots.productId,
-      lotId: lots.id,
-      locationId: locations.id,
-      locationName: locations.name,
-      expiresOn: lots.expiresOn,
-      quantity: stockLevels.quantity,
-    })
+  return q
+    .select(lotColumns)
     .from(stockLevels)
     .innerJoin(lots, eq(lots.id, stockLevels.lotId))
     .innerJoin(locations, eq(locations.id, stockLevels.locationId))
     .where(and(eq(locations.type, "ALMACEN"), gt(stockLevels.quantity, 0), inArray(lots.productId, productIds)));
+}
+
+/** Lots with stock on one location (a vehicle), ready for `buildPicking`. */
+export function locationLots(locationId: string): Promise<(StockLot & { productId: string })[]> {
+  return db
+    .select(lotColumns)
+    .from(stockLevels)
+    .innerJoin(lots, eq(lots.id, stockLevels.lotId))
+    .innerJoin(locations, eq(locations.id, stockLevels.locationId))
+    .where(and(eq(stockLevels.locationId, locationId), gt(stockLevels.quantity, 0)));
 }

@@ -21,7 +21,11 @@ const lot = (productId: string, lotId: string, locationName: string, expiresOn: 
 test("sums the same product across orders and packagings", () => {
   const p = buildPicking([line("a", 2, 12), line("a", 5)], [lot("a", "l1", "Piso 1", "2027-01-01", 100)]);
   assert.deepEqual(p.floors, [
-    { locationId: "Piso 1", locationName: "Piso 1", items: [{ productId: "a", productName: "Arroz", expiresOn: "2027-01-01", baseQty: 29 }] },
+    {
+      locationId: "Piso 1",
+      locationName: "Piso 1",
+      items: [{ productId: "a", productName: "Arroz", lotId: "l1", expiresOn: "2027-01-01", baseQty: 29 }],
+    },
   ]);
   assert.deepEqual(p.short, []);
 });
@@ -32,16 +36,16 @@ test("splits over 2 lots by expiry, no date last", () => {
     [lot("a", "l3", "Piso 1", null, 50), lot("a", "l2", "Piso 2", "2027-06-01", 10), lot("a", "l1", "Piso 1", "2027-01-01", 3)],
   );
   assert.deepEqual(
-    p.floors.map((f) => [f.locationName, f.items.map((i) => [i.expiresOn, i.baseQty])]),
+    p.floors.map((f) => [f.locationName, f.items.map((i) => [i.lotId, i.expiresOn, i.baseQty])]),
     [
       [
         "Piso 1",
         [
-          ["2027-01-01", 3],
-          [null, 2],
+          ["l1", "2027-01-01", 3],
+          ["l3", null, 2],
         ],
       ],
-      ["Piso 2", [["2027-06-01", 10]]],
+      ["Piso 2", [["l2", "2027-06-01", 10]]],
     ],
   );
 });
@@ -49,8 +53,19 @@ test("splits over 2 lots by expiry, no date last", () => {
 test("same expiry: the floor first by name", () => {
   const p = buildPicking([line("a", 4)], [lot("a", "x", "Piso 2", "2027-01-01", 10), lot("a", "y", "Piso 1", "2027-01-01", 10)]);
   assert.deepEqual(
-    p.floors.map((f) => f.locationName),
-    ["Piso 1"],
+    p.floors.map((f) => [f.locationName, f.items.map((i) => i.lotId)]),
+    [["Piso 1", ["y"]]],
+  );
+});
+
+test("same lot on 2 floors = 2 items", () => {
+  const p = buildPicking([line("a", 8)], [lot("a", "l1", "Piso 1", "2027-01-01", 5), lot("a", "l1", "Piso 2", "2027-01-01", 5)]);
+  assert.deepEqual(
+    p.floors.map((f) => [f.locationName, f.items.map((i) => [i.lotId, i.baseQty])]),
+    [
+      ["Piso 1", [["l1", 5]]],
+      ["Piso 2", [["l1", 3]]],
+    ],
   );
 });
 
@@ -68,6 +83,7 @@ test("floors and products sorted by name", () => {
 test("short stock: picks what there is and reports the rest", () => {
   const p = buildPicking([line("a", 2, 12)], [lot("a", "l1", "Piso 1", null, 20)]);
   assert.equal(p.floors[0].items[0].baseQty, 20);
+  assert.equal(p.floors[0].items[0].lotId, "l1");
   assert.deepEqual(p.short, [{ productId: "a", productName: "Arroz", missing: 4 }]);
 });
 

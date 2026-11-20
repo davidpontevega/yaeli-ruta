@@ -1,8 +1,8 @@
 import "server-only";
 import { and, asc, count, eq, inArray, isNull, sql } from "drizzle-orm";
-import { db } from "@/server/db";
+import { db, type Tx } from "@/server/db";
 import { customers, deliverySheets, locations, orderItems, orders, packagings, products, routes } from "@/server/db/schema";
-import { warehouseLots } from "@/modules/inventory";
+import { locationLots, warehouseLots } from "@/modules/inventory";
 import { buildPicking } from "./picking";
 
 const pending = eq(orders.status, "PENDIENTE");
@@ -67,9 +67,9 @@ export async function getSheet(id: string) {
 }
 export type SheetDetail = NonNullable<Awaited<ReturnType<typeof getSheet>>>;
 
-/** Picking of the sheet's pending orders, plus each product's packagings to show quantities. */
-export async function getPicking(sheetId: string) {
-  const lines = await db
+/** Lines of the sheet's pending orders, for `buildPicking`. `q` = a transaction to read inside it. */
+export function sheetLines(sheetId: string, q: Tx | typeof db = db) {
+  return q
     .select({
       productId: packagings.productId,
       productName: products.name,
@@ -82,9 +82,21 @@ export async function getPicking(sheetId: string) {
     .innerJoin(packagings, eq(packagings.id, orderItems.packagingId))
     .innerJoin(products, eq(products.id, packagings.productId))
     .where(and(eq(orders.sheetId, sheetId), pending));
+}
+
+/**
+ * PREPARANDO: picking of the sheet's pending orders from the warehouse floors. EN_RUTA: the same lines over the vehicle's lots (its load).
+ * Plus each product's packagings to show quantities.
+ */
+export async function getPicking(sheetId: string) {
+  const [[sheet], lines] = await Promise.all([
+    db.select({ status: deliverySheets.status, vehicleId: deliverySheets.vehicleId }).from(deliverySheets).where(eq(deliverySheets.id, sheetId)),
+    sheetLines(sheetId),
+  ]);
+  const status = sheet?.status ?? "PREPARANDO";
   const ids = [...new Set(lines.map((l) => l.productId))];
   const [lots, packs] = await Promise.all([
-    warehouseLots(ids),
+    status === "EN_RUTA" ? locationLots(sheet.vehicleId) : warehouseLots(ids),
     ids.length
       ? db
           .select({ productId: packagings.productId, name: packagings.name, factor: packagings.factor })
@@ -92,6 +104,6 @@ export async function getPicking(sheetId: string) {
           .where(inArray(packagings.productId, ids))
       : [],
   ]);
-  return { ...buildPicking(lines, lots), packagings: Object.groupBy(packs, (p) => p.productId) };
+  return { ...buildPicking(lines, lots), status, packagings: Object.groupBy(packs, (p) => p.productId) };
 }
 export type SheetPicking = Awaited<ReturnType<typeof getPicking>>;

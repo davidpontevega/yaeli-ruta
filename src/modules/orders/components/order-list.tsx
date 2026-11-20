@@ -73,6 +73,7 @@ export function OrderList({ orders }: { orders: OrderRow[] }) {
 /** Read-only view of a closed order (cancelled or delivered). Delivered orders show what was delivered. */
 export function OrderSummary({ order, customerName }: { order: OrderDetail; customerName: string }) {
   const delivered = order.status === "ENTREGADO";
+  const cancelled = order.status === "ANULADO";
   const qty = (i: OrderDetail["items"][number]) => (delivered ? (i.delivered ?? 0) : i.quantity);
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -83,19 +84,22 @@ export function OrderSummary({ order, customerName }: { order: OrderDetail; cust
           <div className="mt-1 flex flex-wrap gap-1">
             <span className={`chip ${STATUS[order.status].className}`}>{STATUS[order.status].label}</span>
             <span className="chip bg-slate-100 text-slate-600">entrega {formatDate(order.deliveryOn)}</span>
+            {!delivered && !cancelled && order.sheet?.status === "EN_RUTA" && (
+              <span className="chip bg-teal-50 text-teal-800">En ruta · Hoja #{order.sheet.number}</span>
+            )}
           </div>
         </div>
         <Link href={`/clientes/${order.customerId}/cuenta`} className="btn-suave flex h-10 shrink-0 items-center px-3 text-sm">
           Cuenta
         </Link>
       </div>
-      <section className={`lista lg:row-span-2 ${delivered ? "" : "opacity-60"}`}>
+      <section className={`lista lg:row-span-2 ${cancelled ? "opacity-60" : ""}`}>
         <ul className="divide-y divide-slate-100">
           {order.items.map((i) => (
             <li key={i.packagingId} className="flex items-center gap-3 px-4 py-3">
               <Avatar name={i.productName} size="sm" />
               <div className="min-w-0 flex-1">
-                <p className={`font-semibold leading-tight ${delivered ? "" : "line-through"}`}>{i.productName}</p>
+                <p className={`font-semibold leading-tight ${cancelled ? "line-through" : ""}`}>{i.productName}</p>
                 <div className="mt-1 flex flex-wrap gap-1">
                   <span className="chip bg-slate-100 text-slate-600">
                     {qty(i)} {i.packagingName} · {formatSoles(i.price)} c/u
@@ -109,8 +113,8 @@ export function OrderSummary({ order, customerName }: { order: OrderDetail; cust
         </ul>
       </section>
       <div className="tarjeta flex items-baseline justify-between lg:col-start-2">
-        <span className="font-bold">{delivered ? "Total entregado" : "Total (anulado)"}</span>
-        <span className={`cifra text-2xl ${delivered ? "text-primary" : "text-slate-500 line-through"}`}>{formatSoles(order.total)}</span>
+        <span className="font-bold">{delivered ? "Total entregado" : cancelled ? "Total (anulado)" : "Total"}</span>
+        <span className={`cifra text-2xl ${cancelled ? "text-slate-500 line-through" : "text-primary"}`}>{formatSoles(order.total)}</span>
       </div>
     </div>
   );

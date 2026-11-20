@@ -9,6 +9,7 @@ const TYPE: Record<Movement["type"], { label: string; icon: string; tone: string
   INGRESO: { label: "Ingreso", icon: ICONS.truck, tone: "bg-emerald-50 text-emerald-700" },
   SALDO_INICIAL: { label: "Saldo inicial", icon: ICONS.box, tone: "bg-slate-100 text-slate-600" },
   VENTA: { label: "Venta", icon: ICONS.users, tone: "bg-sky-50 text-sky-700" },
+  TRASLADO: { label: "Traslado", icon: ICONS.truck, tone: "bg-violet-50 text-violet-700" },
 };
 const LIMA = { timeZone: "America/Lima" } as const;
 const dayOf = (d: Date) => d.toLocaleDateString("es-PE", { ...LIMA, weekday: "long", day: "numeric", month: "long", year: "numeric" });

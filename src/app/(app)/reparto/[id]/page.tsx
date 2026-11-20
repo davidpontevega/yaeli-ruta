@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/server/auth";
 import { BackLink } from "@/components/ui/back-link";
-import { PickingList, SheetOrders, getPicking, getSheet } from "@/modules/delivery";
+import { LoadActions, PickingList, SheetOrders, getPicking, getSheet } from "@/modules/delivery";
 
 export default async function DeliverySheetPage({ params }: PageProps<"/reparto/[id]">) {
   await requireUser("DUENO");
@@ -16,7 +16,12 @@ export default async function DeliverySheetPage({ params }: PageProps<"/reparto/
       <h1 className="text-[22px] font-bold tracking-tight md:text-[26px] print:hidden">Hoja de ruta #{sheet.number}</h1>
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <SheetOrders sheetId={sheet.id} editable={sheet.status === "PREPARANDO"} orders={sheet.orders} candidates={sheet.candidates} />
-        <PickingList sheet={sheet} picking={picking} />
+        <div className="flex flex-col gap-3">
+          {(sheet.status === "EN_RUTA" || (sheet.status === "PREPARANDO" && sheet.orders.length > 0)) && (
+            <LoadActions key={sheet.status} sheetId={sheet.id} status={sheet.status} short={picking.short.length} />
+          )}
+          <PickingList sheet={sheet} picking={picking} />
+        </div>
       </div>
     </section>
   );

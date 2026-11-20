@@ -7,10 +7,11 @@ import type { SheetPicking } from "../queries";
 
 type Header = { number: number; routeName: string; date: string; vehicleName: string; capacityKg: number | null };
 
-/** Picking by floor (FEFO lot to take), shortages and load weight vs the vehicle. Prints only the header and the picking. */
+/** Picking by floor (FEFO lot to take) or, once EN_RUTA, the vehicle's load; shortages and weight vs the vehicle. Prints only the header and the list. */
 export function PickingList({ sheet, picking }: { sheet: Header; picking: SheetPicking }) {
   const qty = (productId: string, base: number) => formatQty(base, picking.packagings[productId] ?? []);
   const expiry = (d: string | null) => (d ? `vence ${formatDate(d)}` : "sin fecha");
+  const label = picking.status === "EN_RUTA" ? "Carga del vehículo" : "Picking";
   const title = `Hoja de ruta #${sheet.number} · ${sheet.routeName}`;
   const sub = `${formatDate(sheet.date)} · ${sheet.vehicleName}`;
   const { grams, noWeight } = picking.weight;
@@ -18,7 +19,7 @@ export function PickingList({ sheet, picking }: { sheet: Header; picking: SheetP
   const over = capacity !== null && grams > capacity;
 
   const text = [
-    title,
+    `${label} · ${title}`,
     sub,
     ...picking.floors.flatMap((f) => [
       "",
@@ -30,6 +31,7 @@ export function PickingList({ sheet, picking }: { sheet: Header; picking: SheetP
 
   return (
     <div className="flex flex-col gap-3">
+      <h2 className="rotulo print:hidden">{label}</h2>
       <div className="grid grid-cols-2 gap-2.5 print:hidden">
         <Stat
           label={capacity === null ? "Peso" : "Peso / capacidad"}
@@ -47,7 +49,9 @@ export function PickingList({ sheet, picking }: { sheet: Header; picking: SheetP
       <div className="tarjeta flex flex-col gap-3 print:border-0 print:p-0 print:shadow-none">
         <div>
           <h2 className="font-bold">{title}</h2>
-          <p className="text-sm text-muted">{sub}</p>
+          <p className="text-sm text-muted">
+            {label} · {sub}
+          </p>
         </div>
         {!picking.floors.length && !picking.short.length ? (
           <p className="text-sm text-muted">Nada que cargar.</p>

@@ -2,13 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, lt, sql } from "drizzle-orm";
 import { audit, db, type Tx } from "@/server/db";
-import { customers, deliverySheets, locations, orders, routes } from "@/server/db/schema";
+import { customers, deliverySheets, locations, lots, orders, products, routes, stockMovements } from "@/server/db/schema";
 import { requireUser } from "@/server/auth";
 import type { FormState } from "@/lib/form-state";
-import { todayInLima } from "@/modules/inventory";
+import { moveStock, todayInLima, warehouseLots } from "@/modules/inventory";
 import { createSheetSchema, sheetIdSchema, sheetOrderSchema } from "./schemas";
+import { sheetLines } from "./queries";
+import { buildPicking } from "./picking";
 
 /** Thrown inside the transaction so nothing is saved; the message is shown to the owner. */
 class SheetError extends Error {}
@@ -22,17 +24,36 @@ const freeOrders = (tx: Tx, routeId: string, date: string) =>
     inArray(orders.customerId, tx.select({ id: customers.id }).from(customers).where(eq(customers.routeId, routeId))),
   );
 
-/** Locks the sheet until commit; only a PREPARANDO sheet can change. */
-async function lockSheet(tx: Tx, id: string) {
+/** Locks the sheet until commit; only a sheet in `status` (PREPARANDO by default) can change. */
+async function lockSheet(tx: Tx, id: string, status: "PREPARANDO" | "EN_RUTA" = "PREPARANDO") {
   const [s] = await tx
-    .select({ status: deliverySheets.status, routeId: deliverySheets.routeId, date: deliverySheets.date })
+    .select({ status: deliverySheets.status, routeId: deliverySheets.routeId, date: deliverySheets.date, vehicleId: deliverySheets.vehicleId })
     .from(deliverySheets)
     .where(eq(deliverySheets.id, id))
     .for("update");
   if (!s) throw new SheetError("La hoja de ruta no existe");
-  if (s.status !== "PREPARANDO") throw new SheetError("La hoja de ruta ya no se puede cambiar");
+  if (s.status !== status)
+    throw new SheetError(status === "PREPARANDO" ? "La hoja de ruta ya no se puede cambiar" : "La hoja de ruta no está en ruta");
   return s;
 }
+
+/** Locks the products in id order (same order as receiveGoods and deliverOrder) and returns their average cost. */
+async function lockProducts(tx: Tx, ids: string[]) {
+  if (!ids.length) return new Map<string, number>();
+  const rows = await tx
+    .select({ id: products.id, averageCost: products.averageCost })
+    .from(products)
+    .where(inArray(products.id, ids))
+    .orderBy(asc(products.id))
+    .for("update");
+  return new Map(rows.map((r) => [r.id, r.averageCost]));
+}
+
+const revalidateLoad = (sheetId: string) => {
+  revalidatePath(`/reparto/${sheetId}`);
+  revalidatePath("/reparto");
+  revalidatePath("/stock");
+};
 
 async function run(fn: () => Promise<void>): Promise<FormState> {
   try {
@@ -143,4 +164,125 @@ export async function deleteSheet(_: FormState, form: FormData): Promise<FormSta
   if (r) return r;
   revalidatePath("/reparto");
   redirect(`/reparto?fecha=${date}`);
+}
+
+/** PREPARANDO → EN_RUTA: moves the recalculated FEFO picking from the floors to the vehicle. Short stock loads what there is. */
+export async function loadVehicle(_: FormState, form: FormData): Promise<FormState> {
+  const me = await requireUser("DUENO");
+  const input = sheetIdSchema.safeParse({ sheetId: form.get("sheetId") });
+  if (!input.success) return { error: input.error.issues[0].message };
+  const { sheetId } = input.data;
+  const r = await run(() =>
+    db.transaction(async (tx) => {
+      // Lock order: sheet → vehicle → orders → products. deliverOrder takes order → products: no cycle.
+      const { vehicleId } = await lockSheet(tx, sheetId);
+      const [v] = await tx
+        .select({ type: locations.type, active: locations.active })
+        .from(locations)
+        .where(eq(locations.id, vehicleId))
+        .for("update");
+      if (v?.type !== "VEHICULO" || !v.active) throw new SheetError("El vehículo no está activo");
+      const [busy] = await tx
+        .select({ number: deliverySheets.number })
+        .from(deliverySheets)
+        .where(and(eq(deliverySheets.vehicleId, vehicleId), eq(deliverySheets.status, "EN_RUTA")));
+      if (busy) throw new SheetError(`El vehículo ya está en ruta (hoja #${busy.number})`);
+      const pendingOrders = await tx
+        .select({ id: orders.id })
+        .from(orders)
+        .where(and(eq(orders.sheetId, sheetId), eq(orders.status, "PENDIENTE")))
+        .orderBy(asc(orders.id))
+        .for("update");
+      if (!pendingOrders.length) throw new SheetError("La hoja no tiene pedidos pendientes");
+
+      // Recalculated here (never quantities from the form), with the products locked so stock can't change under us.
+      const lines = await sheetLines(sheetId, tx);
+      const ids = [...new Set(lines.map((l) => l.productId))];
+      const cost = await lockProducts(tx, ids);
+      const picking = buildPicking(lines, await warehouseLots(ids, tx));
+      const moved = picking.floors.flatMap((f) => f.items.map((i) => ({ ...i, locationId: f.locationId })));
+      for (const i of moved) {
+        const ok = await moveStock(tx, {
+          lotId: i.lotId,
+          fromId: i.locationId,
+          toId: vehicleId,
+          quantity: i.baseQty,
+          unitCost: cost.get(i.productId)!,
+          documentId: sheetId,
+          userId: me.id,
+        });
+        if (!ok) throw new SheetError("El stock cambió; recarga la página");
+      }
+      await tx.update(deliverySheets).set({ status: "EN_RUTA" }).where(eq(deliverySheets.id, sheetId));
+      await audit(tx, {
+        actorId: me.id,
+        action: "sheet.load",
+        entity: "delivery_sheet",
+        entityId: sheetId,
+        details: {
+          vehicleId,
+          lines: moved.map((i) => ({ lotId: i.lotId, locationId: i.locationId, quantity: i.baseQty })),
+          short: picking.short.map((s) => ({ productId: s.productId, missing: s.missing })),
+        },
+      });
+    }),
+  );
+  if (r) return r;
+  revalidateLoad(sheetId);
+}
+
+/** EN_RUTA → PREPARANDO: returns each lot to the floor it came from (net TRASLADO of the sheet), only while the vehicle still holds it all. */
+export async function unloadVehicle(_: FormState, form: FormData): Promise<FormState> {
+  const me = await requireUser("DUENO");
+  const input = sheetIdSchema.safeParse({ sheetId: form.get("sheetId") });
+  if (!input.success) return { error: input.error.issues[0].message };
+  const { sheetId } = input.data;
+  const r = await run(() =>
+    db.transaction(async (tx) => {
+      const { vehicleId } = await lockSheet(tx, sheetId, "EN_RUTA");
+      const [delivered] = await tx
+        .select({ id: orders.id })
+        .from(orders)
+        .where(and(eq(orders.sheetId, sheetId), eq(orders.status, "ENTREGADO")))
+        .limit(1);
+      if (delivered) throw new SheetError("Ya salió mercadería del vehículo; se resuelve en la liquidación");
+      // Net per (lot, floor): negative = still out of that floor. The net makes repeated load/unload add up.
+      const out = await tx
+        .select({
+          lotId: stockMovements.lotId,
+          locationId: stockMovements.locationId,
+          productId: lots.productId,
+          quantity: sql`-sum(${stockMovements.quantity})`.mapWith(Number),
+        })
+        .from(stockMovements)
+        .innerJoin(lots, eq(lots.id, stockMovements.lotId))
+        .where(and(eq(stockMovements.documentId, sheetId), eq(stockMovements.type, "TRASLADO")))
+        .groupBy(stockMovements.lotId, stockMovements.locationId, lots.productId)
+        .having(lt(sql`sum(${stockMovements.quantity})`, 0))
+        .orderBy(asc(stockMovements.lotId), asc(stockMovements.locationId));
+      const cost = await lockProducts(tx, [...new Set(out.map((o) => o.productId))]);
+      for (const o of out) {
+        const ok = await moveStock(tx, {
+          lotId: o.lotId,
+          fromId: vehicleId,
+          toId: o.locationId,
+          quantity: o.quantity,
+          unitCost: cost.get(o.productId)!,
+          documentId: sheetId,
+          userId: me.id,
+        });
+        if (!ok) throw new SheetError("Ya salió mercadería del vehículo; se resuelve en la liquidación");
+      }
+      await tx.update(deliverySheets).set({ status: "PREPARANDO" }).where(eq(deliverySheets.id, sheetId));
+      await audit(tx, {
+        actorId: me.id,
+        action: "sheet.unload",
+        entity: "delivery_sheet",
+        entityId: sheetId,
+        details: { vehicleId, lines: out.map(({ lotId, locationId, quantity }) => ({ lotId, locationId, quantity })) },
+      });
+    }),
+  );
+  if (r) return r;
+  revalidateLoad(sheetId);
 }

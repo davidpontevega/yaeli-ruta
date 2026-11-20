@@ -1,8 +1,8 @@
 import "server-only";
 import { and, asc, count, desc, eq, gte, inArray, ne, sql, type SQL } from "drizzle-orm";
 import { db, type Tx } from "@/server/db";
-import { customers, orderItems, orders, packagings, products, routes } from "@/server/db/schema";
-import { todayInLima, warehouseStockByProduct } from "@/modules/inventory";
+import { customers, deliverySheets, orderItems, orders, packagings, products, routes } from "@/server/db/schema";
+import { todayInLima, stockByProduct } from "@/modules/inventory";
 import { available } from "./order-math";
 
 /** Next delivery date with pending orders from today on; today if none. */
@@ -47,10 +47,16 @@ export async function getOrder(id: string) {
       total: orders.total,
       deliveryOn: orders.deliveryOn,
       customerId: orders.customerId,
+      sheetNumber: deliverySheets.number,
+      sheetStatus: deliverySheets.status,
+      sheetVehicleId: deliverySheets.vehicleId,
     })
     .from(orders)
+    .leftJoin(deliverySheets, eq(deliverySheets.id, orders.sheetId))
     .where(eq(orders.id, id));
   if (!o) return null;
+  const { sheetNumber, sheetStatus, sheetVehicleId, ...order } = o;
+  const sheet = sheetNumber === null ? null : { number: sheetNumber, status: sheetStatus!, vehicleId: sheetVehicleId! };
   const items = await db
     .select({
       packagingId: orderItems.packagingId,
@@ -67,7 +73,7 @@ export async function getOrder(id: string) {
     .innerJoin(products, eq(products.id, packagings.productId))
     .where(eq(orderItems.orderId, id))
     .orderBy(asc(orderItems.id));
-  return { ...o, items };
+  return { ...order, sheet, items };
 }
 export type OrderDetail = NonNullable<Awaited<ReturnType<typeof getOrder>>>;
 
@@ -92,21 +98,28 @@ export async function lastOrderLines(customerId: string) {
   };
 }
 
-/** Base units held by PENDING orders per product, except `excludeOrderId` (the one being edited). */
+/** Base units held by PENDING orders per product, except `excludeOrderId` (the one being edited) and orders already loaded (sheet EN_RUTA). */
 export async function reservedByProduct(excludeOrderId?: string): Promise<Record<string, number>> {
   const rows = await db
     .select({ productId: packagings.productId, qty: sql`sum(${orderItems.quantity}::bigint * ${packagings.factor})`.mapWith(Number) })
     .from(orderItems)
     .innerJoin(orders, eq(orders.id, orderItems.orderId))
     .innerJoin(packagings, eq(packagings.id, orderItems.packagingId))
-    .where(and(eq(orders.status, "PENDIENTE"), excludeOrderId ? ne(orders.id, excludeOrderId) : undefined))
+    .leftJoin(deliverySheets, eq(deliverySheets.id, orders.sheetId))
+    .where(
+      and(
+        eq(orders.status, "PENDIENTE"),
+        sql`${deliverySheets.status} is distinct from 'EN_RUTA'`, // their stock already left the warehouse
+        excludeOrderId ? ne(orders.id, excludeOrderId) : undefined,
+      ),
+    )
     .groupBy(packagings.productId);
   return Object.fromEntries(rows.map((r) => [r.productId, r.qty]));
 }
 
 /** Free base units per product for the order form: warehouse stock − other pending orders. */
 export async function availableByProduct(excludeOrderId?: string): Promise<Record<string, number>> {
-  const [stock, reserved] = await Promise.all([warehouseStockByProduct(), reservedByProduct(excludeOrderId)]);
+  const [stock, reserved] = await Promise.all([stockByProduct(), reservedByProduct(excludeOrderId)]);
   const ids = new Set([...Object.keys(stock), ...Object.keys(reserved)]);
   return Object.fromEntries([...ids].map((id) => [id, available(stock[id] ?? 0, reserved[id] ?? 0)]));
 }

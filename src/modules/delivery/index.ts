@@ -4,3 +4,4 @@ export { SheetList } from "./components/sheet-list";
 export { SheetForm } from "./components/sheet-form";
 export { SheetOrders } from "./components/sheet-orders";
 export { PickingList } from "./components/picking-list";
+export { LoadActions } from "./components/load-actions";

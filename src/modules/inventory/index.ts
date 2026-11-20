@@ -10,12 +10,13 @@ export {
   listSupplierNames,
   listSupplierStats,
   listMovements,
-  warehouseStockByProduct,
+  stockByProduct,
   warehouseLots,
+  locationLots,
 } from "./queries";
 export { parseReadResponse, fileType } from "./document-read";
 export { todayInLima, addDays, daysUntil } from "./expiry";
-export { dispatchStock } from "./dispatch";
+export { dispatchStock, moveStock } from "./dispatch";
 export { LOW_COVERAGE_DAYS, targetStock } from "./coverage";
 export { toBaseUnits } from "./stock-math";
 export { reserveReadSlot, recordReadResult } from "./read-limit";
