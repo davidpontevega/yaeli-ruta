@@ -334,6 +334,10 @@ export const deliverySheets = pgTable(
       .notNull()
       .references(() => users.id),
     status: sheetStatusEnum("estado").notNull().default("PREPARANDO"),
+    // Settlement (LIQUIDADA): cash expected from the sheet's EFECTIVO payments vs. cash handed in, both céntimos.
+    expectedCash: integer("efectivo_esperado"),
+    declaredCash: integer("efectivo_entregado"),
+    settledAt: timestamp("liquidada_en", { withTimezone: true }),
     createdAt: createdAt(),
   },
   (t) => [index("hojas_ruta_fecha_idx").on(t.date)],
@@ -402,6 +406,7 @@ export const accountMovements = pgTable(
     method: paymentMethodEnum("medio"), // ABONO only
     note: text("nota"),
     orderId: uuid("pedido_id").references(() => orders.id), // CARGO of a delivery
+    sheetId: uuid("hoja_ruta_id").references(() => deliverySheets.id), // ABONO taken on the road
     userId: uuid("usuario_id")
       .notNull()
       .references(() => users.id),
@@ -409,6 +414,7 @@ export const accountMovements = pgTable(
   },
   (t) => [
     index("movimientos_cuenta_cliente_idx").on(t.customerId, t.date),
+    index("movimientos_cuenta_hoja_ruta_idx").on(t.sheetId),
     uniqueIndex("movimientos_cuenta_saldo_inicial_uq")
       .on(t.customerId)
       .where(sql`${t.type} = 'SALDO_INICIAL'`),

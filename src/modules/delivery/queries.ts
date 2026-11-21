@@ -1,7 +1,20 @@
 import "server-only";
-import { and, asc, count, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, count, eq, gt, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { db, type Tx } from "@/server/db";
-import { customers, deliverySheets, locations, orderItems, orders, packagings, products, routes } from "@/server/db/schema";
+import {
+  accountMovements,
+  customers,
+  deliverySheets,
+  locations,
+  lots,
+  orderItems,
+  orders,
+  packagings,
+  products,
+  routes,
+  stockLevels,
+  stockMovements,
+} from "@/server/db/schema";
 import { locationLots, warehouseLots } from "@/modules/inventory";
 import { buildPicking } from "./picking";
 
@@ -95,15 +108,91 @@ export async function getPicking(sheetId: string) {
   ]);
   const status = sheet?.status ?? "PREPARANDO";
   const ids = [...new Set(lines.map((l) => l.productId))];
-  const [lots, packs] = await Promise.all([
-    status === "EN_RUTA" ? locationLots(sheet.vehicleId) : warehouseLots(ids),
-    ids.length
-      ? db
-          .select({ productId: packagings.productId, name: packagings.name, factor: packagings.factor })
-          .from(packagings)
-          .where(inArray(packagings.productId, ids))
-      : [],
-  ]);
-  return { ...buildPicking(lines, lots), status, packagings: Object.groupBy(packs, (p) => p.productId) };
+  const [stock, packs] = await Promise.all([status === "EN_RUTA" ? locationLots(sheet.vehicleId) : warehouseLots(ids), packagingsOf(ids)]);
+  return { ...buildPicking(lines, stock), status, packagings: packs };
 }
 export type SheetPicking = Awaited<ReturnType<typeof getPicking>>;
+
+/** Packagings of these products grouped by product, to show quantities with `formatQty`. */
+async function packagingsOf(ids: string[]) {
+  const packs = ids.length
+    ? await db
+        .select({ productId: packagings.productId, name: packagings.name, factor: packagings.factor })
+        .from(packagings)
+        .where(inArray(packagings.productId, ids))
+    : [];
+  return Object.groupBy(packs, (p) => p.productId);
+}
+
+/** Net TRASLADO of the sheet per (lot, floor) still out of that floor (quantity > 0), with its product. In lot, floor order. */
+export function sheetOrigins(sheetId: string, q: Tx | typeof db = db) {
+  return q
+    .select({
+      lotId: stockMovements.lotId,
+      locationId: stockMovements.locationId,
+      productId: lots.productId,
+      quantity: sql`-sum(${stockMovements.quantity})`.mapWith(Number),
+    })
+    .from(stockMovements)
+    .innerJoin(lots, eq(lots.id, stockMovements.lotId))
+    .where(and(eq(stockMovements.documentId, sheetId), eq(stockMovements.type, "TRASLADO")))
+    .groupBy(stockMovements.lotId, stockMovements.locationId, lots.productId)
+    .having(lt(sql`sum(${stockMovements.quantity})`, 0))
+    .orderBy(asc(stockMovements.lotId), asc(stockMovements.locationId));
+}
+
+/** Cash expected from a sheet: its EFECTIVO payments (céntimos). `q` = a transaction to read inside it. */
+export async function sheetPayments(sheetId: string, q: Tx | typeof db = db) {
+  const byMethod = await q
+    .select({ method: accountMovements.method, amount: sql`-sum(${accountMovements.amount})`.mapWith(Number) })
+    .from(accountMovements)
+    .where(and(eq(accountMovements.sheetId, sheetId), eq(accountMovements.type, "ABONO"), isNotNull(accountMovements.method)))
+    .groupBy(accountMovements.method)
+    .orderBy(asc(accountMovements.method));
+  return { byMethod, expected: byMethod.find((m) => m.method === "EFECTIVO")?.amount ?? 0 };
+}
+
+/** Settlement of a sheet: delivered orders, payments taken on the road by method, cash expected, and (EN_RUTA) what is on the vehicle. */
+export async function getSettlement(sheetId: string) {
+  const [[sheet], delivered, { byMethod, expected }] = await Promise.all([
+    db
+      .select({
+        status: deliverySheets.status,
+        vehicleId: deliverySheets.vehicleId,
+        expectedCash: deliverySheets.expectedCash,
+        declaredCash: deliverySheets.declaredCash,
+        settledAt: deliverySheets.settledAt,
+      })
+      .from(deliverySheets)
+      .where(eq(deliverySheets.id, sheetId)),
+    db
+      .select({ id: orders.id, number: orders.number, customerName: customers.name, total: orders.total })
+      .from(orders)
+      .innerJoin(customers, eq(customers.id, orders.customerId))
+      .where(and(eq(orders.sheetId, sheetId), eq(orders.status, "ENTREGADO")))
+      .orderBy(asc(customers.routeOrder), asc(orders.number)),
+    sheetPayments(sheetId),
+  ]);
+  const leftovers =
+    sheet?.status === "EN_RUTA"
+      ? await db
+          .select({ productId: products.id, productName: products.name, baseQty: sql`sum(${stockLevels.quantity})`.mapWith(Number) })
+          .from(stockLevels)
+          .innerJoin(lots, eq(lots.id, stockLevels.lotId))
+          .innerJoin(products, eq(products.id, lots.productId))
+          .where(and(eq(stockLevels.locationId, sheet.vehicleId), gt(stockLevels.quantity, 0)))
+          .groupBy(products.id)
+          .orderBy(asc(products.name))
+      : [];
+  return {
+    delivered,
+    byMethod,
+    expected,
+    leftovers,
+    packagings: await packagingsOf(leftovers.map((l) => l.productId)),
+    expectedCash: sheet?.expectedCash ?? null,
+    declaredCash: sheet?.declaredCash ?? null,
+    settledAt: sheet?.settledAt ?? null,
+  };
+}
+export type Settlement = Awaited<ReturnType<typeof getSettlement>>;

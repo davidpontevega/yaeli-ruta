@@ -27,8 +27,14 @@ export const addCharge = (tx: Tx, c: { customerId: string; orderId: string; amou
     .insert(accountMovements)
     .values({ customerId: c.customerId, type: "CARGO", amount: c.amount, date: todayInLima(), orderId: c.orderId, userId: c.userId });
 
-/** Payment (amount > 0, stored negative), dated today. Callers check it doesn't exceed the balance. */
-export const addPayment = (tx: Tx, p: { customerId: string; amount: number; method: PaymentMethod; userId: string }) =>
-  tx
-    .insert(accountMovements)
-    .values({ customerId: p.customerId, type: "ABONO", amount: -p.amount, date: todayInLima(), method: p.method, userId: p.userId });
+/** Payment (amount > 0, stored negative), dated today. `sheetId` = taken on the road with that sheet. Callers check it doesn't exceed the balance. */
+export const addPayment = (tx: Tx, p: { customerId: string; amount: number; method: PaymentMethod; userId: string; sheetId?: string }) =>
+  tx.insert(accountMovements).values({
+    customerId: p.customerId,
+    type: "ABONO",
+    amount: -p.amount,
+    date: todayInLima(),
+    method: p.method,
+    userId: p.userId,
+    sheetId: p.sheetId,
+  });

@@ -2,14 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { and, asc, eq, inArray, isNull, lt, sql } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNull } from "drizzle-orm";
 import { audit, db, type Tx } from "@/server/db";
-import { customers, deliverySheets, locations, lots, orders, products, routes, stockMovements } from "@/server/db/schema";
+import { customers, deliverySheets, locations, orders, products, routes, stockLevels } from "@/server/db/schema";
 import { requireUser } from "@/server/auth";
 import type { FormState } from "@/lib/form-state";
 import { moveStock, todayInLima, warehouseLots } from "@/modules/inventory";
-import { createSheetSchema, sheetIdSchema, sheetOrderSchema } from "./schemas";
-import { sheetLines } from "./queries";
+import { createSheetSchema, settleSchema, sheetIdSchema, sheetOrderSchema } from "./schemas";
+import { sheetLines, sheetOrigins, sheetPayments } from "./queries";
+import { returnPlan } from "./settlement";
 import { buildPicking } from "./picking";
 
 /** Thrown inside the transaction so nothing is saved; the message is shown to the owner. */
@@ -246,20 +247,8 @@ export async function unloadVehicle(_: FormState, form: FormData): Promise<FormS
         .where(and(eq(orders.sheetId, sheetId), eq(orders.status, "ENTREGADO")))
         .limit(1);
       if (delivered) throw new SheetError("Ya salió mercadería del vehículo; se resuelve en la liquidación");
-      // Net per (lot, floor): negative = still out of that floor. The net makes repeated load/unload add up.
-      const out = await tx
-        .select({
-          lotId: stockMovements.lotId,
-          locationId: stockMovements.locationId,
-          productId: lots.productId,
-          quantity: sql`-sum(${stockMovements.quantity})`.mapWith(Number),
-        })
-        .from(stockMovements)
-        .innerJoin(lots, eq(lots.id, stockMovements.lotId))
-        .where(and(eq(stockMovements.documentId, sheetId), eq(stockMovements.type, "TRASLADO")))
-        .groupBy(stockMovements.lotId, stockMovements.locationId, lots.productId)
-        .having(lt(sql`sum(${stockMovements.quantity})`, 0))
-        .orderBy(asc(stockMovements.lotId), asc(stockMovements.locationId));
+      // Net per (lot, floor) still out of that floor. The net makes repeated load/unload add up.
+      const out = await sheetOrigins(sheetId, tx);
       const cost = await lockProducts(tx, [...new Set(out.map((o) => o.productId))]);
       for (const o of out) {
         const ok = await moveStock(tx, {
@@ -285,4 +274,84 @@ export async function unloadVehicle(_: FormState, form: FormData): Promise<FormS
   );
   if (r) return r;
   revalidateLoad(sheetId);
+}
+
+/**
+ * EN_RUTA → LIQUIDADA: pending orders leave the sheet (still PENDIENTE), what is left on the vehicle goes back to the floors it came from,
+ * and the cash expected (recalculated here) vs. handed in is saved. A difference doesn't block.
+ */
+export async function settleSheet(_: FormState, form: FormData): Promise<FormState> {
+  const me = await requireUser("DUENO");
+  const input = settleSchema.safeParse({ sheetId: form.get("sheetId"), declared: form.get("declared") ?? "" });
+  if (!input.success) return { error: input.error.issues[0].message };
+  const { sheetId, declared } = input.data;
+  const r = await run(() =>
+    db.transaction(async (tx) => {
+      // Lock order: sheet → orders → products. deliverOrder takes order → products and reads the sheet unlocked: no cycle.
+      const { vehicleId } = await lockSheet(tx, sheetId, "EN_RUTA");
+      const undelivered = await tx
+        .select({ id: orders.id })
+        .from(orders)
+        .where(and(eq(orders.sheetId, sheetId), eq(orders.status, "PENDIENTE")))
+        .orderBy(asc(orders.id))
+        .for("update");
+      const origins = await sheetOrigins(sheetId, tx);
+      const cost = await lockProducts(tx, [...new Set(origins.map((o) => o.productId))]);
+      // Vehicle stock read after locking the products, so a concurrent delivery can't change it under us.
+      const vehicle = origins.length
+        ? await tx
+            .select({ lotId: stockLevels.lotId, quantity: stockLevels.quantity })
+            .from(stockLevels)
+            .where(
+              and(
+                eq(stockLevels.locationId, vehicleId),
+                gt(stockLevels.quantity, 0),
+                inArray(
+                  stockLevels.lotId,
+                  origins.map((o) => o.lotId),
+                ),
+              ),
+            )
+        : [];
+      const productOf = new Map(origins.map((o) => [o.lotId, o.productId]));
+      const returned = returnPlan(vehicle, origins);
+      for (const l of returned) {
+        const ok = await moveStock(tx, {
+          lotId: l.lotId,
+          fromId: vehicleId,
+          toId: l.locationId,
+          quantity: l.quantity,
+          unitCost: cost.get(productOf.get(l.lotId)!)!,
+          documentId: sheetId,
+          userId: me.id,
+        });
+        if (!ok) throw new SheetError("El stock cambió; recarga la página");
+      }
+      if (undelivered.length)
+        await tx
+          .update(orders)
+          .set({ sheetId: null })
+          .where(
+            inArray(
+              orders.id,
+              undelivered.map((o) => o.id),
+            ),
+          );
+      const { expected } = await sheetPayments(sheetId, tx);
+      await tx
+        .update(deliverySheets)
+        .set({ status: "LIQUIDADA", expectedCash: expected, declaredCash: declared, settledAt: new Date() })
+        .where(eq(deliverySheets.id, sheetId));
+      await audit(tx, {
+        actorId: me.id,
+        action: "sheet.settle",
+        entity: "delivery_sheet",
+        entityId: sheetId,
+        details: { expected, declared, difference: declared - expected, undeliveredOrderIds: undelivered.map((o) => o.id), returned },
+      });
+    }),
+  );
+  if (r) return r;
+  revalidateLoad(sheetId);
+  revalidatePath("/pedidos");
 }

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { solesSchema } from "@/lib/money-schema";
 
 export const createSheetSchema = z.object({
   routeId: z.uuid("Elige una ruta"),
@@ -9,3 +10,5 @@ export const createSheetSchema = z.object({
 export const sheetIdSchema = z.object({ sheetId: z.uuid("Hoja inválida") });
 
 export const sheetOrderSchema = sheetIdSchema.extend({ orderId: z.uuid("Pedido inválido") });
+
+export const settleSchema = sheetIdSchema.extend({ declared: solesSchema });

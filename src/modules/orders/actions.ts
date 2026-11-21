@@ -145,6 +145,7 @@ export async function deliverOrder(_: FormState, form: FormData): Promise<FormSt
   const { orderId, paid, method } = input.data;
   const deliveredOf = new Map(input.data.lines.map((l) => [l.packagingId, l.delivered]));
 
+  let routeSheetId: string | undefined; // sheet EN_RUTA of the order: the payment belongs to it and we go back to it
   try {
     await db.transaction(async (tx) => {
       const [o] = await tx
@@ -157,6 +158,7 @@ export async function deliverOrder(_: FormState, form: FormData): Promise<FormSt
       // In a sheet EN_RUTA the goods are on the vehicle: dispatch from it. Otherwise from the warehouse floors.
       const sheet = await sheetOf(tx, o.sheetId);
       const fromId = sheet?.status === "EN_RUTA" ? sheet.vehicleId : undefined;
+      if (fromId) routeSheetId = o.sheetId!;
       const items = await tx
         .select({
           id: orderItems.id,
@@ -208,7 +210,7 @@ export async function deliverOrder(_: FormState, form: FormData): Promise<FormSt
       const maxPaid = Math.max(0, balance + total);
       if (paid > maxPaid) throw new DeliveryError(`Lo pagado no puede pasar de ${formatSoles(maxPaid)}`);
       if (total > 0) await addCharge(tx, { customerId: o.customerId, orderId, amount: total, userId: me.id });
-      if (paid > 0) await addPayment(tx, { customerId: o.customerId, amount: paid, method, userId: me.id });
+      if (paid > 0) await addPayment(tx, { customerId: o.customerId, amount: paid, method, userId: me.id, sheetId: routeSheetId });
       await audit(tx, {
         actorId: me.id,
         action: "order.deliver",
@@ -223,5 +225,9 @@ export async function deliverOrder(_: FormState, form: FormData): Promise<FormSt
   }
   revalidatePath("/pedidos");
   revalidatePath("/deudores");
+  if (routeSheetId) {
+    revalidatePath(`/reparto/${routeSheetId}`);
+    redirect(`/reparto/${routeSheetId}`);
+  }
   redirect(`/pedidos/${orderId}`);
 }
