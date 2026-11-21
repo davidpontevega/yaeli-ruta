@@ -121,7 +121,8 @@ async function packagingsOf(ids: string[]) {
         .from(packagings)
         .where(inArray(packagings.productId, ids))
     : [];
-  return Object.groupBy(packs, (p) => p.productId);
+  // Spread: Object.groupBy gives a null-prototype object, which can't be passed to a Client Component.
+  return { ...Object.groupBy(packs, (p) => p.productId) };
 }
 
 /** Net TRASLADO of the sheet per (lot, floor) still out of that floor (quantity > 0), with its product. In lot, floor order. */
