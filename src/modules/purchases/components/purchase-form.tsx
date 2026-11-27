@@ -1,5 +1,6 @@
 "use client";
 
+import { askFirst } from "@/components/ui/confirm";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { ProductPicker } from "@/components/ui/product-picker";
@@ -205,12 +206,19 @@ export function PurchaseForm({
             </div>
           )}
           {initial.id && editable && (
-            <Link href={`/recepciones/nueva?compra=${initial.id}`} className="btn-primario btn-ingreso flex h-12 items-center justify-center print:hidden">
+            <Link
+              href={`/recepciones/nueva?compra=${initial.id}`}
+              className="btn-primario btn-ingreso flex h-12 items-center justify-center print:hidden"
+            >
               Llegó mercadería
             </Link>
           )}
           {initial.id && editable && (
-            <form action={cancelAction} onSubmit={(e) => !confirm("¿Anular esta lista?") && e.preventDefault()} className="print:hidden">
+            <form
+              action={cancelAction}
+              onSubmit={askFirst({ title: "¿Anular esta lista?", yes: "Sí, anular", tone: "peligro" })}
+              className="print:hidden"
+            >
               <input type="hidden" name="id" value={initial.id} />
               <button disabled={cancelling} className="h-12 w-full rounded-xl border border-red-300 text-red-600">
                 Anular lista

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { Stat } from "@/components/ui/stat";
+import { askFirst } from "@/components/ui/confirm";
 import { formatSoles, parseSoles } from "@/lib/money";
 import { paymentLabel } from "@/lib/payment";
 import { formatQty } from "@/lib/quantity";
@@ -29,11 +30,15 @@ export function SettlementPanel({
   const sold = s.delivered.reduce((t, o) => t + o.total, 0);
   const expected = settled ? (s.expectedCash ?? 0) : s.expected;
   const handed = settled ? s.declaredCash : parseSoles(declared);
-  const question = `¿Cerrar la ruta? El sobrante vuelve a su piso y la hoja se cierra.${
-    pending.length
-      ? `\n${pending.length} pedido${pending.length === 1 ? " queda" : "s quedan"} como no entregado${pending.length === 1 ? "" : "s"}.`
-      : ""
-  }`;
+  const ask = askFirst({
+    title: "¿Cerrar la ruta?",
+    text: "Lo que sobró vuelve a su piso y la hoja se cierra.",
+    note: pending.length
+      ? `${pending.length} pedido${pending.length === 1 ? " queda" : "s quedan"} como no entregado${pending.length === 1 ? "" : "s"}.`
+      : undefined,
+    yes: "Sí, cerrar ruta",
+    tone: "cerrar",
+  });
 
   const orderList = (list: { id: string; number: number; customerName: string; total: number }[], deliver: boolean) => (
     <ul className="lista">
@@ -101,7 +106,7 @@ export function SettlementPanel({
           ) : (
             <p className="tarjeta text-sm text-muted">El vehículo está vacío.</p>
           )}
-          <form action={action} onSubmit={(e) => !confirm(question) && e.preventDefault()} className="flex flex-col gap-2">
+          <form action={action} onSubmit={ask} className="flex flex-col gap-2">
             <input type="hidden" name="sheetId" value={sheetId} />
             <input
               name="declared"

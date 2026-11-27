@@ -1,5 +1,6 @@
 "use client";
 
+import { askFirst } from "@/components/ui/confirm";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { ProductPicker } from "@/components/ui/product-picker";
@@ -245,7 +246,10 @@ export function OrderForm({
         </Link>
       )}
       {initial.id && (
-        <form action={cancelAction} onSubmit={(e) => !confirm("¿Anular este pedido?") && e.preventDefault()}>
+        <form
+          action={cancelAction}
+          onSubmit={askFirst({ title: "¿Anular este pedido?", text: "No se podrá entregar.", yes: "Sí, anular", tone: "peligro" })}
+        >
           <input type="hidden" name="id" value={initial.id} />
           <button disabled={cancelling} className="h-12 w-full rounded-xl border border-red-300 text-red-600">
             Anular pedido

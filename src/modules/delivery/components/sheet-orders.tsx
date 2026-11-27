@@ -1,5 +1,6 @@
 "use client";
 
+import { askFirst } from "@/components/ui/confirm";
 import Link from "next/link";
 import { useActionState } from "react";
 import { Avatar } from "@/components/ui/avatar";
@@ -81,7 +82,10 @@ export function SheetOrders({
         ))}
       {error && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {editable && (
-        <form action={del} onSubmit={(e) => !confirm("¿Eliminar la hoja? Sus pedidos quedan sin hoja.") && e.preventDefault()}>
+        <form
+          action={del}
+          onSubmit={askFirst({ title: "¿Eliminar la hoja?", text: "Sus pedidos quedan sin hoja.", yes: "Sí, eliminar", tone: "peligro" })}
+        >
           <input type="hidden" name="sheetId" value={sheetId} />
           <button disabled={busy} className="h-12 w-full rounded-xl border border-red-300 text-red-600">
             Eliminar hoja
