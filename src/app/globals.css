@@ -59,7 +59,7 @@ body {
     @apply bg-sky-700 shadow-sky-700/25;
   }
   .btn-armar {
-    @apply bg-sky-700 shadow-sky-700/25;
+    @apply bg-cyan-700 shadow-cyan-700/25;
   }
   .btn-cargar {
     @apply bg-amber-600 shadow-amber-600/25;
