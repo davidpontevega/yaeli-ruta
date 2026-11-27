@@ -18,7 +18,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/pedidos">
     <section className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Pedidos</h1>
-        <Link href="/pedidos/nuevo" className="btn-primario flex h-10 items-center text-sm">
+        <Link href="/pedidos/nuevo" className="btn-primario btn-pedido flex h-10 items-center text-sm">
           + Nuevo
         </Link>
       </div>

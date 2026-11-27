@@ -10,7 +10,7 @@ export default async function PurchasesPage() {
     <section className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Pedir a proveedor</h1>
-        <Link href="/compras/nueva" className="btn-primario flex h-10 items-center text-sm">
+        <Link href="/compras/nueva" className="btn-primario btn-proveedor flex h-10 items-center text-sm">
           + Nueva lista
         </Link>
       </div>

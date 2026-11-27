@@ -51,7 +51,7 @@ export function SheetForm({
           </select>
         </label>
       </div>
-      <button disabled={pending} className="btn-primario h-11 text-sm">
+      <button disabled={pending} className="btn-primario btn-armar h-11 text-sm">
         Crear hoja
       </button>
       {state?.error && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>}

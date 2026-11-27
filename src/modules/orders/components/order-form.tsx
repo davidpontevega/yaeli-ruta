@@ -77,7 +77,7 @@ export function OrderForm({
         </span>
         <span className="cifra text-2xl">{formatSoles(orderTotal(priced))}</span>
       </div>
-      <button disabled={pending || !known.length} className="btn-primario h-[52px] text-base">
+      <button disabled={pending || !known.length} className="btn-primario btn-pedido h-[52px] text-base">
         {initial.id ? "Guardar cambios" : "Guardar pedido"}
       </button>
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}

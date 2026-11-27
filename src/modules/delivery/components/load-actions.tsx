@@ -13,7 +13,7 @@ export function LoadActions({ sheetId, status, short }: { sheetId: string; statu
   return (
     <form action={action} onSubmit={(e) => !confirm(question) && e.preventDefault()} className="flex flex-col gap-2 print:hidden">
       <input type="hidden" name="sheetId" value={sheetId} />
-      <button disabled={pending} className={`${loading ? "btn-primario" : "btn-secundario"} h-12 w-full`}>
+      <button disabled={pending} className={`${loading ? "btn-primario btn-cargar" : "btn-secundario"} h-12 w-full`}>
         {loading ? "Cargar vehículo" : "Devolver al almacén"}
       </button>
       {state?.error && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>}

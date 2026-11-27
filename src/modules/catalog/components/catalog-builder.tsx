@@ -350,7 +350,7 @@ export function CatalogBuilder({ sheet }: { sheet: CatalogSheet }) {
                 <button type="button" onClick={generate} disabled={pending} className="btn-secundario h-12">
                   {pending ? "Armando…" : pages.length ? "Volver a armar" : "Ver catálogo"}
                 </button>
-                <button type="button" onClick={share} disabled={pending || !pages.length} className="btn-primario h-12">
+                <button type="button" onClick={share} disabled={pending || !pages.length} className="btn-primario btn-catalogo h-12">
                   Enviar {pages.length ? `(${pages.length})` : ""}
                 </button>
               </div>

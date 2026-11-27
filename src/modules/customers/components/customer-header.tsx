@@ -29,7 +29,7 @@ export function CustomerHeader({ customer: c, balance, here }: { customer: Custo
       </div>
       <div className="flex flex-wrap gap-2">
         {c.active && (
-          <Link href={`/pedidos/nuevo?cliente=${c.id}`} className="btn-primario flex h-10 items-center gap-1.5 px-3.5 text-sm">
+          <Link href={`/pedidos/nuevo?cliente=${c.id}`} className="btn-primario btn-pedido flex h-10 items-center gap-1.5 px-3.5 text-sm">
             <Glyph d={ICONS.plus} />
             Nuevo pedido
           </Link>

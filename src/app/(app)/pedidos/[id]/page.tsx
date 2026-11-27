@@ -26,7 +26,7 @@ export default async function EditOrderPage({ params }: PageProps<"/pedidos/[id]
         <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Pedido #{order.number}</h1>
         <OrderSummary order={order} customerName={customer.name} />
         {inRoute && (
-          <Link href={`/pedidos/${order.id}/entregar`} className="btn-primario flex h-12 items-center justify-center">
+          <Link href={`/pedidos/${order.id}/entregar`} className="btn-primario btn-entregar flex h-12 items-center justify-center">
             Entregar
           </Link>
         )}

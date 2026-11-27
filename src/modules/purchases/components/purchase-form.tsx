@@ -177,7 +177,7 @@ export function PurchaseForm({
           {totals.noWeight > 0 && <p className="text-xs text-amber-700">{totals.noWeight} producto(s) sin peso: complétalo en Productos.</p>}
           {/* Save lives in the summary, which stays in view: no scrolling to the end of a long list. */}
           {editable && (
-            <button form="purchase-form" disabled={pending || !known.length} className="btn-primario mt-1 h-12 print:hidden">
+            <button form="purchase-form" disabled={pending || !known.length} className="btn-primario btn-proveedor mt-1 h-12 print:hidden">
               {initial.id ? "Guardar cambios" : "Guardar lista"} · {known.length} producto{known.length === 1 ? "" : "s"}
             </button>
           )}
@@ -205,7 +205,7 @@ export function PurchaseForm({
             </div>
           )}
           {initial.id && editable && (
-            <Link href={`/recepciones/nueva?compra=${initial.id}`} className="btn-primario flex h-12 items-center justify-center print:hidden">
+            <Link href={`/recepciones/nueva?compra=${initial.id}`} className="btn-primario btn-ingreso flex h-12 items-center justify-center print:hidden">
               Llegó mercadería
             </Link>
           )}

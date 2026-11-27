@@ -54,6 +54,34 @@ body {
   .btn-primario {
     @apply rounded-xl bg-primary px-4 font-semibold text-primary-foreground shadow-[0_6px_16px_rgba(15,118,110,0.25)] transition active:scale-[0.98] active:opacity-90 disabled:opacity-40 disabled:shadow-none;
   }
+  /* One color per action, on top of .btn-primario: the same action keeps its color on every screen (home, sheet steps, buttons). */
+  .btn-pedido {
+    @apply bg-sky-700 shadow-sky-700/25;
+  }
+  .btn-armar {
+    @apply bg-sky-700 shadow-sky-700/25;
+  }
+  .btn-cargar {
+    @apply bg-amber-600 shadow-amber-600/25;
+  }
+  .btn-entregar {
+    @apply bg-emerald-700 shadow-emerald-700/25;
+  }
+  .btn-cerrar {
+    @apply bg-violet-700 shadow-violet-700/25;
+  }
+  .btn-ingreso {
+    @apply bg-indigo-700 shadow-indigo-700/25;
+  }
+  .btn-proveedor {
+    @apply bg-orange-700 shadow-orange-700/25;
+  }
+  .btn-stock {
+    @apply bg-teal-700 shadow-teal-700/25;
+  }
+  .btn-catalogo {
+    @apply bg-pink-700 shadow-pink-700/25;
+  }
   .btn-secundario {
     @apply rounded-xl border border-border bg-surface px-4 font-semibold transition active:scale-[0.98] active:bg-slate-100 disabled:opacity-40;
   }

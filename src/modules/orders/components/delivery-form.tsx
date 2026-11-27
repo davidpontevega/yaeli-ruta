@@ -125,7 +125,7 @@ export function DeliveryForm({ orderId, items, balance }: { orderId: string; ite
         <div className="sticky bottom-[calc(6rem+env(safe-area-inset-bottom))] z-10 md:bottom-4 lg:static">
           <button
             disabled={pending || total === 0}
-            className="btn-primario h-[52px] w-full text-base shadow-[0_-8px_24px_rgba(15,23,42,0.08)] lg:shadow-none"
+            className="btn-primario btn-entregar h-[52px] w-full text-base shadow-[0_-8px_24px_rgba(15,23,42,0.08)] lg:shadow-none"
           >
             {pending ? "Guardando…" : `Confirmar entrega · ${formatSoles(total)}`}
           </button>

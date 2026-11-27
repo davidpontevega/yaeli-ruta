@@ -11,12 +11,12 @@ import { canSee } from "@/lib/menus";
 const dayLabel = () => new Date().toLocaleDateString("es-PE", { timeZone: "America/Lima", weekday: "long", day: "numeric", month: "long" });
 
 const ACTIONS = [
-  { href: "/pedidos/nuevo", label: "Anotar pedido", icon: ICONS.pencil },
-  { href: "/recepciones/nueva", label: "Llegó mercadería", icon: ICONS.box },
-  { href: "/compras", label: "Pedir a proveedores", icon: ICONS.phone },
-  { href: "/reparto", label: "Salir a repartir", icon: ICONS.truck },
-  { href: "/stock", label: "Ver mi stock", icon: ICONS.box },
-  { href: "/productos/catalogo", label: "Catálogo", icon: ICONS.users },
+  { href: "/pedidos/nuevo", label: "Anotar pedido", icon: ICONS.pencil, color: "btn-pedido" },
+  { href: "/recepciones/nueva", label: "Llegó mercadería", icon: ICONS.box, color: "btn-ingreso" },
+  { href: "/compras", label: "Pedir a proveedores", icon: ICONS.phone, color: "btn-proveedor" },
+  { href: "/reparto", label: "Salir a repartir", icon: ICONS.truck, color: "btn-cargar" },
+  { href: "/stock", label: "Ver mi stock", icon: ICONS.box, color: "btn-stock" },
+  { href: "/productos/catalogo", label: "Catálogo", icon: ICONS.users, color: "btn-catalogo" },
 ];
 
 export default async function HomePage() {
@@ -51,13 +51,9 @@ export default async function HomePage() {
       />
       {actions.length > 0 && (
         <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3">
-          {actions.map((a, i) => (
-            <Link
-              key={a.href}
-              href={a.href}
-              className={`${i === 0 ? "btn-primario" : "btn-secundario"} flex min-h-[84px] flex-col items-start justify-between gap-2 p-3.5`}
-            >
-              <IconTile d={a.icon} tone={i === 0 ? "bg-white/15 text-white" : "bg-teal-50 text-teal-700"} />
+          {actions.map((a) => (
+            <Link key={a.href} href={a.href} className={`btn-primario ${a.color} flex min-h-[84px] flex-col items-start justify-between gap-2 p-3.5`}>
+              <IconTile d={a.icon} tone="bg-white/15 text-white" />
               <span className="text-[15px] font-semibold">{a.label}</span>
             </Link>
           ))}

@@ -246,7 +246,7 @@ export function ReceiptForm({
             <Link href="/stock" className="btn-secundario flex h-12 flex-1 items-center justify-center">
               Cancelar
             </Link>
-            <button disabled={pending || !lines.length || missing > 0} className="btn-primario h-12 flex-1">
+            <button disabled={pending || !lines.length || missing > 0} className="btn-primario btn-ingreso h-12 flex-1">
               {pending ? "Guardando…" : "Guardar"}
             </button>
           </div>

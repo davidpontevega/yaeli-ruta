@@ -45,7 +45,7 @@ export function SettlementPanel({
           </div>
           <span className="cifra shrink-0">{formatSoles(o.total)}</span>
           {deliver && (
-            <Link href={`/pedidos/${o.id}/entregar`} className="btn-primario flex h-9 items-center text-sm">
+            <Link href={`/pedidos/${o.id}/entregar`} className="btn-primario btn-entregar flex h-9 items-center text-sm">
               Entregar
             </Link>
           )}
@@ -114,7 +114,7 @@ export function SettlementPanel({
               className="h-12 rounded-xl border border-border bg-surface px-3"
             />
             {/* Only the current step's action is primary: while orders are pending, that is "Entregar". */}
-            <button disabled={busy} className={`${pending.length ? "btn-secundario" : "btn-primario"} h-12 w-full`}>
+            <button disabled={busy} className={`${pending.length ? "btn-secundario" : "btn-primario btn-cerrar"} h-12 w-full`}>
               Cerrar ruta
             </button>
             {state?.error && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>}

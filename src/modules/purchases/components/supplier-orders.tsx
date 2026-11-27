@@ -37,7 +37,7 @@ export function SupplierOrders({ suppliers, missing }: { suppliers: { id: string
             >
               Enviar por WhatsApp
             </a>
-            <Link href={`/compras/nueva?proveedor=${s.id}`} className="btn-primario flex h-12 items-center justify-center text-sm">
+            <Link href={`/compras/nueva?proveedor=${s.id}`} className="btn-primario btn-proveedor flex h-12 items-center justify-center text-sm">
               Crear lista
             </Link>
           </div>
