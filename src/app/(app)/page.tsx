@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { requireUser } from "@/server/auth";
 import { listPriceReview } from "@/modules/catalog";
-import { HomeAlerts, MissingList, getAlertCounts, listStock, todayInLima } from "@/modules/inventory";
+import { ExpiryCard, HomeAlerts, MissingList, getAlertCounts, listStock, todayInLima } from "@/modules/inventory";
 import { ReceivableCard, receivableSummary } from "@/modules/accounts";
 import { TodayCard, TodayOrders, listOrders, todaySummary } from "@/modules/orders";
 import { Kpi } from "@/components/ui/kpi";
+import { formatSoles } from "@/lib/money";
 import { canSee } from "@/lib/menus";
 
 const dayLabel = () => new Date().toLocaleDateString("es-PE", { timeZone: "America/Lima", weekday: "long", day: "numeric", month: "long" });
@@ -14,7 +15,8 @@ export default async function HomePage() {
   const isOwner = user.role === "DUENO";
   // Blocks of hidden menus are neither shown nor queried (spec 020). Every `can(...)` below is false for the repartidor on owner screens.
   const can = (href: string) => canSee(href, user.role, user.hiddenMenus);
-  const [canOrder, canBuy] = [can("/pedidos/nuevo"), can("/compras/nueva")];
+  const [canOrder, canBuy, canRoute, canExpiry] = [can("/pedidos/nuevo"), can("/compras/nueva"), can("/reparto"), can("/vencimientos")];
+  const buttons = [canOrder, canBuy, canRoute].filter(Boolean).length;
   const [counts, review, receivable, today, missing, todayOrders] = await Promise.all([
     getAlertCounts(), // the layout runs it on every request anyway
     can("/precios") && isOwner ? listPriceReview() : null,
@@ -36,9 +38,9 @@ export default async function HomePage() {
       {/* Phone (and the repartidor everywhere): one column. */}
       <section className={`flex flex-col gap-3.5 ${isOwner ? "md:hidden" : ""}`}>
         {greeting}
-        {receivable && <ReceivableCard summary={receivable} />}
-        {(canOrder || canBuy) && (
-          <div className={`grid gap-2.5 ${canOrder && canBuy ? "grid-cols-2" : "grid-cols-1"}`}>
+        {canExpiry && <ExpiryCard {...counts} />}
+        {buttons > 0 && (
+          <div className={`grid gap-2.5 ${["", "grid-cols-1", "grid-cols-2", "grid-cols-3"][buttons]}`}>
             {canOrder && (
               <Link href="/pedidos/nuevo" className="btn-primario btn-pedido flex min-h-[84px] flex-col justify-between p-3.5">
                 <svg
@@ -80,10 +82,30 @@ export default async function HomePage() {
                 <span className="text-[15px]">Pedir a proveedor</span>
               </Link>
             )}
+            {canRoute && (
+              <Link href="/reparto" className="btn-primario btn-cargar flex min-h-[84px] flex-col justify-between p-3.5">
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z" />
+                  <circle cx="12" cy="10" r="2.5" />
+                </svg>
+                <span className="text-[15px]">Salir a repartir</span>
+              </Link>
+            )}
           </div>
         )}
         {today && <TodayCard today={today} />}
         <HomeAlerts {...counts} priceReview={review ? review.length : null} can={can} />
+        {receivable && <ReceivableCard summary={receivable} />}
       </section>
 
       {/* Desktop owner: indicators in a row, then today's orders and what is missing side by side. */}
@@ -92,6 +114,11 @@ export default async function HomePage() {
           <div className="flex flex-wrap items-end justify-between gap-3">
             {greeting}
             <div className="flex gap-2">
+              {canRoute && (
+                <Link href="/reparto" className="btn-primario btn-cargar flex h-[42px] items-center text-sm">
+                  Salir a repartir
+                </Link>
+              )}
               {canBuy && (
                 <Link href="/compras/nueva" className="btn-primario btn-proveedor flex h-[42px] items-center text-sm">
                   Pedir a proveedor
@@ -105,7 +132,7 @@ export default async function HomePage() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {receivable && <ReceivableCard summary={receivable} />}
+            {canExpiry && <ExpiryCard {...counts} />}
             {today && (
               <Kpi href="/pedidos" label="Entregas de hoy" value={today.count ? `${today.delivered} de ${today.count}` : "0"}>
                 <div className="h-1.5 overflow-hidden rounded-full bg-slate-200" aria-hidden>
@@ -122,18 +149,12 @@ export default async function HomePage() {
                 detail={suppliersMissing || "Todo bien"}
               />
             )}
-            {can("/vencimientos") && (
+            {receivable && (
               <Kpi
-                href="/vencimientos"
-                label="Por vencer en 30 días"
-                value={counts.within30}
-                valueClass={counts.within30 ? "text-amber-800" : ""}
-                detail={
-                  counts.expired
-                    ? `${counts.expired} lote${counts.expired === 1 ? "" : "s"} ya vencido${counts.expired === 1 ? "" : "s"}`
-                    : "Ninguno vencido"
-                }
-                detailClass={counts.expired ? "font-semibold text-red-700" : "text-muted"}
+                href="/deudores"
+                label="Por cobrar a clientes"
+                value={formatSoles(receivable.total)}
+                detail={receivable.debtors ? `${receivable.debtors} cliente${receivable.debtors === 1 ? "" : "s"} deben` : "Nadie debe"}
               />
             )}
           </div>
