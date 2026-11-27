@@ -25,6 +25,7 @@ export { ReceiptForm } from "./components/receipt-form";
 export { ExpiryList } from "./components/expiry-list";
 export { LocationFilter } from "./components/location-filter";
 export { HomeAlerts } from "./components/home-alerts";
+export { MissingList } from "./components/missing-list";
 export { SupplierList, type SupplierProducts } from "./components/supplier-list";
 export { MovementList } from "./components/movement-list";
 export { createSupplier, type SupplierCreated } from "./actions";
