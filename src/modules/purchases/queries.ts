@@ -71,7 +71,9 @@ export async function listMissingBySupplier() {
   return stock.flatMap((p) => {
     const big = biggestPackaging(p.packagings);
     const quantity = big ? missingToOrder(p.total, Math.max(p.minStock, p.target), big.factor) : 0;
-    return p.supplierId && big && quantity ? [{ supplierId: p.supplierId, packagingId: big.id, quantity }] : [];
+    return p.supplierId && big && quantity
+      ? [{ supplierId: p.supplierId, packagingId: big.id, quantity, productName: p.name, packagingName: big.name }]
+      : [];
   });
 }
 

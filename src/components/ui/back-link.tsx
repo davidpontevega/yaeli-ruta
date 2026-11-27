@@ -16,8 +16,8 @@ const NAMES: Record<string, string> = {
   rutas: "Rutas",
   stock: "Stock",
   vencimientos: "Por vencer",
-  compras: "Listas de pedido",
-  recepciones: "Ingreso",
+  compras: "Pedir a proveedor",
+  recepciones: "Llegó mercadería",
   proveedores: "Proveedores",
   productos: "Productos",
   precios: "Precios",
@@ -40,7 +40,7 @@ function nameOf(url: string): string | null {
   const [path, query = ""] = url.split("?");
   const parts = path.split("/").filter(Boolean);
   if (parts[0] === "stock" && /(^|&)falta=1/.test(query)) return "Stock bajo";
-  if (parts[0] === "productos" && parts[2] === "movimientos") return "Movimientos";
+  if (parts[0] === "productos" && parts[2] === "movimientos") return "Historial";
   if (parts[0] === "compras" && parts[1]) return "la lista";
   if (parts[0] === "pedidos" && parts[1]) return "el pedido";
   if (parts[0] === "reparto" && parts[1]) return "la hoja";
@@ -69,7 +69,7 @@ export function NavTrail() {
 }
 
 /**
- * "‹ Volver a X" at the top of a screen reached from a button. Goes to the screen you came from (Stock → Movimientos →
+ * "‹ Volver a X" at the top of a screen reached from a button. Goes to the screen you came from (Stock → Historial →
  * back to Stock); after a reload or a direct link, to the fixed parent `href`.
  */
 export function BackLink({ href, label }: { href: string; label: string }) {

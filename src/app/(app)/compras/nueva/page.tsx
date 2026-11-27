@@ -22,8 +22,8 @@ export default async function NewPurchasePage({ searchParams }: PageProps<"/comp
     .map((m) => ({ packagingId: m.packagingId, quantity: m.quantity, cost: costs[m.packagingId] ?? 0, freight: 0 }));
   return (
     <section className="flex flex-col gap-4">
-      <BackLink href="/compras" label="Listas de pedido" />
-      <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Nueva lista de pedido</h1>
+      <BackLink href="/compras" label="Pedir a proveedor" />
+      <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Nuevo pedido a proveedor</h1>
       <PurchaseForm
         products={products}
         suppliers={suppliers}

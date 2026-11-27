@@ -6,3 +6,5 @@ export { SheetOrders } from "./components/sheet-orders";
 export { PickingList } from "./components/picking-list";
 export { LoadActions } from "./components/load-actions";
 export { SettlementPanel } from "./components/settlement-panel";
+export { SheetStepper } from "./components/sheet-stepper";
+export { sheetStep } from "./sheet-step";

@@ -9,6 +9,7 @@ import { formatSoles, parseSoles, toSolesInput } from "@/lib/money";
 import { formatKg, lineWeight } from "@/lib/weight";
 import { cancelPurchase, savePurchase } from "../actions";
 import { purchaseTotals } from "../purchase-math";
+import { orderText } from "../order-text";
 import { STALE_LIST_ERROR } from "../schemas";
 import { ICONS, IconTile } from "@/components/ui/avatar";
 import type { PurchaseType } from "@/server/db/schema";
@@ -118,17 +119,20 @@ export function PurchaseForm({
   });
 
   // WhatsApp text: to the supplier without costs; for the owner's own trip, with weight and cost.
-  const shareText = [
-    `Pedido${initial.number ? ` #${initial.number}` : ""} — Distribuidora Yaeli`,
-    ...known.map((l) => {
-      const { product, packaging } = byPackaging.get(l.packagingId)!;
-      const base = `${l.quantity} ${packaging.name} · ${product.name}`;
-      if (!recojo) return base;
-      const w = lineWeight(num(l));
-      return `${base}${w ? ` · ${formatKg(w)}` : ""} · ${formatSoles(num(l).quantity * Math.max(0, num(l).cost))}`;
-    }),
-    ...(recojo ? [`Peso ${formatKg(totals.weight)} · Flete ${formatSoles(totals.freight)} · Total ${formatSoles(totals.total)}`] : []),
-  ].join("\n");
+  const shareLines = known.map((l) => {
+    const { product, packaging } = byPackaging.get(l.packagingId)!;
+    return { quantity: l.quantity, packagingName: packaging.name, productName: product.name, n: num(l) };
+  });
+  const shareText = !recojo
+    ? orderText(shareLines, initial.number)
+    : [
+        `Pedido${initial.number ? ` #${initial.number}` : ""} — Distribuidora Yaeli`,
+        ...shareLines.map(({ quantity, packagingName, productName, n }) => {
+          const w = lineWeight(n);
+          return `${quantity} ${packagingName} · ${productName}${w ? ` · ${formatKg(w)}` : ""} · ${formatSoles(n.quantity * Math.max(0, n.cost))}`;
+        }),
+        `Peso ${formatKg(totals.weight)} · Flete ${formatSoles(totals.freight)} · Total ${formatSoles(totals.total)}`,
+      ].join("\n");
 
   return (
     // Phone: totals, list, actions in one column. Desktop: the list on the left; totals and actions on the right.
@@ -202,7 +206,7 @@ export function PurchaseForm({
           )}
           {initial.id && editable && (
             <Link href={`/recepciones/nueva?compra=${initial.id}`} className="btn-primario flex h-12 items-center justify-center print:hidden">
-              Registrar ingreso
+              Llegó mercadería
             </Link>
           )}
           {initial.id && editable && (

@@ -194,7 +194,7 @@ export async function listExpiring(f: { locationId: string; withCost: boolean })
 
 export type ExpiringLot = Awaited<ReturnType<typeof listExpiring>>[number];
 
-/** Counts for the home alerts: expired lots, lots expiring within 30 days, active products below their minimum. */
+/** Counts for the home alerts: expired lots, lots expiring within 7 and 30 days, active products below their minimum. */
 export async function getAlertCounts() {
   const today = todayInLima();
   const lotCount = (...where: Parameters<typeof and>) =>
@@ -206,8 +206,9 @@ export async function getAlertCounts() {
       .where(and(gt(stockLevels.quantity, 0), eq(products.active, true), ...where))
       .then(([r]) => r.n);
 
-  const [expired, within30, low] = await Promise.all([
+  const [expired, within7, within30, low] = await Promise.all([
     lotCount(lt(lots.expiresOn, today)),
+    lotCount(gte(lots.expiresOn, today), lte(lots.expiresOn, addDays(today, 7))),
     lotCount(gte(lots.expiresOn, today), lte(lots.expiresOn, addDays(today, 30))),
     db
       .select({ id: products.id })
@@ -218,7 +219,7 @@ export async function getAlertCounts() {
       .groupBy(products.id)
       .having(sql`coalesce(sum(${stockLevels.quantity}), 0) < ${products.minStock}`),
   ]);
-  return { expired, within30, lowStock: low.length };
+  return { expired, within7, within30, lowStock: low.length };
 }
 
 /** Supplier names, for the receipt form's suggestions. */

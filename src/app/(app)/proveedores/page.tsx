@@ -19,7 +19,7 @@ export default async function SuppliersPage() {
   }
   return (
     <section className="flex flex-col gap-4">
-      <BackLink href="/compras" label="Listas de pedido" />
+      <BackLink href="/compras" label="Pedir a proveedor" />
       <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Proveedores</h1>
       <p className="-mt-2 text-sm text-muted">A quién le compras: qué le falta pedir, cuánto le has comprado y cómo contactarlo.</p>
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">

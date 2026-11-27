@@ -25,7 +25,7 @@ export default async function PurchasePage({ params }: PageProps<"/compras/[id]"
   ]);
   return (
     <section className="flex flex-col gap-4">
-      <BackLink href="/compras" label="Listas de pedido" />
+      <BackLink href="/compras" label="Pedir a proveedor" />
       <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">
         Lista #{purchase.number}
         {STATUS[purchase.status]}

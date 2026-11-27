@@ -50,15 +50,15 @@ const SECTIONS: Section[] = [
       },
       {
         href: "/compras",
-        label: "Lista de pedido",
-        short: "Lista",
+        label: "Pedir a proveedor",
+        short: "Pedir",
         icon: "M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 12h6M9 16h6",
         also: ["/proveedores"],
       },
       {
         href: "/recepciones/nueva",
-        label: "Ingreso de mercadería",
-        short: "Ingreso",
+        label: "Llegó mercadería",
+        short: "Llegó",
         icon: "M1 3h15v13H1zM16 8h4l3 3v5h-7zM5.5 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18.5 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4z",
         also: ["/recepciones"],
       },
@@ -133,8 +133,8 @@ const PLUS = "M12 5v14M5 12h14";
 const QUICK = [
   { href: "/pedidos/nuevo", label: "Nuevo pedido", hint: "Un cliente llamó" },
   { href: "/deudores", label: "Registrar cobro", hint: "Pagó en la oficina" },
-  { href: "/compras/nueva", label: "Lista de pedido", hint: "Al proveedor o para ir a comprar" },
-  { href: "/recepciones/nueva", label: "Ingreso de mercadería", hint: "Llegó o leer factura" },
+  { href: "/compras/nueva", label: "Pedir a proveedor", hint: "Al proveedor o para ir a comprar" },
+  { href: "/recepciones/nueva", label: "Llegó mercadería", hint: "Llegó o leer factura" },
   { href: "/productos/catalogo", label: "Catálogo para clientes", hint: "Imágenes para WhatsApp" },
 ];
 

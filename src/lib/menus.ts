@@ -15,8 +15,15 @@ export const MENUS = [
   },
   { key: "stock", label: "Stock", group: "Almacén", href: "/stock", prefixes: ["/stock"] },
   { key: "vencimientos", label: "Por vencer", group: "Almacén", href: "/vencimientos", prefixes: ["/vencimientos"] },
-  { key: "compras", label: "Lista de pedido y proveedores", group: "Almacén", owner: true, href: "/compras", prefixes: ["/compras", "/proveedores"] },
-  { key: "recepciones", label: "Ingreso de mercadería", group: "Almacén", owner: true, href: "/recepciones/nueva", prefixes: ["/recepciones"] },
+  {
+    key: "compras",
+    label: "Pedir a proveedor y proveedores",
+    group: "Almacén",
+    owner: true,
+    href: "/compras",
+    prefixes: ["/compras", "/proveedores"],
+  },
+  { key: "recepciones", label: "Llegó mercadería", group: "Almacén", owner: true, href: "/recepciones/nueva", prefixes: ["/recepciones"] },
   { key: "productos", label: "Productos y precios", group: "Más", href: "/productos", prefixes: ["/productos", "/precios"] },
   {
     key: "catalogo",

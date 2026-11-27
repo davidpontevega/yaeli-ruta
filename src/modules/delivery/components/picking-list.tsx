@@ -7,11 +7,11 @@ import type { SheetPicking } from "../queries";
 
 type Header = { number: number; routeName: string; date: string; vehicleName: string; capacityKg: number | null };
 
-/** Picking by floor (FEFO lot to take) or, once EN_RUTA, the vehicle's load; shortages and weight vs the vehicle. Prints only the header and the list. */
+/** "Lista para cargar" by floor (FEFO lot to take) or, once EN_RUTA, the vehicle's load; shortages and weight vs the vehicle. Prints only the header and the list. */
 export function PickingList({ sheet, picking }: { sheet: Header; picking: SheetPicking }) {
   const qty = (productId: string, base: number) => formatQty(base, picking.packagings[productId] ?? []);
   const expiry = (d: string | null) => (d ? `vence ${formatDate(d)}` : "sin fecha");
-  const label = picking.status === "EN_RUTA" ? "Carga del vehículo" : "Picking";
+  const label = picking.status === "EN_RUTA" ? "Carga del vehículo" : "Lista para cargar";
   const title = `Hoja de ruta #${sheet.number} · ${sheet.routeName}`;
   const sub = `${formatDate(sheet.date)} · ${sheet.vehicleName}`;
   const { grams, noWeight } = picking.weight;

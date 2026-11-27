@@ -11,7 +11,7 @@ import { settleSheet } from "../actions";
 
 const diffTone = (d: number) => (d === 0 ? "text-emerald-700" : "text-amber-700");
 
-/** EN_RUTA: pending orders (Entregar), delivered, payments by method, cash expected vs handed in, vehicle leftovers and "Liquidar". LIQUIDADA: read-only summary. */
+/** EN_RUTA: pending orders (Entregar), delivered, payments by method, cash expected vs handed in, vehicle leftovers and "Cerrar ruta". LIQUIDADA: read-only summary. */
 export function SettlementPanel({
   sheetId,
   status,
@@ -29,7 +29,7 @@ export function SettlementPanel({
   const sold = s.delivered.reduce((t, o) => t + o.total, 0);
   const expected = settled ? (s.expectedCash ?? 0) : s.expected;
   const handed = settled ? s.declaredCash : parseSoles(declared);
-  const question = `¿Liquidar la hoja? El sobrante vuelve a su piso y la hoja se cierra.${
+  const question = `¿Cerrar la ruta? El sobrante vuelve a su piso y la hoja se cierra.${
     pending.length
       ? `\n${pending.length} pedido${pending.length === 1 ? " queda" : "s quedan"} como no entregado${pending.length === 1 ? "" : "s"}.`
       : ""
@@ -45,7 +45,7 @@ export function SettlementPanel({
           </div>
           <span className="cifra shrink-0">{formatSoles(o.total)}</span>
           {deliver && (
-            <Link href={`/pedidos/${o.id}/entregar`} className="btn-suave h-9 text-sm">
+            <Link href={`/pedidos/${o.id}/entregar`} className="btn-primario flex h-9 items-center text-sm">
               Entregar
             </Link>
           )}
@@ -56,7 +56,7 @@ export function SettlementPanel({
 
   return (
     <div className="flex flex-col gap-3 print:hidden">
-      <h2 className="rotulo">Liquidación</h2>
+      <h2 className="rotulo">{settled ? "Ruta cerrada" : "Cerrar ruta"}</h2>
       {!settled && pending.length > 0 && (
         <>
           <h3 className="text-sm font-semibold text-muted">Por entregar</h3>
@@ -83,7 +83,7 @@ export function SettlementPanel({
       {settled ? (
         s.settledAt && (
           <p className="text-sm text-muted">
-            Liquidada el {new Date(s.settledAt).toLocaleString("es-PE", { timeZone: "America/Lima", dateStyle: "short", timeStyle: "short" })}
+            Ruta cerrada el {new Date(s.settledAt).toLocaleString("es-PE", { timeZone: "America/Lima", dateStyle: "short", timeStyle: "short" })}
           </p>
         )
       ) : (
@@ -113,8 +113,9 @@ export function SettlementPanel({
               onChange={(e) => setDeclared(e.target.value)}
               className="h-12 rounded-xl border border-border bg-surface px-3"
             />
-            <button disabled={busy} className="btn-primario h-12 w-full">
-              Liquidar
+            {/* Only the current step's action is primary: while orders are pending, that is "Entregar". */}
+            <button disabled={busy} className={`${pending.length ? "btn-secundario" : "btn-primario"} h-12 w-full`}>
+              Cerrar ruta
             </button>
             {state?.error && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>}
           </form>

@@ -49,7 +49,7 @@ function Card({ icon, title, count, children }: { icon: string; title: string; c
 export function CatalogSummary({ summary, can, isAdmin }: { summary: Summary; can: (href: string) => boolean; isAdmin: boolean }) {
   const links = [
     { href: "/usuarios", icon: KEY, title: "Usuarios y PIN", hint: "Quién entra al sistema y con qué rol" },
-    { href: "/proveedores", icon: ICONS.truck, title: "Proveedores", hint: "Teléfonos, compras y listas de pedido" },
+    { href: "/proveedores", icon: ICONS.truck, title: "Proveedores", hint: "Teléfonos, compras y pedidos" },
     ...(isAdmin ? [{ href: "/menus", icon: MENU, title: "Menús", hint: "Qué pantallas ve cada usuario" }] : []),
   ].filter((l) => can(l.href));
   return (

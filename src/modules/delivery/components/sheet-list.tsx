@@ -7,7 +7,7 @@ import type { SheetRow } from "../queries";
 const SHEET_STATUS = {
   PREPARANDO: { label: "Preparando", className: "bg-amber-100 text-amber-800" },
   EN_RUTA: { label: "En ruta", className: "bg-sky-100 text-sky-800" },
-  LIQUIDADA: { label: "Liquidada", className: "bg-emerald-100 text-emerald-800" },
+  LIQUIDADA: { label: "Cerrada", className: "bg-emerald-100 text-emerald-800" },
 } as const;
 
 /** GET date filter (?fecha=) and the sheets of that date. */

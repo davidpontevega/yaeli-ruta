@@ -78,6 +78,10 @@ export function ReceiptForm({
   const [supplier, setSupplier] = useState(initial?.supplier ?? "");
   const [document, setDocument] = useState("");
   const [readTotal, setReadTotal] = useState<number | null>(null);
+  // Lines whose "Más datos" the user opened; a line with an empty cost is always open (the cost is required, a closed <details> would block the save silently).
+  const [opened, setOpened] = useState<Set<string>>(() => new Set());
+  const setOpen = (key: string, open: boolean) =>
+    setOpened((s) => (s.has(key) === open ? s : open ? new Set(s).add(key) : new Set([...s].filter((k) => k !== key))));
   const [lines, setLines] = useState<Line[]>(() =>
     (initial?.lines ?? []).map((l) => ({
       key: `l${seq++}`,
@@ -204,10 +208,13 @@ export function ReceiptForm({
                     placeholder="Escribe o elige (si es nuevo, se crea)"
                   />
                 </label>
-                <label className="campo-etiqueta">
-                  N° guía / factura
-                  <input value={document} onChange={(e) => setDocument(e.target.value)} maxLength={80} placeholder="Opcional, ej. F001-123" />
-                </label>
+                <details>
+                  <summary className="cursor-pointer text-sm text-primary">Más datos{document && ` · ${document}`}</summary>
+                  <label className="campo-etiqueta mt-2">
+                    N° guía / factura
+                    <input value={document} onChange={(e) => setDocument(e.target.value)} maxLength={80} placeholder="Opcional, ej. F001-123" />
+                  </label>
+                </details>
               </div>
             </>
           )}
@@ -240,7 +247,7 @@ export function ReceiptForm({
               Cancelar
             </Link>
             <button disabled={pending || !lines.length || missing > 0} className="btn-primario h-12 flex-1">
-              {pending ? "Guardando…" : "Guardar ingreso"}
+              {pending ? "Guardando…" : "Guardar"}
             </button>
           </div>
         </div>
@@ -331,7 +338,7 @@ export function ReceiptForm({
                 />
               )}
               {p && (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <label className="campo">
                     Cantidad
                     <input
@@ -357,16 +364,6 @@ export function ReceiptForm({
                       ))}
                     </select>
                   </label>
-                  <label className="campo">
-                    Costo c/{pack?.name} S/
-                    <input
-                      inputMode="decimal"
-                      value={l.unitCost}
-                      onChange={(e) => update(l.key, { unitCost: e.target.value })}
-                      required
-                      placeholder="0.00"
-                    />
-                  </label>
                 </div>
               )}
               <div className="grid grid-cols-2 gap-2">
@@ -386,9 +383,31 @@ export function ReceiptForm({
                 </label>
               </div>
               {p && (
-                <p className="flex items-baseline justify-end gap-2 border-t border-slate-100 pt-2 text-sm text-muted">
-                  Subtotal <span className="cifra text-base text-foreground">{formatSoles(subtotal(l))}</span>
-                </p>
+                <details
+                  open={!l.unitCost.trim() || opened.has(l.key)}
+                  onToggle={(e) => setOpen(l.key, e.currentTarget.open)}
+                  className="border-t border-slate-100 pt-2"
+                >
+                  <summary className="cursor-pointer text-sm text-primary">Más datos · {formatSoles(subtotal(l))}</summary>
+                  <div className="mt-2 flex items-end justify-between gap-3">
+                    <label className="campo flex-1">
+                      Costo c/{pack?.name} S/
+                      <input
+                        inputMode="decimal"
+                        value={l.unitCost}
+                        onChange={(e) => {
+                          setOpen(l.key, true);
+                          update(l.key, { unitCost: e.target.value });
+                        }}
+                        required
+                        placeholder="0.00"
+                      />
+                    </label>
+                    <p className="flex items-baseline gap-2 pb-2 text-sm text-muted">
+                      Subtotal <span className="cifra text-base text-foreground">{formatSoles(subtotal(l))}</span>
+                    </p>
+                  </div>
+                </details>
               )}
             </div>
           );

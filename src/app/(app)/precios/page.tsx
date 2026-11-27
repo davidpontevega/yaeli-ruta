@@ -13,7 +13,7 @@ export default async function PricesPage({ searchParams }: PageProps<"/precios">
       <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Precios por revisar</h1>
       {raised > 0 && (
         <p className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
-          Ingreso guardado. Subió el costo de {raised} producto{raised === 1 ? "" : "s"}: revisa sus precios de venta.
+          Mercadería guardada. Subió el costo de {raised} producto{raised === 1 ? "" : "s"}: revisa sus precios de venta.
         </p>
       )}
       <div className="tarjeta flex items-start gap-3 border-sky-200 bg-sky-50">

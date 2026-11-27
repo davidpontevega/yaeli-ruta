@@ -19,7 +19,7 @@ export default async function MovementsPage({ params }: PageProps<"/productos/[i
       <BackLink href="/productos" label="Productos" />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Movimientos</h1>
+          <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">Historial</h1>
           <p className="text-muted">
             {product.name} · {product.sku}
           </p>

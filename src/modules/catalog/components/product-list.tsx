@@ -132,7 +132,7 @@ export function ProductList({
                         </Link>
                         <Link href={`/productos/${p.id}/movimientos`} className="btn-secundario inline-flex h-9 items-center gap-2 px-3 text-sm">
                           <Glyph d={G.kardex} />
-                          Kardex
+                          Historial
                         </Link>
                         {buyButton && stock[p.id] && stock[p.id].status !== "ok" && buyButton(p)}
                         <form action={setProductActive} className="ml-auto">
