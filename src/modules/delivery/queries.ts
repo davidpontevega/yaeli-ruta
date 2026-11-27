@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, count, eq, gt, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
+import { and, asc, count, eq, gt, inArray, isNotNull, isNull, lt, ne, or, sql } from "drizzle-orm";
 import { db, type Tx } from "@/server/db";
 import {
   accountMovements,
@@ -45,7 +45,15 @@ export type SheetRow = Awaited<ReturnType<typeof listSheets>>[number];
 /** Pending orders matching `where`, in visit order: customer, number, lines and total. */
 const orderRows = (where: ReturnType<typeof and>) =>
   db
-    .select({ id: orders.id, number: orders.number, total: orders.total, customerName: customers.name, lines: count(orderItems.id) })
+    .select({
+      id: orders.id,
+      number: orders.number,
+      total: orders.total,
+      deliveryOn: orders.deliveryOn,
+      sheetNumber: sql<number | null>`(select numero from hojas_ruta where id = ${orders.sheetId})`,
+      customerName: customers.name,
+      lines: count(orderItems.id),
+    })
     .from(orders)
     .innerJoin(customers, eq(customers.id, orders.customerId))
     .leftJoin(orderItems, eq(orderItems.orderId, orders.id))
@@ -54,7 +62,7 @@ const orderRows = (where: ReturnType<typeof and>) =>
     .orderBy(asc(customers.routeOrder), asc(orders.number));
 export type SheetOrder = Awaited<ReturnType<typeof orderRows>>[number];
 
-/** Header (with the vehicle capacity), its pending orders, and the candidates: pending orders of the route and date in no sheet. */
+/** Header (with the vehicle capacity), its pending orders, and the candidates: pending orders of the route, any date, in no sheet or in another sheet still PREPARANDO. */
 export async function getSheet(id: string) {
   const [sheet] = await db
     .select({
@@ -74,7 +82,18 @@ export async function getSheet(id: string) {
   if (!sheet) return null;
   const [inSheet, candidates] = await Promise.all([
     orderRows(eq(orders.sheetId, id)),
-    orderRows(and(eq(orders.deliveryOn, sheet.date), isNull(orders.sheetId), eq(customers.routeId, sheet.routeId))),
+    orderRows(
+      and(
+        eq(customers.routeId, sheet.routeId),
+        or(
+          isNull(orders.sheetId),
+          and(
+            ne(orders.sheetId, id),
+            inArray(orders.sheetId, db.select({ id: deliverySheets.id }).from(deliverySheets).where(eq(deliverySheets.status, "PREPARANDO"))),
+          ),
+        ),
+      ),
+    ),
   ]);
   return { ...sheet, orders: inSheet, candidates };
 }

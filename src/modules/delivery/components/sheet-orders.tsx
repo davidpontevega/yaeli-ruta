@@ -1,19 +1,23 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { formatSoles } from "@/lib/money";
+import { formatDate } from "@/lib/date";
 import type { SheetOrder } from "../queries";
 import { addSheetOrder, deleteSheet, removeSheetOrder } from "../actions";
 
 /** Orders of the sheet in visit order (Quitar), the route's orders in no sheet (Agregar), and delete. Buttons only while editable. */
 export function SheetOrders({
   sheetId,
+  date,
   editable,
   orders,
   candidates,
 }: {
   sheetId: string;
+  date: string;
   editable: boolean;
   orders: SheetOrder[];
   candidates: SheetOrder[];
@@ -37,6 +41,8 @@ export function SheetOrders({
               <span className="chip bg-slate-100 text-slate-600">
                 {o.lines} producto{o.lines === 1 ? "" : "s"}
               </span>
+              {!inSheet && o.deliveryOn !== date && <span className="chip bg-amber-50 text-amber-800">para {formatDate(o.deliveryOn)}</span>}
+              {!inSheet && o.sheetNumber && <span className="chip bg-sky-50 text-sky-800">en hoja #{o.sheetNumber}</span>}
             </div>
           </div>
           <span className="cifra shrink-0">{formatSoles(o.total)}</span>
@@ -58,12 +64,21 @@ export function SheetOrders({
     <div className="flex flex-col gap-3 print:hidden">
       <h2 className="rotulo">Pedidos en orden de visita</h2>
       {orders.length ? rows(orders, true) : <p className="tarjeta text-sm text-muted">La hoja no tiene pedidos.</p>}
-      {editable && candidates.length > 0 && (
-        <>
-          <h2 className="rotulo">Pedidos sin hoja</h2>
-          {rows(candidates, false)}
-        </>
-      )}
+      {editable &&
+        (candidates.length > 0 ? (
+          <>
+            <h2 className="rotulo">Otros pedidos pendientes de la ruta</h2>
+            <p className="-mt-2 text-xs text-muted">Al agregarlo, su entrega pasa al {formatDate(date)} y sale de su otra hoja.</p>
+            {rows(candidates, false)}
+          </>
+        ) : (
+          <p className="tarjeta text-sm text-muted">
+            No hay pedidos pendientes de esta ruta.{" "}
+            <Link href="/pedidos/nuevo" className="font-semibold text-primary">
+              Anotar pedido
+            </Link>
+          </p>
+        ))}
       {error && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {editable && (
         <form action={del} onSubmit={(e) => !confirm("¿Eliminar la hoja? Sus pedidos quedan sin hoja.") && e.preventDefault()}>

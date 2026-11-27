@@ -106,14 +106,30 @@ export async function addSheetOrder(_: FormState, form: FormData): Promise<FormS
   const { sheetId, orderId } = input.data;
   const r = await run(() =>
     db.transaction(async (tx) => {
-      const s = await lockSheet(tx, sheetId);
-      const done = await tx
-        .update(orders)
-        .set({ sheetId })
-        .where(and(eq(orders.id, orderId), freeOrders(tx, s.routeId, s.date)))
-        .returning({ id: orders.id });
-      if (!done.length) throw new SheetError("El pedido ya no está disponible; recarga la página");
-      await audit(tx, { actorId: me.id, action: "sheet.add_order", entity: "delivery_sheet", entityId: sheetId, details: { orderId } });
+      // Lock both sheets (this one and the one the order comes from) in id order before the order, like loadVehicle: sheet → orders.
+      const [o0] = await tx.select({ sheetId: orders.sheetId }).from(orders).where(eq(orders.id, orderId));
+      if (o0?.sheetId === sheetId) throw new SheetError("El pedido ya está en esta hoja");
+      const ids = [sheetId, ...(o0?.sheetId ? [o0.sheetId] : [])].sort();
+      const locked = new Map<string, Awaited<ReturnType<typeof lockSheet>>>();
+      for (const id of ids) locked.set(id, await lockSheet(tx, id));
+      const s = locked.get(sheetId)!;
+      const [o] = await tx
+        .select({ status: orders.status, sheetId: orders.sheetId, deliveryOn: orders.deliveryOn, routeId: customers.routeId })
+        .from(orders)
+        .innerJoin(customers, eq(customers.id, orders.customerId))
+        .where(eq(orders.id, orderId))
+        .for("update", { of: orders });
+      if (!o || o.status !== "PENDIENTE" || o.routeId !== s.routeId || o.sheetId !== (o0?.sheetId ?? null))
+        throw new SheetError("El pedido ya no está disponible; recarga la página");
+      // Adding it to the sheet also moves its delivery date to the sheet's date.
+      await tx.update(orders).set({ sheetId, deliveryOn: s.date }).where(eq(orders.id, orderId));
+      await audit(tx, {
+        actorId: me.id,
+        action: "sheet.add_order",
+        entity: "delivery_sheet",
+        entityId: sheetId,
+        details: { orderId, fromSheetId: o.sheetId, fromDate: o.deliveryOn },
+      });
     }),
   );
   if (r) return r;

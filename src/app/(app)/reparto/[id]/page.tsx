@@ -29,7 +29,7 @@ export default async function DeliverySheetPage({ params }: PageProps<"/reparto/
         {sheet.status === "LIQUIDADA" && <SettlementPanel sheetId={sheet.id} status="LIQUIDADA" pending={[]} settlement={settlement} />}
         {sheet.status === "PREPARANDO" && (
           <>
-            <SheetOrders sheetId={sheet.id} editable orders={sheet.orders} candidates={sheet.candidates} />
+            <SheetOrders sheetId={sheet.id} date={sheet.date} editable orders={sheet.orders} candidates={sheet.candidates} />
             <div className="flex flex-col gap-3">
               {sheet.orders.length > 0 && <LoadActions key={sheet.status} sheetId={sheet.id} status={sheet.status} short={picking.short.length} />}
               <PickingList sheet={sheet} picking={picking} />
