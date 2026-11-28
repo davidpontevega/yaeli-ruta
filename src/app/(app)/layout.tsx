@@ -41,7 +41,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         footer={
           <div className="flex items-center gap-2 border-t border-border px-1.5 pt-4 text-sm">
             <span className="min-w-0 flex-1 truncate text-muted">{user.name}</span>
-            <SignOutButton className="btn-secundario h-9 text-sm" />
+            <SignOutButton userId={user.id} className="btn-secundario h-9 text-sm" />
           </div>
         }
       />

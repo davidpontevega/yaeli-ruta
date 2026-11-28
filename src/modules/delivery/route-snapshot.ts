@@ -22,6 +22,7 @@ export type RouteRow = {
   orderNumber: number | null;
   orderStatus: "PENDIENTE" | "ANULADO" | "ENTREGADO" | null;
   orderTotal: number | null;
+  packagingId: string | null;
   productName: string | null;
   packagingName: string | null;
   quantity: number | null;
@@ -35,7 +36,7 @@ export type RouteOrder = {
   number: number;
   status: "PENDIENTE" | "ENTREGADO";
   total: number;
-  lines: { product: string; packaging: string; quantity: number; price: number }[];
+  lines: { packagingId: string; product: string; packaging: string; quantity: number; price: number }[];
 };
 export type RouteCustomer = {
   id: string;
@@ -128,8 +129,8 @@ export function buildRouteSnapshot(
       o = { id: r.orderId, number: r.orderNumber ?? 0, status: r.orderStatus, total: r.orderTotal ?? 0, lines: [] };
       c.orders.push(o);
     }
-    if (r.productName && r.packagingName && r.quantity !== null && r.price !== null)
-      o.lines.push({ product: r.productName, packaging: r.packagingName, quantity: r.quantity, price: r.price });
+    if (r.packagingId && r.productName && r.packagingName && r.quantity !== null && r.price !== null)
+      o.lines.push({ packagingId: r.packagingId, product: r.productName, packaging: r.packagingName, quantity: r.quantity, price: r.price });
   }
   for (const s of sheets.values()) {
     s.customers.sort((a, b) => visit.get(a.id)! - visit.get(b.id)! || a.name.localeCompare(b.name, "es"));

@@ -7,3 +7,5 @@ export { OrderList, OrderSummary } from "./components/order-list";
 export { OrderFilters } from "./components/order-filters";
 export { DeliveryForm } from "./components/delivery-form";
 export { CustomerPicker } from "./components/customer-picker";
+export { deliverInTx, DeliveryError } from "./deliver";
+export { deliverySchema } from "./schemas";

@@ -258,6 +258,7 @@ export async function getMyRoute(user: { id: string; role: Role }, today: string
       orderNumber: orders.number,
       orderStatus: orders.status,
       orderTotal: orders.total,
+      packagingId: orderItems.packagingId,
       productName: products.name,
       packagingName: packagings.name,
       quantity: orderItems.quantity,

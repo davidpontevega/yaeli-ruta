@@ -387,6 +387,18 @@ export const orderItems = pgTable(
   ],
 );
 
+// Deliveries made without signal (spec 025): the id comes from the phone, so a re-sent one is a no-op.
+export const offlineOps = pgTable("operaciones_offline", {
+  id: uuid("id").primaryKey(),
+  userId: uuid("usuario_id")
+    .notNull()
+    .references(() => users.id),
+  orderId: uuid("pedido_id")
+    .notNull()
+    .references(() => orders.id),
+  createdAt: createdAt(),
+});
+
 // ── Customer accounts ───────────────────────────────────────────────────────
 
 export const accountMovementTypeEnum = pgEnum("tipo_movimiento_cuenta", ["SALDO_INICIAL", "CARGO", "ABONO", "AJUSTE"]);

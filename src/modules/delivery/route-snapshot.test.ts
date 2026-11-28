@@ -20,6 +20,7 @@ const base: RouteRow = {
   orderNumber: 10,
   orderStatus: "PENDIENTE",
   orderTotal: 1500,
+  packagingId: "k1",
   productName: "Arroz",
   packagingName: "saco",
   quantity: 1,
@@ -42,6 +43,7 @@ test("groups by customer in visit order, orders by number; debt defaults to 0", 
     ],
   );
   assert.equal(s.customers[1].orders[0].lines.length, 2);
+  assert.equal(s.customers[1].orders[0].lines[0].packagingId, "k1");
 });
 
 test("cancelled orders are left out; a sheet without orders is kept", () => {
@@ -53,6 +55,7 @@ test("cancelled orders are left out; a sheet without orders is kept", () => {
       customerId: null,
       orderId: null,
       orderStatus: null,
+      packagingId: null,
       productName: null,
       packagingName: null,
       quantity: null,

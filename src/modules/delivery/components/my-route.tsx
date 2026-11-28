@@ -1,14 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatSoles } from "@/lib/money";
 import { formatDate } from "@/lib/date";
 import { formatKg } from "@/lib/weight";
-import { cacheShell, clearOfflineData, readRoute, saveRoute } from "@/lib/offline-store";
-import type { RouteSheet, RouteSnapshot } from "../route-snapshot";
+import { cacheShell, clearRoute, deleteOps, putOp, readOps, readRoute, saveRoute } from "@/lib/offline-store";
+import type { RouteCustomer, RouteOrder, RouteSheet, RouteSnapshot } from "../route-snapshot";
+import { applyQueue, applyResults, limaDay, ownOps, staleSent, type OfflineOp, type SyncResult } from "../offline-queue";
 import { SHEET_STATUS } from "./sheet-list";
+import { OfflineDeliverForm } from "./offline-deliver-form";
 
 const LIMA = { timeZone: "America/Lima" } as const;
 
@@ -42,6 +44,10 @@ export function MyRoute({ userId }: { userId: string }) {
   const [busy, setBusy] = useState(false);
   const [expired, setExpired] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Every op on this phone (any user); only this user's are shown or uploaded.
+  const [ops, setOps] = useState<OfflineOp[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const sending = useRef(false); // one upload at a time
 
   const download = useCallback(async () => {
     if (!navigator.onLine) return;
@@ -70,10 +76,69 @@ export function MyRoute({ userId }: { userId: string }) {
     }
   }, []);
 
+  const refreshOps = useCallback(async () => setOps(await readOps<OfflineOp>()), []);
+
+  /** Uploads this user's pending deliveries (50 per request), then downloads the sheet again. */
+  const sync = useCallback(async () => {
+    if (sending.current || !navigator.onLine) return;
+    sending.current = true;
+    setUploading(true);
+    try {
+      const pending = ownOps(await readOps<OfflineOp>(), userId).filter((o) => o.state === "pending");
+      for (let i = 0; i < pending.length; i += 50) {
+        const chunk = pending.slice(i, i + 50);
+        const res = await fetch("/api/mi-ruta/sync", {
+          method: "POST",
+          cache: "no-store",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ops: chunk.map(({ id, sheetId, orderId, lines, paid, method }) => ({ id, sheetId, orderId, lines, paid, method })),
+          }),
+        });
+        if (res.status === 401) return setExpired(true);
+        if (!res.ok) {
+          const fail: { error?: string } | null = await res.json().catch(() => null);
+          return setError(`${fail?.error ?? `No se pudieron subir las entregas (error ${res.status})`}. Siguen guardadas en el celular.`);
+        }
+        const { results }: { results: SyncResult[] } = await res.json();
+        for (const op of applyResults(chunk, results)) if (op.state !== "pending") await putOp(op);
+      }
+    } catch (e) {
+      console.error(e);
+      setError("No se pudieron subir las entregas: revisa tu señal. Siguen guardadas en el celular.");
+    } finally {
+      sending.current = false;
+      setUploading(false);
+      await refreshOps().catch(console.error);
+    }
+    await download();
+  }, [userId, download, refreshOps]);
+
+  const save = async (sheetId: string, c: RouteCustomer, o: RouteOrder, op: Pick<OfflineOp, "lines" | "paid" | "method">) => {
+    await putOp<OfflineOp>({
+      ...op,
+      id: crypto.randomUUID(),
+      userId,
+      sheetId,
+      orderId: o.id,
+      at: new Date().toISOString(),
+      state: "pending",
+      customerName: c.name,
+      orderNumber: o.number,
+    });
+    await refreshOps();
+    void sync();
+  };
+
+  const dismiss = async (id: string) => {
+    await deleteOps([id]);
+    await refreshOps();
+  };
+
   useEffect(() => {
     const on = () => {
       setOnline(true);
-      void download();
+      void sync();
     };
     const off = () => setOnline(false);
     window.addEventListener("online", on);
@@ -82,35 +147,77 @@ export function MyRoute({ userId }: { userId: string }) {
       setOnline(navigator.onLine);
       try {
         const saved = await readRoute<RouteSnapshot>();
-        // Another user's data on this phone: gone before anything is shown.
-        if (saved && saved.userId !== userId) await clearOfflineData();
+        // Another user's sheet on this phone: gone before anything is shown. Their queue stays (hidden) until they come back.
+        if (saved && saved.userId !== userId) await clearRoute();
         else if (saved) setRoute(saved);
+        await deleteOps(staleSent(ownOps(await readOps<OfflineOp>(), userId), limaDay(new Date())).map((o) => o.id));
+        await refreshOps();
       } catch (e) {
         console.error(e);
         setError("No se pudieron leer los datos guardados en este celular.");
       }
       setReady(true);
-      await download();
+      await sync();
     })();
     return () => {
       window.removeEventListener("online", on);
       window.removeEventListener("offline", off);
     };
-  }, [userId, download]);
+  }, [userId, sync, refreshOps]);
+
+  const mine = ownOps(ops, userId);
+  const toUpload = mine.filter((o) => o.state === "pending").length;
+  const rejected = mine.filter((o) => o.state === "rejected");
+  const othersPending = ops.some((o) => o.userId !== userId && o.state === "pending");
+  // Latest op of each order (ops are sorted by time; a rejected one can be followed by a new try).
+  const opOf = new Map(mine.filter((o) => o.state !== "rejected").map((o) => [o.orderId, o]));
+  const sheets = route ? applyQueue(route.sheets, mine) : [];
 
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="flex-1 text-[22px] font-bold tracking-tight md:text-[26px]">Mi ruta de hoy</h1>
         {!online && <span className="chip bg-red-100 text-red-800">Sin señal</span>}
+        {toUpload > 0 && <span className="chip bg-amber-100 text-amber-800">{toUpload} por subir</span>}
         <button type="button" onClick={download} disabled={!online || busy} className="btn-primario btn-entregar h-10 text-sm">
           {busy ? "Descargando…" : "Actualizar"}
         </button>
       </div>
       {route && <p className="text-sm text-muted">{downloadedLabel(route.downloadedAt)}</p>}
+      {toUpload > 0 && (
+        <button type="button" onClick={sync} disabled={!online || uploading} className="btn-primario btn-entregar h-12 w-full">
+          {uploading ? "Subiendo…" : `Subir ahora (${toUpload})`}
+        </button>
+      )}
+      {rejected.length > 0 && (
+        <div className="tarjeta flex flex-col gap-2 border-red-200 bg-red-50">
+          <p className="font-bold text-red-800">No se pudieron subir</p>
+          {rejected.map((o) => (
+            <div key={o.id} className="flex items-start gap-2 text-sm text-red-800">
+              <p className="min-w-0 flex-1">
+                <span className="font-semibold">
+                  {o.customerName} · Pedido {o.orderNumber}
+                </span>
+                <br />
+                {o.reason}
+              </p>
+              <button type="button" onClick={() => dismiss(o.id)} className="btn-secundario h-10 text-sm">
+                Entendido
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      {othersPending && (
+        <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          Hay entregas de otro usuario sin subir; que entre él con su PIN para subirlas.
+        </p>
+      )}
       {expired && (
         <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          Sesión vencida: entra con tu PIN para actualizar.{" "}
+          {toUpload > 0
+            ? `Sesión vencida: entra con tu PIN para subir ${toUpload} entrega${toUpload === 1 ? "" : "s"}.`
+            : "Sesión vencida: entra con tu PIN para actualizar."}{" "}
           <Link href="/login" className="font-semibold underline">
             Entrar
           </Link>
@@ -123,16 +230,25 @@ export function MyRoute({ userId }: { userId: string }) {
         ) : (
           busy && <p className="text-sm text-muted">Descargando tu hoja…</p>
         )
-      ) : !route.sheets.length ? (
+      ) : !sheets.length ? (
         <EmptyState text="No tienes hoja de ruta para hoy." />
       ) : (
-        route.sheets.map((s) => <SheetCard key={s.id} sheet={s} />)
+        sheets.map((s) => <SheetCard key={s.id} sheet={s} opOf={opOf} onSave={(c, o, op) => save(s.id, c, o, op)} />)
       )}
     </section>
   );
 }
 
-function SheetCard({ sheet: s }: { sheet: RouteSheet }) {
+function SheetCard({
+  sheet: s,
+  opOf,
+  onSave,
+}: {
+  sheet: RouteSheet;
+  opOf: Map<string, OfflineOp>;
+  onSave: (c: RouteCustomer, o: RouteOrder, op: Pick<OfflineOp, "lines" | "paid" | "method">) => Promise<void>;
+}) {
+  const [open, setOpen] = useState<string | null>(null); // order being delivered
   const load = s.status === "EN_RUTA" ? "Carga del vehículo" : "Para cargar";
   return (
     <article className="flex flex-col gap-3">
@@ -164,22 +280,50 @@ function SheetCard({ sheet: s }: { sheet: RouteSheet }) {
                   {c.phone}
                 </a>
               )}
-              {c.orders.map((o) => (
-                <div key={o.id} className="rounded-xl bg-slate-50 px-3 py-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="flex-1 font-semibold">Pedido {o.number}</span>
-                    {o.status === "ENTREGADO" && <span className="chip bg-emerald-100 text-emerald-800">Entregado</span>}
-                    <span className="cifra">{formatSoles(o.total)}</span>
+              {c.orders.map((o) => {
+                const op = opOf.get(o.id);
+                return (
+                  <div key={o.id} className="rounded-xl bg-slate-50 px-3 py-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="flex-1 font-semibold">Pedido {o.number}</span>
+                      {op?.state === "pending" ? (
+                        <span className="chip bg-amber-100 text-amber-800">Entregado (por subir)</span>
+                      ) : op?.state === "sent" ? (
+                        <span className="chip bg-emerald-100 text-emerald-800">Subido</span>
+                      ) : (
+                        o.status === "ENTREGADO" && <span className="chip bg-emerald-100 text-emerald-800">Entregado</span>
+                      )}
+                      <span className="cifra">{formatSoles(o.total)}</span>
+                    </div>
+                    {open === o.id && o.status === "PENDIENTE" ? (
+                      <OfflineDeliverForm
+                        order={o}
+                        debt={c.debt}
+                        onSave={async (x) => {
+                          await onSave(c, o, x);
+                          setOpen(null);
+                        }}
+                        onClose={() => setOpen(null)}
+                      />
+                    ) : (
+                      <>
+                        <ul className="mt-1 text-muted">
+                          {o.lines.map((l) => (
+                            <li key={l.packagingId}>
+                              {l.quantity} {l.packaging} {l.product} · {formatSoles(l.price)}
+                            </li>
+                          ))}
+                        </ul>
+                        {s.status === "EN_RUTA" && o.status === "PENDIENTE" && (
+                          <button type="button" onClick={() => setOpen(o.id)} className="btn-primario btn-entregar mt-2 h-12 w-full text-base">
+                            Entregar
+                          </button>
+                        )}
+                      </>
+                    )}
                   </div>
-                  <ul className="mt-1 text-muted">
-                    {o.lines.map((l, j) => (
-                      <li key={j}>
-                        {l.quantity} {l.packaging} {l.product} · {formatSoles(l.price)}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+                );
+              })}
             </li>
           ))}
         </ol>

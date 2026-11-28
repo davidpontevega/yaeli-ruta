@@ -2,32 +2,21 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { asc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { audit, db, type Tx } from "@/server/db";
-import { customers, deliverySheets, orderItems, orders, packagings, products } from "@/server/db/schema";
+import { audit, db } from "@/server/db";
+import { customers, orderItems, orders } from "@/server/db/schema";
 import { requireUser } from "@/server/auth";
 import type { FormState } from "@/lib/form-state";
-import { addDays, dispatchStock, todayInLima, toBaseUnits } from "@/modules/inventory";
-import { addCharge, addPayment, lockedBalance } from "@/modules/accounts";
+import { addDays, todayInLima } from "@/modules/inventory";
 import { specialPriceMap } from "@/modules/customers";
-import { formatSoles } from "@/lib/money";
-import { formatQty } from "@/lib/quantity";
 import { deliverySchema, orderSchema } from "./schemas";
 import { sellablePackagings } from "./queries";
 import { orderTotal, priceFor } from "./order-math";
+import { DeliveryError, deliverInTx, sheetOf } from "./deliver";
 
 const MAX_DAYS_AHEAD = 365;
 
-/** Delivery sheet of the order (read without locking it; the caller already locked the order). */
-async function sheetOf(tx: Tx, sheetId: string | null) {
-  if (!sheetId) return undefined;
-  const [s] = await tx
-    .select({ number: deliverySheets.number, status: deliverySheets.status, vehicleId: deliverySheets.vehicleId })
-    .from(deliverySheets)
-    .where(eq(deliverySheets.id, sheetId));
-  return s;
-}
 const inRoute = (n: number) => `El pedido está en ruta (hoja #${n})`;
 const MAX_TOTAL = 2_000_000_000;
 
@@ -131,9 +120,6 @@ export async function cancelOrder(_: FormState, form: FormData): Promise<FormSta
   redirect(`/pedidos?fecha=${done.deliveryOn}`);
 }
 
-/** Thrown inside the delivery transaction so nothing is saved; the message is shown to the owner. */
-class DeliveryError extends Error {}
-
 /** Form: `orderId`, one `delivered_<packagingId>` per line, `paid` (S/) and `method`. Stock, charge and payment in one transaction. */
 export async function deliverOrder(_: FormState, form: FormData): Promise<FormState> {
   const me = await requireUser("DUENO");
@@ -142,83 +128,11 @@ export async function deliverOrder(_: FormState, form: FormData): Promise<FormSt
     .map(([k, v]) => ({ packagingId: k.slice(10), delivered: String(v).trim() || "0" }));
   const input = deliverySchema.safeParse({ orderId: form.get("orderId"), lines, paid: form.get("paid") ?? "", method: form.get("method") });
   if (!input.success) return { error: input.error.issues[0].message };
-  const { orderId, paid, method } = input.data;
-  const deliveredOf = new Map(input.data.lines.map((l) => [l.packagingId, l.delivered]));
+  const { orderId } = input.data;
 
   let routeSheetId: string | undefined; // sheet EN_RUTA of the order: the payment belongs to it and we go back to it
   try {
-    await db.transaction(async (tx) => {
-      const [o] = await tx
-        .select({ status: orders.status, customerId: orders.customerId, number: orders.number, sheetId: orders.sheetId })
-        .from(orders)
-        .where(eq(orders.id, orderId))
-        .for("update");
-      if (!o) throw new DeliveryError("El pedido no existe");
-      if (o.status !== "PENDIENTE") throw new DeliveryError("El pedido ya no está pendiente");
-      // In a sheet EN_RUTA the goods are on the vehicle: dispatch from it. Otherwise from the warehouse floors.
-      const sheet = await sheetOf(tx, o.sheetId);
-      const fromId = sheet?.status === "EN_RUTA" ? sheet.vehicleId : undefined;
-      if (fromId) routeSheetId = o.sheetId!;
-      const items = await tx
-        .select({
-          id: orderItems.id,
-          packagingId: orderItems.packagingId,
-          quantity: orderItems.quantity,
-          price: orderItems.price,
-          factor: packagings.factor,
-          productId: packagings.productId,
-          productName: products.name,
-        })
-        .from(orderItems)
-        .innerJoin(packagings, eq(packagings.id, orderItems.packagingId))
-        .innerJoin(products, eq(products.id, packagings.productId))
-        .where(eq(orderItems.orderId, orderId));
-      if (items.length !== deliveredOf.size || items.some((i) => !deliveredOf.has(i.packagingId)))
-        throw new DeliveryError("El pedido cambió; recarga la página");
-      const delivered = items.map((i) => ({ ...i, delivered: deliveredOf.get(i.packagingId)! }));
-      const over = delivered.find((i) => i.delivered > i.quantity);
-      if (over) throw new DeliveryError(`No puedes entregar más de lo pedido en ${over.productName}`);
-      const total = delivered.reduce((s, i) => s + i.delivered * i.price, 0);
-      if (!delivered.some((i) => i.delivered > 0)) throw new DeliveryError("No hay nada que entregar; anula el pedido");
-
-      // Base units per product, dispatched in product id order (same lock order as receiveGoods).
-      const perProduct = new Map<string, { qty: number; name: string }>();
-      for (const i of delivered) {
-        const p = perProduct.get(i.productId) ?? { qty: 0, name: i.productName };
-        p.qty += toBaseUnits(i.delivered, i.factor);
-        perProduct.set(i.productId, p);
-      }
-      for (const [productId, p] of [...perProduct].sort(([a], [b]) => a.localeCompare(b))) {
-        if (!p.qty) continue;
-        const r = await dispatchStock(tx, { productId, baseQty: p.qty, orderId, userId: me.id, fromId });
-        if (!r.ok) {
-          const packs = await tx
-            .select({ name: packagings.name, factor: packagings.factor })
-            .from(packagings)
-            .where(eq(packagings.productId, productId))
-            .orderBy(asc(packagings.factor));
-          throw new DeliveryError(
-            `Falta stock de ${p.name}${fromId ? " en el vehículo" : ""}: hay ${r.available ? formatQty(r.available, packs) : "0"}`,
-          );
-        }
-      }
-
-      for (const i of delivered) await tx.update(orderItems).set({ delivered: i.delivered }).where(eq(orderItems.id, i.id));
-      await tx.update(orders).set({ status: "ENTREGADO", total, deliveredAt: new Date() }).where(eq(orders.id, orderId));
-
-      const balance = (await lockedBalance(tx, o.customerId)) ?? 0;
-      const maxPaid = Math.max(0, balance + total);
-      if (paid > maxPaid) throw new DeliveryError(`Lo pagado no puede pasar de ${formatSoles(maxPaid)}`);
-      if (total > 0) await addCharge(tx, { customerId: o.customerId, orderId, amount: total, userId: me.id });
-      if (paid > 0) await addPayment(tx, { customerId: o.customerId, amount: paid, method, userId: me.id, sheetId: routeSheetId });
-      await audit(tx, {
-        actorId: me.id,
-        action: "order.deliver",
-        entity: "order",
-        entityId: orderId,
-        details: { total, paid, method: paid ? method : null },
-      });
-    });
+    ({ routeSheetId } = await db.transaction((tx) => deliverInTx(tx, input.data, me.id)));
   } catch (e) {
     if (e instanceof DeliveryError) return { error: e.message };
     throw e;
