@@ -9,6 +9,7 @@ const display = Space_Grotesk({ variable: "--font-display-face", subsets: ["lati
 export const metadata: Metadata = {
   title: BRAND.name,
   description: `Stock y reparto · ${BRAND.company}`,
+  appleWebApp: { capable: true, title: BRAND.name, statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = { themeColor: "#0f766e", viewportFit: "cover" };
