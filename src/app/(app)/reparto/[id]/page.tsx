@@ -6,11 +6,13 @@ import {
   LoadActions,
   PickingList,
   SettlementPanel,
+  SheetDriverForm,
   SheetOrders,
   SheetStepper,
   getPicking,
   getSettlement,
   getSheet,
+  listDrivers,
   sheetStep,
 } from "@/modules/delivery";
 
@@ -18,13 +20,14 @@ export default async function DeliverySheetPage({ params }: PageProps<"/reparto/
   await requireUser("DUENO");
   const id = z.uuid().safeParse((await params).id);
   if (!id.success) notFound();
-  const [sheet, picking, settlement] = await Promise.all([getSheet(id.data), getPicking(id.data), getSettlement(id.data)]);
+  const [sheet, picking, settlement, drivers] = await Promise.all([getSheet(id.data), getPicking(id.data), getSettlement(id.data), listDrivers()]);
   if (!sheet) notFound();
   return (
     <section className="flex flex-col gap-4">
       <BackLink href={`/reparto?fecha=${sheet.date}`} label="Reparto" />
       <h1 className="text-[22px] font-bold tracking-tight md:text-[26px] print:hidden">Hoja de ruta #{sheet.number}</h1>
       <SheetStepper step={sheetStep(sheet.status, sheet.orders.length)} />
+      {sheet.status !== "LIQUIDADA" && <SheetDriverForm sheetId={sheet.id} driverId={sheet.driverId} drivers={drivers} />}
       <div className="grid items-start gap-4 lg:grid-cols-2">
         {sheet.status === "LIQUIDADA" && <SettlementPanel sheetId={sheet.id} status="LIQUIDADA" pending={[]} settlement={settlement} />}
         {sheet.status === "PREPARANDO" && (

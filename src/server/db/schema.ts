@@ -333,6 +333,8 @@ export const deliverySheets = pgTable(
     userId: uuid("usuario_id")
       .notNull()
       .references(() => users.id),
+    // Who delivers it; null = the owner.
+    driverId: uuid("repartidor_id").references(() => users.id),
     status: sheetStatusEnum("estado").notNull().default("PREPARANDO"),
     // Settlement (LIQUIDADA): cash expected from the sheet's EFECTIVO payments vs. cash handed in, both céntimos.
     expectedCash: integer("efectivo_esperado"),

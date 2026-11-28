@@ -4,11 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, asc, eq, gt, inArray, isNull } from "drizzle-orm";
 import { audit, db, type Tx } from "@/server/db";
-import { customers, deliverySheets, locations, orders, products, routes, stockLevels } from "@/server/db/schema";
+import { customers, deliverySheets, locations, orders, products, routes, stockLevels, users } from "@/server/db/schema";
 import { requireUser } from "@/server/auth";
 import type { FormState } from "@/lib/form-state";
 import { moveStock, todayInLima, warehouseLots } from "@/modules/inventory";
-import { createSheetSchema, settleSchema, sheetIdSchema, sheetOrderSchema } from "./schemas";
+import { createSheetSchema, settleSchema, sheetDriverSchema, sheetIdSchema, sheetOrderSchema } from "./schemas";
 import { sheetLines, sheetOrigins, sheetPayments } from "./queries";
 import { returnPlan } from "./settlement";
 import { buildPicking } from "./picking";
@@ -56,6 +56,16 @@ const revalidateLoad = (sheetId: string) => {
   revalidatePath("/stock");
 };
 
+/** A driver must be an active REPARTIDOR. */
+async function checkDriver(tx: Tx, driverId: string | undefined) {
+  if (!driverId) return;
+  const [u] = await tx.select({ role: users.role, active: users.active }).from(users).where(eq(users.id, driverId));
+  if (u?.role !== "REPARTIDOR" || !u.active) throw new SheetError("Elige un repartidor activo");
+}
+
+/** `null` and "" from the form mean "the owner delivers". */
+const optional = (v: FormDataEntryValue | null) => v || undefined;
+
 async function run(fn: () => Promise<void>): Promise<FormState> {
   try {
     await fn();
@@ -67,9 +77,14 @@ async function run(fn: () => Promise<void>): Promise<FormState> {
 
 export async function createSheet(_: FormState, form: FormData): Promise<FormState> {
   const me = await requireUser("DUENO");
-  const input = createSheetSchema.safeParse({ routeId: form.get("routeId"), date: form.get("date"), vehicleId: form.get("vehicleId") });
+  const input = createSheetSchema.safeParse({
+    routeId: form.get("routeId"),
+    date: form.get("date"),
+    vehicleId: form.get("vehicleId"),
+    driverId: optional(form.get("driverId")),
+  });
   if (!input.success) return { error: input.error.issues[0].message };
-  const { routeId, date, vehicleId } = input.data;
+  const { routeId, date, vehicleId, driverId } = input.data;
   if (date < todayInLima()) return { error: "La fecha no puede ser pasada" };
 
   let sheetId = "";
@@ -79,7 +94,11 @@ export async function createSheet(_: FormState, form: FormData): Promise<FormSta
       if (!route) throw new SheetError("La ruta no existe");
       const [v] = await tx.select({ type: locations.type, active: locations.active }).from(locations).where(eq(locations.id, vehicleId));
       if (v?.type !== "VEHICULO" || !v.active) throw new SheetError("Elige un vehículo activo");
-      [{ id: sheetId }] = await tx.insert(deliverySheets).values({ routeId, date, vehicleId, userId: me.id }).returning({ id: deliverySheets.id });
+      await checkDriver(tx, driverId);
+      [{ id: sheetId }] = await tx
+        .insert(deliverySheets)
+        .values({ routeId, date, vehicleId, driverId, userId: me.id })
+        .returning({ id: deliverySheets.id });
       const taken = await tx
         .update(orders)
         .set({ sheetId })
@@ -90,13 +109,42 @@ export async function createSheet(_: FormState, form: FormData): Promise<FormSta
         action: "sheet.create",
         entity: "delivery_sheet",
         entityId: sheetId,
-        details: { routeId, date, vehicleId, orderIds: taken.map((o) => o.id) },
+        details: { routeId, date, vehicleId, driverId: driverId ?? null, orderIds: taken.map((o) => o.id) },
       });
     }),
   );
   if (r) return r;
   revalidatePath("/reparto");
   redirect(`/reparto/${sheetId}`);
+}
+
+/** Who delivers the sheet; can change until it is LIQUIDADA. Empty = the owner. */
+export async function setSheetDriver(_: FormState, form: FormData): Promise<FormState> {
+  const me = await requireUser("DUENO");
+  const input = sheetDriverSchema.safeParse({ sheetId: form.get("sheetId"), driverId: optional(form.get("driverId")) });
+  if (!input.success) return { error: input.error.issues[0].message };
+  const { sheetId, driverId } = input.data;
+  const r = await run(() =>
+    db.transaction(async (tx) => {
+      const [s] = await tx.select({ status: deliverySheets.status }).from(deliverySheets).where(eq(deliverySheets.id, sheetId)).for("update");
+      if (!s) throw new SheetError("La hoja de ruta no existe");
+      if (s.status === "LIQUIDADA") throw new SheetError("La hoja ya está liquidada");
+      await checkDriver(tx, driverId);
+      await tx
+        .update(deliverySheets)
+        .set({ driverId: driverId ?? null })
+        .where(eq(deliverySheets.id, sheetId));
+      await audit(tx, {
+        actorId: me.id,
+        action: "sheet.driver",
+        entity: "delivery_sheet",
+        entityId: sheetId,
+        details: { driverId: driverId ?? null },
+      });
+    }),
+  );
+  if (r) return r;
+  revalidatePath(`/reparto/${sheetId}`);
 }
 
 export async function addSheetOrder(_: FormState, form: FormData): Promise<FormState> {

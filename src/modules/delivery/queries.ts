@@ -1,5 +1,6 @@
 import "server-only";
 import { and, asc, count, eq, gt, inArray, isNotNull, isNull, lt, ne, or, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { db, type Tx } from "@/server/db";
 import {
   accountMovements,
@@ -14,9 +15,13 @@ import {
   routes,
   stockLevels,
   stockMovements,
+  users,
+  type Role,
 } from "@/server/db/schema";
 import { locationLots, warehouseLots } from "@/modules/inventory";
+import { balancesByCustomer } from "@/modules/accounts";
 import { buildPicking } from "./picking";
+import { buildRouteSnapshot, type RouteSnapshot } from "./route-snapshot";
 
 const pending = eq(orders.status, "PENDIENTE");
 
@@ -74,6 +79,7 @@ export async function getSheet(id: string) {
       routeId: routes.id,
       vehicleName: locations.name,
       capacityKg: locations.capacityKg,
+      driverId: deliverySheets.driverId,
     })
     .from(deliverySheets)
     .innerJoin(routes, eq(routes.id, deliverySheets.routeId))
@@ -216,3 +222,71 @@ export async function getSettlement(sheetId: string) {
   };
 }
 export type Settlement = Awaited<ReturnType<typeof getSettlement>>;
+
+/** Active REPARTIDOR users, to choose who delivers a sheet. */
+export function listDrivers() {
+  return db
+    .select({ id: users.id, name: users.name })
+    .from(users)
+    .where(and(eq(users.role, "REPARTIDOR"), eq(users.active, true)))
+    .orderBy(asc(users.name));
+}
+
+const drivers = alias(users, "repartidores");
+
+/**
+ * Sheets for the phone: EN_RUTA (any date) or PREPARANDO of `today`, never LIQUIDADA. A REPARTIDOR only gets the sheets assigned to him.
+ * Customers in visit order with their current debt, their non-cancelled orders with lines (sale price), and the load summary.
+ */
+export async function getMyRoute(user: { id: string; role: Role }, today: string): Promise<RouteSnapshot["sheets"]> {
+  const rows = await db
+    .select({
+      sheetId: deliverySheets.id,
+      sheetNumber: deliverySheets.number,
+      sheetStatus: deliverySheets.status,
+      sheetDate: deliverySheets.date,
+      routeName: routes.name,
+      vehicleName: locations.name,
+      driverName: drivers.name,
+      customerId: customers.id,
+      customerName: customers.name,
+      phone: customers.phone,
+      address: customers.address,
+      reference: customers.reference,
+      routeOrder: customers.routeOrder,
+      orderId: orders.id,
+      orderNumber: orders.number,
+      orderStatus: orders.status,
+      orderTotal: orders.total,
+      productName: products.name,
+      packagingName: packagings.name,
+      quantity: orderItems.quantity,
+      price: orderItems.price,
+    })
+    .from(deliverySheets)
+    .innerJoin(routes, eq(routes.id, deliverySheets.routeId))
+    .innerJoin(locations, eq(locations.id, deliverySheets.vehicleId))
+    .leftJoin(drivers, eq(drivers.id, deliverySheets.driverId))
+    .leftJoin(orders, and(eq(orders.sheetId, deliverySheets.id), ne(orders.status, "ANULADO")))
+    .leftJoin(customers, eq(customers.id, orders.customerId))
+    .leftJoin(orderItems, eq(orderItems.orderId, orders.id))
+    .leftJoin(packagings, eq(packagings.id, orderItems.packagingId))
+    .leftJoin(products, eq(products.id, packagings.productId))
+    .where(
+      and(
+        or(eq(deliverySheets.status, "EN_RUTA"), and(eq(deliverySheets.status, "PREPARANDO"), eq(deliverySheets.date, today))),
+        user.role === "DUENO" ? undefined : eq(deliverySheets.driverId, user.id),
+      ),
+    )
+    .orderBy(asc(routes.name), asc(deliverySheets.number), asc(products.name));
+  const sheetIds = [...new Set(rows.map((r) => r.sheetId))];
+  const customerIds = [...new Set(rows.flatMap((r) => (r.customerId ? [r.customerId] : [])))];
+  // One getPicking per sheet: 1–2 sheets a day.
+  const [balances, pickings] = await Promise.all([balancesByCustomer(customerIds), Promise.all(sheetIds.map((id) => getPicking(id)))]);
+  return buildRouteSnapshot(
+    rows,
+    balances,
+    Object.fromEntries(sheetIds.map((id, i) => [id, pickings[i]])),
+    Object.assign({}, ...pickings.map((p) => p.packagings)),
+  );
+}

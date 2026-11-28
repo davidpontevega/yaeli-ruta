@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { CurrentUser } from "@/server/auth";
 import { LogoMark } from "@/components/ui/logo";
-import { signOut } from "@/modules/auth";
+import { SignOutButton } from "@/modules/auth";
 import { SectionNav, type NavBadges } from "./app-nav";
 
 export function AppHeader({ user, badges }: { user: CurrentUser; badges?: NavBadges }) {
@@ -12,10 +12,10 @@ export function AppHeader({ user, badges }: { user: CurrentUser; badges?: NavBad
           <LogoMark size={36} label="Distribuidora Yaeli" />
         </Link>
         <SectionNav role={user.role} hidden={user.hiddenMenus} badges={badges} />
-        <form action={signOut} className="flex items-center gap-3 text-sm">
+        <div className="flex items-center gap-3 text-sm">
           <span className="text-muted">{user.name}</span>
-          <button className="btn-secundario h-9 text-sm">Salir</button>
-        </form>
+          <SignOutButton className="btn-secundario h-9 text-sm" />
+        </div>
       </div>
     </header>
   );

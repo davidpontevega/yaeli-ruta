@@ -1,0 +1,2 @@
+ALTER TABLE "hojas_ruta" ADD COLUMN "repartidor_id" uuid;--> statement-breakpoint
+ALTER TABLE "hojas_ruta" ADD CONSTRAINT "hojas_ruta_repartidor_id_usuarios_id_fk" FOREIGN KEY ("repartidor_id") REFERENCES "public"."usuarios"("id") ON DELETE no action ON UPDATE no action;

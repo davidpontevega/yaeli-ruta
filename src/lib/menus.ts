@@ -13,6 +13,7 @@ export const MENUS = [
     href: "/clientes",
     prefixes: ["/clientes", "/deudores", "/rutas"],
   },
+  { key: "mi-ruta", label: "Mi ruta de hoy", group: "Ventas", href: "/mi-ruta", prefixes: ["/mi-ruta"] },
   { key: "stock", label: "Stock", group: "Almacén", href: "/stock", prefixes: ["/stock"] },
   { key: "vencimientos", label: "Por vencer", group: "Almacén", href: "/vencimientos", prefixes: ["/vencimientos"] },
   {

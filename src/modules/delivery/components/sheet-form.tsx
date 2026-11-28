@@ -2,16 +2,19 @@
 
 import { useActionState } from "react";
 import { createSheet } from "../actions";
+import { DriverSelect } from "./driver-select";
 
-/** New sheet: route + date + vehicle. The route's pending orders of that date are added on create. */
+/** New sheet: route + date + vehicle + who delivers. The route's pending orders of that date are added on create. */
 export function SheetForm({
   routes,
   vehicles,
+  drivers,
   date,
   today,
 }: {
   routes: { id: string; name: string }[];
   vehicles: { id: string; name: string; capacityKg: number | null }[];
+  drivers: { id: string; name: string }[];
   date: string;
   today: string;
 }) {
@@ -19,7 +22,7 @@ export function SheetForm({
   return (
     <form action={action} className="tarjeta flex flex-col gap-3">
       <h2 className="font-bold">Armar hoja de ruta</h2>
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         <label className="campo-etiqueta">
           Ruta
           <select name="routeId" required defaultValue="">
@@ -50,6 +53,7 @@ export function SheetForm({
             ))}
           </select>
         </label>
+        <DriverSelect drivers={drivers} defaultValue="" />
       </div>
       <button disabled={pending} className="btn-primario btn-armar h-11 text-sm">
         Crear hoja

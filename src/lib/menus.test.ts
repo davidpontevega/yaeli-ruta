@@ -14,6 +14,7 @@ test("menuKeyFor", () => {
   assert.equal(menuKeyFor("/productosx"), null);
   assert.equal(menuKeyFor("/stock?falta=1"), "stock");
   assert.equal(menuKeyFor("/reparto/9"), "pedidos");
+  assert.equal(menuKeyFor("/mi-ruta"), "mi-ruta");
 });
 
 test("canSee", () => {
@@ -22,13 +23,16 @@ test("canSee", () => {
   assert.equal(canSee("/pedidos/nuevo", "DUENO", ["pedidos"]), false);
   assert.equal(canSee("/stock", "REPARTIDOR", []), true);
   assert.equal(canSee("/menus", "REPARTIDOR", ["inicio"]), true);
+  assert.equal(canSee("/mi-ruta", "REPARTIDOR", []), true);
+  assert.equal(canSee("/mi-ruta", "DUENO", ["mi-ruta"]), false);
 });
 
 test("firstAllowed", () => {
   assert.equal(firstAllowed("DUENO", []), "/");
   assert.equal(firstAllowed("DUENO", ["inicio"]), "/pedidos");
-  assert.equal(firstAllowed("REPARTIDOR", ["inicio"]), "/stock");
-  assert.equal(firstAllowed("REPARTIDOR", ["inicio", "stock", "vencimientos", "productos"]), "/login");
+  assert.equal(firstAllowed("REPARTIDOR", ["inicio"]), "/mi-ruta");
+  assert.equal(firstAllowed("REPARTIDOR", ["inicio", "mi-ruta"]), "/stock");
+  assert.equal(firstAllowed("REPARTIDOR", ["inicio", "mi-ruta", "stock", "vencimientos", "productos"]), "/login");
 });
 
 test("sanitizeHidden", () => {
@@ -36,6 +40,6 @@ test("sanitizeHidden", () => {
   assert.deepEqual(sanitizeHidden(["pedidos", "stock"], "REPARTIDOR", false), { ok: true, hidden: ["stock"] });
   assert.deepEqual(sanitizeHidden(["ajustes", "inicio"], "DUENO", true), { ok: true, hidden: ["inicio"] });
   assert.deepEqual(sanitizeHidden(["ajustes"], "DUENO", false), { ok: true, hidden: ["ajustes"] });
-  const all = ["inicio", "stock", "vencimientos", "productos"];
+  const all = ["inicio", "mi-ruta", "stock", "vencimientos", "productos"];
   assert.deepEqual(sanitizeHidden(all, "REPARTIDOR", false), { ok: false, error: "Deja al menos una pantalla" });
 });

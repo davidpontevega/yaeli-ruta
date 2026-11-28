@@ -2,7 +2,8 @@ import { Suspense } from "react";
 import { requireUser } from "@/server/auth";
 import { NavTrail } from "@/components/ui/back-link";
 import { BRAND } from "@/lib/brand";
-import { signOut } from "@/modules/auth";
+import { SignOutButton } from "@/modules/auth";
+import { SwRegister } from "@/components/sw-register";
 import { AppHeader } from "@/components/app-header";
 import { SectionTabs, SideNav, type NavBadges } from "@/components/app-nav";
 import { getAlertCounts } from "@/modules/inventory";
@@ -28,6 +29,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   };
   return (
     <div className="flex min-h-full flex-1">
+      <SwRegister />
       <Suspense>
         <NavTrail />
       </Suspense>
@@ -37,10 +39,10 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         brand={BRAND.name}
         badges={badges}
         footer={
-          <form action={signOut} className="flex items-center gap-2 border-t border-border px-1.5 pt-4 text-sm">
+          <div className="flex items-center gap-2 border-t border-border px-1.5 pt-4 text-sm">
             <span className="min-w-0 flex-1 truncate text-muted">{user.name}</span>
-            <button className="btn-secundario h-9 text-sm">Salir</button>
-          </form>
+            <SignOutButton className="btn-secundario h-9 text-sm" />
+          </div>
         }
       />
       <div className="flex min-w-0 flex-1 flex-col">
